@@ -49,44 +49,47 @@
       <p>환영합니다 — miku-tenshi 의 기록 공간입니다.</p>
     </div>
 
-    <article class="window" id="window">
-      <div class="window-chrome">
-        <div class="chrome-dots"><span></span><span></span><span></span></div>
-        <span class="chrome-path">home / index.md</span>
-        <span class="chrome-hint">click to focus &rarr;</span>
-      </div>
-      <div class="window-body" id="window-body">
-
-        <div class="entry-date">welcome</div>
-        <h2>안녕하세요, miku-tenshi 입니다.</h2>
-        <p>개발을 공부하며 배운 것들을 기록하고, 만든 프로젝트를 정리하는 공간입니다.
-        아래 항목을 눌러 둘러보세요. 메뉴 하나하나가 실제 폴더이고, 그 안에 또 폴더가
-        있을 수도 있습니다 &mdash; 왼쪽 위 경로 표시(breadcrumb)를 따라가면 지금 어디에 있는지 알 수 있어요.</p>
-        <div class="entry-list">
-          <a class="entry-list-item clickable is-folder" href="/study/"><span class="t"><span class="folder-icon"></span>study</span><span class="d">오늘의 TIL 보기</span></a>
-          <a class="entry-list-item clickable is-folder" href="/project/"><span class="t"><span class="folder-icon"></span>project</span><span class="d">진행 중인 작업 보기</span></a>
-          <a class="entry-list-item clickable is-folder" href="/contact/"><span class="t"><span class="folder-icon"></span>contact</span><span class="d">연락하기</span></a>
+    <div class="home-grid"></div>
+    <!--HOME 내용-->
+      <article class="window" id="window"> 
+        <div class="window-chrome">
+          <div class="chrome-dots"><span></span><span></span><span></span></div>
+          <span class="chrome-path">home / index.md</span>
+          <span class="chrome-hint">click to focus &rarr;</span>
         </div>
-      </div>
-    </article>
+        <div class="window-body" id="window-body">
 
-    <!-- 최근 글 — study/project 등 모든 섹션의 글을 날짜순으로 모아 보여준다.
-         /posts.json 을 읽어서 렌더링하며, 5개 초과분은 번호 페이지네이션으로 넘어간다.
-         /write/ 에서 글을 올리거나 고치거나 지우면 posts.json도 함께 갱신된다. -->
-    <article class="window" id="recent-window">
-      <div class="window-chrome">
-        <div class="chrome-dots"><span></span><span></span><span></span></div>
-        <span class="chrome-path">home / recent.md</span>
-        <span class="chrome-hint">click to focus &rarr;</span>
-      </div>
-      <div class="window-body" id="recent-window-body">
-        <div class="entry-date">최근 글</div>
-        <h2>최근 글</h2>
-        <p id="recent-empty" style="display:none;">아직 작성된 글이 없어요. <a href="/write/">write</a>에서 첫 글을 올려보세요.</p>
-        <div class="entry-list" id="recent-list"></div>
-        <div class="pagination" id="recent-pagination"></div>
-      </div>
-    </article>
+          <div class="entry-date">welcome</div>
+          <h2>안녕하세요, miku-tenshi 입니다.</h2>
+          <p>개발을 공부하며 배운 것들을 기록하고, 만든 프로젝트를 정리하는 공간입니다.
+          아래 항목을 눌러 둘러보세요. 메뉴 하나하나가 실제 폴더이고, 그 안에 또 폴더가
+          있을 수도 있습니다 &mdash; 왼쪽 위 경로 표시(breadcrumb)를 따라가면 지금 어디에 있는지 알 수 있어요.</p>
+          <div class="entry-list">
+            <a class="entry-list-item clickable is-folder" href="/study/"><span class="t"><span class="folder-icon"></span>study</span><span class="d">오늘의 TIL 보기</span></a>
+            <a class="entry-list-item clickable is-folder" href="/project/"><span class="t"><span class="folder-icon"></span>project</span><span class="d">진행 중인 작업 보기</span></a>
+            <a class="entry-list-item clickable is-folder" href="/contact/"><span class="t"><span class="folder-icon"></span>contact</span><span class="d">연락하기</span></a>
+          </div>
+        </div>
+      </article>
+
+      <!-- 최근 글 — study/project 등 모든 섹션의 글을 날짜순으로 모아 보여준다.
+          /posts.json 을 읽어서 렌더링하며, 5개 초과분은 번호 페이지네이션으로 넘어간다.
+          /write/ 에서 글을 올리거나 고치거나 지우면 posts.json도 함께 갱신된다. -->
+      <article class="window" id="recent-window">
+        <div class="window-chrome">
+          <div class="chrome-dots"><span></span><span></span><span></span></div>
+          <span class="chrome-path">home / recent.md</span>
+          <span class="chrome-hint">click to focus &rarr;</span>
+        </div>
+        <div class="window-body" id="recent-window-body">
+          <div class="entry-date">최근 글</div>
+          <h2>최근 글</h2>
+          <p id="recent-empty" style="display:none;">아직 작성된 글이 없어요. <a href="/write/">write</a>에서 첫 글을 올려보세요.</p>
+          <div class="entry-list" id="recent-list"></div>
+          <div class="pagination" id="recent-pagination"></div>
+        </div>
+      </article>
+    </div>
   </main>
 
 </div>
