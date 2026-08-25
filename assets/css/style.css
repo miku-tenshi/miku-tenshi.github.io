@@ -104,20 +104,23 @@
   --ok-soft: #163429;
 }
 
-/* ── 테마 3) 블루 — 연한 파란색 그라데이션 ── */
+/* ── 테마 3) 블루 — 블루+퍼플 파스텔 그라데이션
+   (이전엔 --bg/--accent가 전부 파란 계열 한 색상 톤이라 흰 배경과 구분이
+   잘 안 된다는 피드백이 있었음 → 배경에도 은은한 라벤더 톤을 섞고, 포인트
+   색은 파랑→보라 그라데이션으로 바꿔서 "블루" 테마임이 한눈에 드러나도록 함) ── */
 :root[data-theme="blue"]{
-  --bg: #eef5ff;
-  --sidebar-bg: #e3eefd;
-  --ink: #16324f;
-  --ink-soft: #4d6a86;
-  --ink-faint: #8fa6bd;
-  --accent-start: #4f8ef7;
-  --accent-end: #7db8ff;
-  --accent-rgb: 79, 142, 247;
-  --accent-solid: #2f6fe0;
-  --accent-soft: #d9e9fd;
+  --bg: #f2f0ff;
+  --sidebar-bg: #e8e4fc;
+  --ink: #241f4d;
+  --ink-soft: #5c5590;
+  --ink-faint: #9791c4;
+  --accent-start: #6f8ff5;
+  --accent-end: #b48af0;
+  --accent-rgb: 124, 106, 224;
+  --accent-solid: #7c6ae0;
+  --accent-soft: #e4ddfb;
   --chrome-bg: #ffffff;
-  --chrome-border: #d3e3f7;
+  --chrome-border: #d9d1f7;
   --danger: #d95763;
   --danger-soft: #fdebed;
   --ok: #218c68;
@@ -249,7 +252,7 @@ a{ color: inherit; text-decoration: none; }
 
 .theme-swatch[data-theme-btn="default"]{ background: linear-gradient(135deg, #2f6fe0, #4f8ef7); }
 .theme-swatch[data-theme-btn="dark"]{ background: linear-gradient(135deg, #12141a, #4f8ef7); }
-.theme-swatch[data-theme-btn="blue"]{ background: linear-gradient(135deg, #4f8ef7, #7db8ff); }
+.theme-swatch[data-theme-btn="blue"]{ background: linear-gradient(135deg, #6f8ff5, #b48af0); }
 .theme-swatch[data-theme-btn="mint"]{ background: linear-gradient(135deg, #39c5bb, #55a9e8); }
 .theme-swatch[data-theme-btn="pink"]{ background: linear-gradient(135deg, #ec6fac, #f9a8c9); }
 
