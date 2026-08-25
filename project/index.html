@@ -13,35 +13,9 @@
 
 <div class="app">
 
-  <aside class="sidebar">
-    <div class="profile">
-      <a class="avatar" href="/" title="홈으로 돌아가기"><img src="/assets/img/avatar.jpg" alt="miku-tenshi 프로필 사진"></a>
-      <div class="profile-text">
-        <div class="profile-name">リミ</div>
-        <div class="profile-role">my page</div>
-      </div>
-    </div>
-
-    <nav class="nav-group">
-      <a class="nav-item" href="/">
-        <span class="bullet"></span> Home
-      </a>
-      <a class="nav-item" href="/study/">
-        <span class="bullet"></span> Study
-      </a>
-      <a class="nav-item active" href="/project/">
-        <span class="bullet"></span> Project
-      </a>
-      <a class="nav-item" href="/contact/">
-        <span class="bullet"></span> Contact
-      </a>
-      <a class="nav-item" href="/write/">
-        <span class="bullet"></span> Write
-      </a>
-    </nav>
-
-    <div class="sidebar-footer">&copy; miku-tenshi.github.io</div>
-  </aside>
+  <aside class="sidebar" id="sidebar-mount"></aside>
+  <script src="/assets/js/site-config.js"></script>
+  <script src="/assets/js/sidebar.js"></script>
 
   <main class="main">
     <div class="main-heading">
@@ -61,7 +35,6 @@
         <h2>project/</h2>
         <p>만들고 있는 것들, 만든 것들을 정리합니다.</p>
         <div class="entry-list">
-          <a class="entry-list-item clickable up" href="/"><span class="t">..</span><span class="d">상위 폴더</span></a>
           <a class="entry-list-item clickable" href="/project/homepage-redesign.html"><span class="t"><span class="file-icon"></span>miku-tenshi.github.io</span><span class="d">진행중</span></a>
         </div>
       </div>

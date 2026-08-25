@@ -180,10 +180,15 @@ a{ color: inherit; text-decoration: none; }
     transform 0.2s ease;
 }
 
-/* 메뉴 아이콘 공통 */
-.nav-item .bullet {
-  width: 20px;
-  height: 20px;
+/* 메뉴 아이콘 — 플랫폼마다 다르게 보이는 이모티콘(예: 아이폰 기본 이모티콘) 대신,
+   단색 선 아이콘(SVG를 mask-image로 사용)으로 통일합니다. 어느 기기/브라우저에서
+   봐도 항상 같은 모양이고, 색은 --ink-faint(기본)/--accent-grad(활성) 하나로만
+   관리됩니다. 아이콘은 sidebar.js가 각 메뉴 항목에 붙이는 data-icon 값으로 고릅니다.
+   메뉴 종류를 늘리거나 뺄 때는 assets/js/site-config.js의 nav 배열의 key와
+   여기 각 [data-icon="..."] 선택자를 맞춰주면 됩니다. */
+.nav-item .nav-icon{
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 
   border-radius: 0;
@@ -202,31 +207,37 @@ a{ color: inherit; text-decoration: none; }
     transform 0.15s ease;
 }
 
-/* Home: 집 아이콘 */
-.nav-item[href="/"] .bullet {
+/* Home: 집 */
+.nav-item .nav-icon[data-icon="home"]{
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 3 2.5 11h2.2v9.5h5.8v-6h3v6h5.8V11h2.2L12 3Z'/%3E%3C/svg%3E");
-
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 3 2.5 11h2.2v9.5h5.8v-6h3v6h5.8V11h2.2L12 3Z'/%3E%3C/svg%3E");
 }
 
-
-/* Study, Project, Contact: 폴더 아이콘 */
-.nav-item[href^="/study"] .bullet,
-.nav-item[href^="/project"] .bullet,
-.nav-item[href^="/contact"] .bullet {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M2.5 5.5A2.5 2.5 0 0 1 5 3h5l2.3 2.5H19A2.5 2.5 0 0 1 21.5 8v9.5A2.5 2.5 0 0 1 19 20H5a2.5 2.5 0 0 1-2.5-2.5v-12Z'/%3E%3C/svg%3E");
-
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M2.5 5.5A2.5 2.5 0 0 1 5 3h5l2.3 2.5H19A2.5 2.5 0 0 1 21.5 8v9.5A2.5 2.5 0 0 1 19 20H5a2.5 2.5 0 0 1-2.5-2.5v-12Z'/%3E%3C/svg%3E");
+/* Study: 폴더(자료 모음) */
+.nav-item .nav-icon[data-icon="study"]{
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2Z'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2Z'/%3E%3C/svg%3E");
 }
 
+/* Project: 렌치(도구) */
+.nav-item .nav-icon[data-icon="project"]{
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M22.7 19 13.6 9.9c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.8 10.1 2.8 12.1c1.9 1.9 4.6 2.4 6.9 1.5L19 22.6c.4.4 1 .4 1.4 0l2.4-2.4c.4-.4.4-1 0-1.4Z'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M22.7 19 13.6 9.9c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.8 10.1 2.8 12.1c1.9 1.9 4.6 2.4 6.9 1.5L19 22.6c.4.4 1 .4 1.4 0l2.4-2.4c.4-.4.4-1 0-1.4Z'/%3E%3C/svg%3E");
+}
 
-/* Private와 Write: 자물쇠 아이콘 */
-.nav-item[href^="/private"] .bullet,
-.nav-item[href^="/write"] .bullet {
+/* Contact: 편지봉투 */
+.nav-item .nav-icon[data-icon="contact"]{
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm16 2.4-8 5.6-8-5.6V17h16V7.4Z'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm16 2.4-8 5.6-8-5.6V17h16V7.4Z'/%3E%3C/svg%3E");
+}
+
+/* Private: 자물쇠 */
+.nav-item .nav-icon[data-icon="private"]{
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17.5 9H17V7a5 5 0 0 0-10 0v2h-.5A2.5 2.5 0 0 0 4 11.5v8A2.5 2.5 0 0 0 6.5 22h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 9ZM9 7a3 3 0 0 1 6 0v2H9V7Zm4 9.7V19h-2v-2.3a2 2 0 1 1 2 0Z'/%3E%3C/svg%3E");
-
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17.5 9H17V7a5 5 0 0 0-10 0v2h-.5A2.5 2.5 0 0 0 4 11.5v8A2.5 2.5 0 0 0 6.5 22h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 9ZM9 7a3 3 0 0 1 6 0v2H9V7Zm4 9.7V19h-2v-2.3a2 2 0 1 1 2 0Z'/%3E%3C/svg%3E");
 }
+
+.nav-item .nav-label{ white-space: nowrap; }
 
 .nav-item:hover{
   color: var(--accent-solid);
@@ -240,9 +251,67 @@ a{ color: inherit; text-decoration: none; }
   font-weight: 700;
 }
 
-.nav-item.active .bullet{
+.nav-item.active .nav-icon{
   background: var(--accent-grad);
-  transform: scale(1.25);
+  transform: scale(1.2);
+}
+
+/* 사이드바 아랫부분(메뉴 목록 밑의 남는 공간)이 통째로 "바다"가 되는 장식 —
+   네모난 카드가 아니라 사이드바 왼쪽/오른쪽/아래 끝까지 실제로 물이 차 있는 것처럼
+   보이도록, 사이드바 자체의 좌우 여백(padding: 68px 56px)만큼 음수 마진으로
+   바깥까지 밀어서 채운다. 저작권 문구(.sidebar-footer)도 이 안에 함께 들어가서
+   "물 위에 떠 있는" 것처럼 보인다. sidebar.js가 nav-group 바로 다음에 이 div를
+   그려 넣는다(이 안에 파도 두 겹 + sidebar-footer가 들어있음). */
+.sidebar-sea{
+  flex: 1;
+  min-height: 120px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin: 0 -56px -68px -56px;
+  padding: 34px 56px 22px;
+  overflow: hidden;
+  /* 바닥색(깊은 바다) — 파도 두 겹이 이 색 위에 끝까지(컨테이너 높이 100%) 깔리기
+     때문에, 사이드바 높이가 얼마가 되든(반응형 등) 파도 이미지와 바닥색 사이에
+     이음매(색이 뚝 끊기는 선)가 생기지 않는다. */
+  background: #0a5c54;
+}
+
+/* 파도 두 겹 — 서로 다른 색/속도/방향으로 흐르게 해서 물이 실제로 일렁이는
+   느낌을 준다. inset:0 + background-size 높이 100%로 항상 컨테이너 바닥까지
+   꽉 채우기 때문에(파도 모양은 SVG 위쪽 20%에만 있고 나머지는 평평한 단색),
+   높이가 얼마든 바닥색과의 경계가 보이지 않는다. 폭은 300px 한 칸이 파도
+   한 주기라서 background-repeat: repeat-x로 이어붙여도 이음매가 안 보인다. */
+.sidebar-sea::before,
+.sidebar-sea::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat-x;
+  background-size: 300px 100%;
+  background-position: top left;
+  pointer-events: none;
+}
+.sidebar-sea::before{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300' preserveAspectRatio='none'%3E%3Cpath fill='%230f9488' d='M0,20 C50,40 100,0 150,20 C200,40 250,0 300,20 L300,300 L0,300 Z'/%3E%3C/svg%3E");
+  animation: sea-wave-a 9s linear infinite;
+  opacity: 0.9;
+}
+.sidebar-sea::after{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300' preserveAspectRatio='none'%3E%3Cpath fill='%2339c5bb' d='M0,32 C50,10 100,54 150,32 C200,10 250,54 300,32 L300,300 L0,300 Z'/%3E%3C/svg%3E");
+  animation: sea-wave-b 15s linear infinite reverse;
+  opacity: 0.5;
+}
+
+@keyframes sea-wave-a{ from{ background-position-x: 0; } to{ background-position-x: 300px; } }
+@keyframes sea-wave-b{ from{ background-position-x: 0; } to{ background-position-x: 300px; } }
+
+.sidebar-sea .sidebar-footer{
+  position: relative;
+  z-index: 1;
+  margin-top: 0;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .sidebar-footer{ margin-top: auto; font-size: 12.5px; color: var(--ink-faint); }
@@ -416,6 +485,7 @@ a{ color: inherit; text-decoration: none; }
 .entry-list-item.up .t{ color: var(--ink-faint); font-weight: 500; }
 .entry-list-item.up .t::before{ content: "↑ "; }
 
+/* 폴더/파일 항목 앞에 붙는 작은 이모티콘 — 별도 이미지 없이 텍스트로 표시 */
 .folder-icon{
   width: 9px;
   height: 9px;
@@ -484,25 +554,63 @@ a{ color: inherit; text-decoration: none; }
 .chrome-dots span{ transition: transform 0.12s ease; }
 
 @media (max-width: 900px){
+  /* 모바일에서는 PC와 다르게, 사이드바를 훨씬 작은 상단 아이콘 바 형태로
+     보여줍니다 — 메뉴 이름 글자는 숨기고 이모티콘만 남겨서 자리를
+     적게 차지하게 합니다. */
   .app{ flex-direction: column; }
   .sidebar{
     width: 100%;
     flex-direction: row;
     align-items: center;
-    padding: 20px 20px;
-    gap: 20px;
+    padding: 10px 14px;
+    gap: 10px;
     overflow-x: auto;
   }
-  .avatar{ width: 64px; height: 64px; flex-shrink: 0; max-width: none; }
-  .avatar span{ font-size: 22px; }
-  .profile{ flex-direction: row; align-items: center; }
-  .profile-name{ font-size: 20px; }
+  .avatar{ width: 40px; height: 40px; flex-shrink: 0; max-width: none; border-radius: 12px; }
+  .avatar span{ font-size: 16px; }
+  .profile{ flex-direction: row; align-items: center; gap: 10px; }
+  .profile-text{ align-items: flex-start; text-align: left; }
+  .profile-name{ font-size: 14px; }
   .profile-role{ display: none; }
-  .nav-group{ flex-direction: row; gap: 4px; }
+  .nav-group{ flex-direction: row; gap: 2px; margin-left: auto; }
+  .nav-item{ padding: 8px 9px; gap: 0; border-radius: 10px; }
+  .nav-item .nav-icon{ width: 20px; height: 20px; }
+  .nav-item .nav-label{ display: none; }
   .sidebar-footer{ display: none; }
+  .sidebar-sea{ display: none; }
   .main{ padding: 32px 18px; }
 }
 
+
+/* ---------- 커스텀 커서 ----------
+   기본 마우스 포인터를 숨기고, 반짝이는 커서 점 + 반짝이(sparkle) 잔상으로 대체합니다.
+   글자를 입력하는 input/textarea에서는 정확한 커서 위치가 필요하니 기본 텍스트 커서를 남겨둡니다.
+   실제 동작(점 위치 갱신, 반짝이 생성)은 assets/js/window.js에서 처리합니다. */
+*, *::before, *::after{ cursor: none !important; }
+input, textarea, select{ cursor: text !important; }
+
+.custom-cursor{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--accent-grad);
+  box-shadow: 0 0 14px 2px rgba(57, 197, 187, 0.55);
+  pointer-events: none;
+  z-index: 10000;
+  opacity: 0;
+  /* transform(위치)에는 일부러 transition을 넣지 않음 — 넣으면 새 페이지로
+     이동한 직후처럼 "이전 위치 → 실제 마우스 위치"로 옮겨갈 때 화면을 가로질러
+     날아가는 것처럼 보여서(클릭할 때마다 커서가 먼 곳에서 튀어오는 것처럼 보이는
+     원인이었음), 위치는 항상 즉시 이동하고 opacity/scale만 부드럽게 바뀐다. */
+  transition: opacity 0.15s ease, scale 0.15s ease;
+}
+
+.custom-cursor.show{ opacity: 1; }
+.custom-cursor.click{ scale: 0.65; }
 
 /* 커서 반짝이 */
 .cursor-sparkle {
@@ -534,9 +642,17 @@ a{ color: inherit; text-decoration: none; }
   }
 }
 
-/* 모바일과 동작 줄이기 설정에서는 비활성화 */
+/* 모바일과 동작 줄이기 설정에서는 비활성화 — 커스텀 커서 대신 기본 포인터를 되살림
+   (터치 기기에는 애초에 마우스 포인터라는 개념이 없어서 숨길 이유도 없음) */
 @media (max-width: 768px), (prefers-reduced-motion: reduce) {
-  .cursor-sparkle {
+  .cursor-sparkle,
+  .custom-cursor {
     display: none;
   }
+  .sidebar-sea::before, .sidebar-sea::after{ animation: none; }
+  *, *::before, *::after{ cursor: auto !important; }
+  a, button, .nav-item, .entry-list-item.clickable, .wbtn, .mode-btn, .page-btn:not(:disabled){
+    cursor: pointer !important;
+  }
+  input, textarea, select{ cursor: text !important; }
 }

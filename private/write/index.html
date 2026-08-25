@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>edit/ — private — miku-tenshi</title>
+<title>write/ — private — miku-tenshi</title>
 <meta name="robots" content="noindex, nofollow">
 <style>.private-pending body { visibility: hidden; }</style>
 <script src="/assets/js/private-guard.js"></script>
@@ -65,21 +65,48 @@
   }
   .live-editor-highlight div{ min-height:1.85em; }
   .live-editor-input{
-    background:transparent; color:transparent; caret-color: var(--ink); resize:none; outline:none;
+    background:transparent; color:transparent; resize:none; outline:none;
+    /* 진짜(브라우저 기본) 커서는 숨긴다 — 제목 줄처럼 글자 크기가 커지는 줄에서는
+       이 기본 커서가 (텍스트에어리어 전체가 한 글자 크기만 쓸 수 있어서) 원래
+       작은 글자 기준 위치에 남기 때문에, 화면에 커진 채로 보이는 글자와 어긋나
+       보임. 대신 아래 #editor-caret(스타일이 적용된 실제 화면 위치를 JS로 계산해
+       그리는 가짜 커서)를 그 자리에 정확히 그려서 보여준다. */
+    caret-color: transparent;
   }
   .live-editor-input::placeholder{ color: var(--ink-faint); }
   .live-editor-input:focus + .live-editor-highlight,
   .live-editor-wrap:focus-within .live-editor-highlight{ border-color: var(--accent-solid); outline:2px solid var(--accent-soft); }
 
-  /* 라이브 마크다운 스타일 — 문법 기호(#, **, ` 등)는 옅게, 내용은 실제 사이트와
-     비슷한 크기/굵기로 즉시 보여준다. */
+  /* 가짜 커서 — 실제 캐럿(텍스트 삽입 위치) 대신 이걸 그려서, 제목처럼 글자가
+     커지는 줄에서도 "화면에 보이는 글자 크기 그대로" 정확한 위치에 커서가 나타나게
+     한다. 위치 계산은 #editor-caret-mirror(화면 밖에 숨겨둔 복사본)에 커서 앞
+     내용을 그대로 다시 그려서 재는 방식 — assets 스크립트가 아니라 이 페이지의
+     updateEditorCaret()/mirrorMeasureCaret()에서 처리한다. */
+  .editor-caret{
+    position:absolute; width:2px; background: var(--ink); pointer-events:none; display:none;
+  }
+  .editor-caret.show{ display:block; animation: editor-caret-blink 1s step-end infinite; }
+  @keyframes editor-caret-blink{ 0%, 50% { opacity:1; } 50.001%, 100% { opacity:0; } }
+
+  /* 화면 밖에 숨겨서, 커서 위치 계산에만 쓰는 복사본. 실제 하이라이트 레이어와
+     폰트/줄간격/여백/줄바꿈 규칙이 전부 똑같아야 위치 계산이 정확하다. */
+  #editor-caret-mirror{
+    position:fixed; top:0; left:-99999px; visibility:hidden; margin:0; box-sizing:border-box;
+    font-family:inherit; font-size:16.5px; line-height:1.85; padding:14px 16px;
+    border:1px solid transparent; white-space:pre-wrap; word-wrap:break-word;
+  }
+  #editor-caret-mirror div{ min-height:1.85em; }
+
+  /* 라이브 마크다운 스타일 — 문법 기호(#, **, ` 등)는 옅게 보여주고, 제목은
+     실제 사이트와 비슷한 크기로 바로 커진다. 위 가짜 커서 덕분에, 여기서 글자
+     크기를 바꿔도 커서 위치는 항상 정확하게 따라온다. */
   .md-mark{ color: var(--ink-faint); }
-  .md-h1{ font-size:26px; font-weight:800; }
-  .md-h2{ font-size:22px; font-weight:800; }
-  .md-h3{ font-size:19px; font-weight:700; }
-  .md-h4{ font-size:17px; font-weight:700; }
-  .md-bold{ font-weight:700; }
-  .md-quote{ color: var(--ink-soft); font-style:italic; }
+  .md-h1{ font-size:26px; font-weight:800; color: var(--accent-solid); }
+  .md-h2{ font-size:22px; font-weight:800; color: var(--accent-solid); }
+  .md-h3{ font-size:19px; font-weight:700; color: var(--accent-solid); }
+  .md-h4{ font-size:17px; font-weight:700; color: var(--accent-solid); }
+  .md-bold{ font-weight: 700; }
+  .md-quote{ color: var(--ink-soft); font-style: italic; }
   .md-code{
     background: var(--accent-soft); color: var(--accent-solid); padding:1px 5px; border-radius:5px;
     font-family:"SFMono-Regular", Consolas, Menlo, monospace; font-size:0.92em;
@@ -114,13 +141,6 @@
   .status-log .err{ color: var(--danger); }
   .status-log .info{ color: var(--ink-soft); }
 
-  .gate-error{
-    margin-top:14px; padding: 12px 16px; border-radius: 10px; font-size:14px;
-    background: var(--danger-soft); color: var(--danger); display:none;
-  }
-  .gate-error.show{ display:block; }
-  .gate-ok{ color: var(--ok); font-size:14px; margin-top:10px; }
-
   details.help summary{ cursor:pointer; color: var(--accent-solid); font-weight:700; font-size:14px; }
   details.help ol{ margin: 10px 0 0; padding-left: 20px; line-height:1.9; font-size:13.5px; color: var(--ink-soft); }
   .checkline{ display:flex; align-items:center; gap:8px; font-size:14px; color: var(--ink-soft); margin: 10px 0 16px; }
@@ -138,97 +158,23 @@
 
 <div class="app">
 
-  <aside class="sidebar">
-    <div class="profile">
-      <a class="avatar" href="/" title="홈으로 돌아가기"><img src="/assets/img/avatar.jpg" alt="miku-tenshi 프로필 사진"></a>
-      <div class="profile-text">
-        <div class="profile-name">リミ</div>
-        <div class="profile-role">my page</div>
-      </div>
-    </div>
-
-    <nav class="nav-group">
-      <a class="nav-item" href="/">
-        <span class="bullet"></span> Home
-      </a>
-      <a class="nav-item" href="/study/">
-        <span class="bullet"></span> Study
-      </a>
-      <a class="nav-item" href="/project/">
-        <span class="bullet"></span> Project
-      </a>
-      <a class="nav-item" href="/contact/">
-        <span class="bullet"></span> Contact
-      </a>
-      <a class="nav-item active" href="/private/">
-        <span class="bullet"></span> Private
-      </a>
-    </nav>
-
-    <div class="sidebar-footer">&copy; miku-tenshi.github.io</div>
-  </aside>
+  <aside class="sidebar" id="sidebar-mount"></aside>
+  <script src="/assets/js/site-config.js"></script>
+  <script src="/assets/js/sidebar.js"></script>
+  <script src="/assets/js/gh-api.js"></script>
 
   <main class="main">
     <div class="main-heading">
-      <h1>private/edit/</h1>
+      <h1>private/write/</h1>
       <p>새 글이나 새 폴더를 GitHub 저장소에 바로 올리고, 기존 글을 고치거나 지울 수 있어요.</p>
     </div>
 
-    <!-- ============ 접근 게이트 ============ -->
-    <article class="window" id="gate-window" data-no-autofocus>
-      <div class="window-chrome">
-        <div class="chrome-dots"><span></span><span></span><span></span></div>
-        <span class="chrome-path">private / edit / lock.md</span>
-      </div>
-      <div class="window-body">
-        <div class="entry-date">접근 확인</div>
-        <h2>토큰을 입력하세요</h2>
-        <p>이 페이지는 GitHub 저장소에 파일을 직접 커밋하는 관리자 도구예요. 저장소에 쓰기 권한이 있는
-        토큰을 입력해서 확인되어야 아래 글쓰기 도구를 쓸 수 있어요.</p>
-
-        <div class="field">
-          <label>Personal Access Token</label>
-          <input type="password" id="g-token" placeholder="github_pat_... 또는 ghp_...">
-        </div>
-        <label class="checkline"><input type="checkbox" id="g-remember"> 이 브라우저에 기억하기</label>
-
-        <details class="help" style="margin-bottom:16px;">
-          <summary>고급 설정 (Owner / Repo / Branch)</summary>
-          <div class="row2" style="margin-top:12px;">
-            <div class="field">
-              <label>Owner</label>
-              <input type="text" id="g-owner" value="miku-tenshi">
-            </div>
-            <div class="field">
-              <label>Repository</label>
-              <input type="text" id="g-repo" value="miku-tenshi.github.io">
-            </div>
-          </div>
-          <div class="field" style="max-width:220px;">
-            <label>Branch</label>
-            <input type="text" id="g-branch" value="main">
-          </div>
-        </details>
-
-        <button class="wbtn wbtn-primary" id="btn-enter">입장하기</button>
-        <div class="gate-error" id="gate-error"></div>
-        <div class="gate-ok" id="gate-ok" style="display:none;">✅ 확인됐어요. 잠시 후 도구가 열려요...</div>
-
-        <details class="help" style="margin-top:20px;">
-          <summary>토큰은 어떻게 만드나요?</summary>
-          <ol>
-            <li>github.com 로그인 상태에서 Settings → Developer settings → Personal access tokens →
-            Fine-grained tokens → "Generate new token" 으로 이동합니다.</li>
-            <li>Repository access를 "Only select repositories" 로 설정하고 <code>miku-tenshi.github.io</code> 저장소만 선택합니다.</li>
-            <li>Permissions → Repository permissions에서 <b>Contents: Read and write</b> 로 설정합니다.</li>
-            <li>만료 기간을 정하고 생성한 뒤, 표시되는 토큰 값을 복사해 위 칸에 붙여넣습니다 (한 번만 보여줘요).</li>
-          </ol>
-        </details>
-      </div>
-    </article>
-
-    <!-- ============ 글쓰기 도구 (게이트 통과 후 표시) ============ -->
-    <div id="tool-area" style="display:none; width:100%; max-width:940px;">
+    <!-- ============ 글쓰기 도구 ============
+         /private/ 에서 이미 한 번 인증한 세션(mt-private-access)을 그대로 사용합니다.
+         이 페이지에 별도 로그인 폼이 없는 이유: <head>의 private-guard.js가
+         유효한 세션이 없으면 이 페이지를 보여주기 전에 /private/ 로 돌려보내기
+         때문에, 여기까지 도달했다면 이미 인증된 상태입니다. -->
+    <div id="tool-area" style="width:100%; max-width:940px;">
 
       <div class="mode-switch">
         <button class="mode-btn active" data-mode="post">새 글 추가</button>
@@ -321,9 +267,11 @@
             <div class="editor-pane-label" id="body-label">본문 <span class="hint">마크다운 문법을 쓰면 바로 스타일이 적용돼요 — # 제목, **굵게**, `코드`, - 목록, &gt; 인용</span></div>
             <div class="live-editor-wrap">
               <div class="live-editor-highlight" id="editor-highlight" aria-hidden="true"></div>
-              <textarea id="editor-textarea" class="live-editor-input" spellchec~k="false"
+              <div class="editor-caret" id="editor-caret" aria-hidden="true"></div>
+              <textarea id="editor-textarea" class="live-editor-input" spellcheck="false"
                 placeholder="여기를 클릭하면 전체화면으로 바뀌어요. #, **, `, -, > 를 쓰면 입력하는 즉시 스타일이 적용됩니다."></textarea>
             </div>
+            <div id="editor-caret-mirror" aria-hidden="true"></div>
           </div>
 
           <!-- 전체화면일 때도 항상 보이도록, 창 안쪽 아래에 붙어있는 툴바 -->
@@ -432,13 +380,9 @@
     indent = indent || '        ';
     return html.split('\n').filter(l => l.trim().length).map(l => indent + l).join('\n');
   }
-  function navHtml(activeKey){
-    const items = [['home','Home','/'], ['study','Study','/study/'], ['project','Project','/project/'], ['contact','Contact','/contact/'], ['private','Private','/private/']];
-    return items.map(([key,label,href]) => {
-      const cls = key === activeKey ? 'nav-item active' : 'nav-item';
-      return '      <a class="' + cls + '" href="' + href + '">\n        <span class="bullet"></span> ' + label + '\n      </a>';
-    }).join('\n');
-  }
+  // 새로 만드는 글/폴더 페이지도 사이드바를 직접 담지 않고 공용 마운트를
+  // 사용합니다 — assets/js/site-config.js를 나중에 고치면 이미 게시된
+  // 글 페이지들의 사이드바(이름/메뉴)도 자동으로 함께 바뀝니다.
   const PAGE_SKELETON = function(opts){
     return '<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
@@ -446,10 +390,9 @@
       '<meta name="description" content="' + opts.description + '">\n' +
       '<link rel="stylesheet" as="style" crossorigin\n  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />\n' +
       '<link rel="stylesheet" href="/assets/css/style.css">\n</head>\n<body>\n\n<div class="app">\n\n' +
-      '  <aside class="sidebar">\n    <div class="profile">\n      <a class="avatar" href="/" title="홈으로 돌아가기"><img src="/assets/img/avatar.jpg" alt="miku-tenshi 프로필 사진"></a>\n' +
-      '      <div class="profile-text">\n        <div class="profile-name">miku-tenshi</div>\n        <div class="profile-role">개발 공부 기록 · TIL</div>\n      </div>\n    </div>\n\n' +
-      '    <nav class="nav-group">\n' + navHtml(opts.navKey) + '\n    </nav>\n\n' +
-      '    <div class="sidebar-footer">&copy; miku-tenshi.github.io</div>\n  </aside>\n\n' +
+      '  <aside class="sidebar" id="sidebar-mount"></aside>\n' +
+      '  <script src="/assets/js/site-config.js"><\/script>\n' +
+      '  <script src="/assets/js/sidebar.js"><\/script>\n\n' +
       '  <main class="main">\n    <div class="main-heading">\n      <h1>' + opts.h1 + '</h1>\n      <p>' + opts.sub + '</p>\n    </div>\n\n' +
       '    <article class="window" id="window">\n      <div class="window-chrome">\n' +
       '        <div class="chrome-dots"><span></span><span></span><span></span></div>\n' +
@@ -581,84 +524,15 @@
   }
 
   // ---------------------------------------------------------------
-  // 접근 게이트
+  // 접근 — /private/ 에서 인증된 세션을 그대로 사용
   // ---------------------------------------------------------------
-  let GH_CFG = null;
-  const gateWindow = document.getElementById('gate-window');
-  const toolArea = document.getElementById('tool-area');
-  const gateError = document.getElementById('gate-error');
-  const gateOk = document.getElementById('gate-ok');
-  const btnEnter = document.getElementById('btn-enter');
-
-  function readGateFields(){
-    return {
-      owner: document.getElementById('g-owner').value.trim(),
-      repo: document.getElementById('g-repo').value.trim(),
-      branch: document.getElementById('g-branch').value.trim() || 'main',
-      token: document.getElementById('g-token').value.trim(),
-    };
-  }
-
-  async function tryEnter(silent){
-    const cfg = readGateFields();
-    gateError.classList.remove('show');
-    if (!cfg.token){
-      if (!silent){ gateError.textContent = '토큰을 입력해주세요.'; gateError.classList.add('show'); }
-      return false;
-    }
-    btnEnter.disabled = true;
-    try{
-      const res = await fetch('https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo, { headers: authHeaders(cfg.token) });
-      if (!res.ok) throw new Error('토큰이 유효하지 않거나 저장소에 접근할 수 없어요 (' + res.status + ').');
-      const json = await res.json();
-      if (!(json.permissions && json.permissions.push)) throw new Error('이 토큰에는 쓰기 권한이 없어요. Contents: Read and write 권한으로 다시 만들어주세요.');
-      if (json.default_branch) cfg.branch = json.default_branch;
-      GH_CFG = cfg;
-      gateOk.style.display = 'block';
-      if (document.getElementById('g-remember').checked){
-        try{ localStorage.setItem('mt-write-cfg', JSON.stringify(cfg)); }catch(e){}
-      } else {
-        try{ localStorage.removeItem('mt-write-cfg'); }catch(e){}
-      }
-      setTimeout(() => {
-        gateWindow.style.display = 'none';
-        toolArea.style.display = '';
-        updateEditorPath();
-        updatePublishButtonLabel();
-      }, silent ? 0 : 400);
-      return true;
-    }catch(e){
-      gateError.textContent = '❌ 접근 권한이 없습니다 — ' + e.message;
-      gateError.classList.add('show');
-      return false;
-    }finally{
-      btnEnter.disabled = false;
-    }
-  }
-
-  btnEnter.addEventListener('click', () => tryEnter(false));
-  document.getElementById('g-token').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryEnter(false); });
-
-  (function autoLogin(){
-    try{
-      const privateSession = JSON.parse(sessionStorage.getItem('mt-private-access') || 'null');
-      const saved = privateSession && privateSession.token ? {
-        owner: 'miku-tenshi',
-        repo: 'miku-tenshi.github.io',
-        branch: 'main',
-        token: privateSession.token,
-        remember: Boolean(privateSession.remember)
-      } : JSON.parse(localStorage.getItem('mt-write-cfg') || 'null');
-      if (saved && saved.token){
-        document.getElementById('g-owner').value = saved.owner || 'miku-tenshi';
-        document.getElementById('g-repo').value = saved.repo || 'miku-tenshi.github.io';
-        document.getElementById('g-branch').value = saved.branch || 'main';
-        document.getElementById('g-token').value = saved.token;
-        document.getElementById('g-remember').checked = saved.remember !== false;
-        tryEnter(true);
-      }
-    }catch(e){}
-  })();
+  // private-guard.js가 <head>에서 이미 세션 유효성을 확인했기 때문에
+  // (유효하지 않았다면 /private/ 로 리다이렉트되어 이 코드는 실행되지 않습니다),
+  // 여기서는 GhApi(assets/js/gh-api.js)로 세션의 토큰만 그대로 가져다 씁니다.
+  // 별도 로그인 폼/토큰 재입력이 필요 없습니다.
+  let GH_CFG = window.GhApi
+    ? GhApi.buildCfgFromSession(SITE_CONFIG.owner, SITE_CONFIG.repo, SITE_CONFIG.branch)
+    : null;
 
   // ---------------------------------------------------------------
   // 모드 전환 (새 글 / 새 폴더 / 수정·삭제)
@@ -670,6 +544,13 @@
   };
   let currentMode = 'post';
   let editState = null; // { folder, slug, path, sha, parentIndexPath } — "수정/삭제" 모드에서 불러온 글
+
+  // GH_CFG 세팅이 끝나고 currentMode/editState가 초기화된 뒤에 호출해야 함
+  // (이 두 함수는 아래에서 currentMode를 참조하는데, let으로 선언된 변수라
+  // 선언 이전에 호출하면 "Cannot access before initialization" 에러가 나서
+  // 이 스크립트 전체가 멈추고 아래의 모드 전환 버튼 리스너도 등록되지 않았던 버그가 있었음).
+  updateEditorPath();
+  updatePublishButtonLabel();
 
   function updatePublishButtonLabel(){
     const btn = document.getElementById('btn-publish');
@@ -774,15 +655,72 @@
   function setEditorRawText(text){
     document.getElementById('editor-textarea').value = text || '';
     syncHighlight();
+    updateEditorCaret();
+  }
+
+  // ---------------------------------------------------------------
+  // 가짜 커서 위치 계산 — 실제 캐럿은 항상 "한 가지 글자 크기"만 아는 textarea
+  // 안에 있어서, 제목처럼 커지는 줄에서는 화면에 보이는(커진) 글자와 어긋난다.
+  // 그래서 진짜 캐럿은 투명하게 숨기고(caret-color:transparent), 대신 커서
+  // 앞쪽 내용을 화면 밖 복사본(#editor-caret-mirror)에 그대로 다시 그린 뒤 그
+  // 끝 지점을 측정해서, 화면에 실제로 보이는 크기 그대로 정확한 위치에
+  // #editor-caret를 그려 넣는다.
+  // ---------------------------------------------------------------
+  function mirrorMeasureCaret(uptoText){
+    const highlightEl = document.getElementById('editor-highlight');
+    const mirror = document.getElementById('editor-caret-mirror');
+    mirror.style.width = highlightEl.clientWidth + 'px';
+    const lines = uptoText.split('\n');
+    mirror.innerHTML = lines.map((line, i) => {
+      const { cls, inner } = mdLineParts(line);
+      if (i === lines.length - 1){
+        return '<div class="' + cls + '">' + (inner || '') + '<span id="caret-tail-marker">​</span></div>';
+      }
+      return '<div class="' + cls + '">' + (inner || '<br>') + '</div>';
+    }).join('');
+    const marker = document.getElementById('caret-tail-marker');
+    const mirrorRect = mirror.getBoundingClientRect();
+    const markerRect = marker.getBoundingClientRect();
+    return {
+      x: markerRect.left - mirrorRect.left,
+      y: markerRect.top - mirrorRect.top,
+      h: markerRect.height || 24
+    };
+  }
+  function updateEditorCaret(){
+    const editorEl = document.getElementById('editor-textarea');
+    const caretEl = document.getElementById('editor-caret');
+    const highlightEl = document.getElementById('editor-highlight');
+    if (document.activeElement !== editorEl || editorEl.selectionStart !== editorEl.selectionEnd){
+      caretEl.classList.remove('show');
+      return;
+    }
+    const offset = mirrorMeasureCaret(editorEl.value.slice(0, editorEl.selectionStart));
+    caretEl.style.left = offset.x + 'px';
+    caretEl.style.top = (offset.y - highlightEl.scrollTop) + 'px';
+    caretEl.style.height = offset.h + 'px';
+    // 깜빡임(blink) 애니메이션을 매번 처음(보이는 상태)부터 다시 시작시키는 트릭 —
+    // 안 그러면 타이핑/이동 도중에 애니메이션 타이밍이 안 보이는 구간과 겹쳐서
+    // 커서가 잠깐 사라진 것처럼 보일 수 있다.
+    caretEl.classList.remove('show');
+    void caretEl.offsetWidth;
+    caretEl.classList.add('show');
   }
   (function(){
     const editorEl = document.getElementById('editor-textarea');
-    editorEl.addEventListener('input', syncHighlight);
+    editorEl.addEventListener('input', () => { syncHighlight(); updateEditorCaret(); });
     editorEl.addEventListener('scroll', () => {
       const highlightEl = document.getElementById('editor-highlight');
       highlightEl.scrollTop = editorEl.scrollTop;
       highlightEl.scrollLeft = editorEl.scrollLeft;
+      updateEditorCaret();
     });
+    editorEl.addEventListener('click', updateEditorCaret);
+    editorEl.addEventListener('keyup', updateEditorCaret);
+    editorEl.addEventListener('select', updateEditorCaret);
+    editorEl.addEventListener('focus', updateEditorCaret);
+    editorEl.addEventListener('blur', () => document.getElementById('editor-caret').classList.remove('show'));
+    window.addEventListener('resize', updateEditorCaret);
     syncHighlight();
   })();
 
@@ -803,6 +741,9 @@
       win.style.left = margin + 'px';
       win.style.width = (window.innerWidth - margin * 2) + 'px';
       win.style.height = (window.innerHeight - margin * 2) + 'px';
+      // 창 너비가 바뀌면 줄바꿈 위치도 바뀌므로, 가짜 커서 위치도 다시 계산해야 함
+      updateEditorCaret();
+      setTimeout(updateEditorCaret, 0);
     }
     function enter(refocus){
       if (win.classList.contains('is-fullscreen')) return;
@@ -821,6 +762,8 @@
       document.body.style.overflow = '';
       window.removeEventListener('resize', applySize);
       hint.textContent = '클릭해서 전체화면으로 쓰기 →';
+      updateEditorCaret();
+      setTimeout(updateEditorCaret, 0);
     }
     chrome.addEventListener('click', () => enter(false));
     editorEl.addEventListener('click', () => enter(true));

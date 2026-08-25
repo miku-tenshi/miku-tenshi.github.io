@@ -84,12 +84,46 @@
 })();
 
 
-// 마우스 효과
+// 마우스 효과 — 기본 마우스 포인터는 숨기고(style.css의 cursor:none),
+// 그 대신 마우스를 따라다니는 반짝이는 커서 점 + 반짝이(sparkle) 잔상으로 대체합니다.
 (function () {
   // 같은 코드가 중복 실행되는 것을 방지
   if (window.cursorSparkleInitialized) return;
   window.cursorSparkleInitialized = true;
 
+  // 터치 기기(마우스 없음)에서는 커스텀 커서를 만들지 않음 — style.css에서도
+  // 같은 조건(모바일 화면 폭 / prefers-reduced-motion)일 때 기본 커서를 되살려둠.
+  const isCoarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (isCoarsePointer || prefersReducedMotion) return;
+
+  // ---- 마우스를 따라다니는 커서 점 ----
+  const dot = document.createElement("div");
+  dot.className = "custom-cursor";
+  // 위치는 반드시 개별 CSS 속성인 translate로 지정한다(transform 축약 속성이 아님) —
+  // 이유: 클릭 시 .click 클래스가 별도의 개별 속성인 scale을 건다(style.css 참고). CSS는
+  // translate/rotate/scale(개별 속성)와 transform(축약 속성)을 "translate → rotate → scale →
+  // transform" 순서로 합성하는데, 이 순서에서 transform 축약 속성은 제일 먼저(안쪽에서)
+  // 적용되고 scale은 그 다음(바깥쪽)에 적용된다. 그래서 위치를 transform으로 잡아두면, 클릭할
+  // 때 scale(0.65)이 그 위치 값 자체를 0.65배로 줄여버려서(원점=뷰포트 좌상단 기준) 커서가
+  // 화면 왼쪽 위 방향으로 확 튀어 보이는 버그가 있었다(클릭할 때마다 "먼 곳으로 튀는" 원인).
+  // translate를 개별 속성으로 쓰면 순서상 가장 바깥(마지막)에 적용되어 scale의 영향을 받지
+  // 않으므로, 클릭해도 위치가 절대 흔들리지 않는다.
+  // 첫 mousemove가 오기 전까지는 화면 밖에 둔다(opacity:0이라 어차피 안 보이지만,
+  // 혹시 모를 깜빡임까지 방지하는 안전장치).
+  dot.style.translate = "-9999px -9999px";
+  document.body.appendChild(dot);
+
+  document.addEventListener("mousemove", function (event) {
+    dot.classList.add("show");
+    dot.style.translate = event.clientX + "px " + event.clientY + "px";
+  });
+  document.addEventListener("mousedown", function () { dot.classList.add("click"); });
+  document.addEventListener("mouseup", function () { dot.classList.remove("click"); });
+  document.addEventListener("mouseleave", function () { dot.classList.remove("show"); });
+  document.addEventListener("mouseenter", function () { dot.classList.add("show"); });
+
+  // ---- 반짝이 잔상 ----
   const sparkles = ["✦", "✧", "⋆", "·"];
 
   const colors = [
