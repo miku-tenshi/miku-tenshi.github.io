@@ -10,9 +10,9 @@ window.SITE_CONFIG = {
   repo: 'miku-tenshi.github.io',
   branch: 'main',
 
-  profileName: 'リミ',
-  profileRole: 'my page',
-  avatarSrc: '/assets/img/avatar.jpg',
+  profileName: 'リミ\'s page',
+  profileRole: '2026.08.26~',
+  avatarSrc: '/assets/img/rem.jpg',
   avatarAlt: 'リミ 프로필 사진',
 
   copyright: '© miku-tenshi.github.io',
