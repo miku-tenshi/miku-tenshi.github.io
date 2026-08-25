@@ -113,7 +113,7 @@ a{ color: inherit; text-decoration: none; }
   gap: 16px;
   padding: 20px 22px;
   border-radius: 14px;
-  font-size: 21px;
+  font-size: 20px;
   color: var(--ink-soft);
   cursor: pointer;
   border: none;
@@ -398,7 +398,7 @@ a{ color: inherit; text-decoration: none; }
   .avatar{ width: 64px; height: 64px; flex-shrink: 0; max-width: none; }
   .avatar span{ font-size: 22px; }
   .profile{ flex-direction: row; align-items: center; }
-  .profile-name{ font-size: 15px; }
+  .profile-name{ font-size: 20px; }
   .profile-role{ display: none; }
   .nav-group{ flex-direction: row; gap: 4px; }
   .sidebar-footer{ display: none; }
