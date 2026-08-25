@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="private-pending">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>write/ — miku-tenshi</title>
+<title>edit/ — private — miku-tenshi</title>
 <meta name="robots" content="noindex, nofollow">
+<style>.private-pending body { visibility: hidden; }</style>
+<script src="/assets/js/private-guard.js"></script>
 <link rel="stylesheet" as="style" crossorigin
   href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
 <link rel="stylesheet" href="/assets/css/style.css">
@@ -158,8 +160,8 @@
       <a class="nav-item" href="/contact/">
         <span class="bullet"></span> Contact
       </a>
-      <a class="nav-item active" href="/write/">
-        <span class="bullet"></span> Write
+      <a class="nav-item active" href="/private/">
+        <span class="bullet"></span> Private
       </a>
     </nav>
 
@@ -168,7 +170,7 @@
 
   <main class="main">
     <div class="main-heading">
-      <h1>write/</h1>
+      <h1>private/edit/</h1>
       <p>새 글이나 새 폴더를 GitHub 저장소에 바로 올리고, 기존 글을 고치거나 지울 수 있어요.</p>
     </div>
 
@@ -176,7 +178,7 @@
     <article class="window" id="gate-window" data-no-autofocus>
       <div class="window-chrome">
         <div class="chrome-dots"><span></span><span></span><span></span></div>
-        <span class="chrome-path">write / lock.md</span>
+        <span class="chrome-path">private / edit / lock.md</span>
       </div>
       <div class="window-body">
         <div class="entry-date">접근 확인</div>
@@ -431,7 +433,7 @@
     return html.split('\n').filter(l => l.trim().length).map(l => indent + l).join('\n');
   }
   function navHtml(activeKey){
-    const items = [['home','Home','/'], ['study','Study','/study/'], ['project','Project','/project/'], ['contact','Contact','/contact/'], ['write','Write','/write/']];
+    const items = [['home','Home','/'], ['study','Study','/study/'], ['project','Project','/project/'], ['contact','Contact','/contact/'], ['private','Private','/private/']];
     return items.map(([key,label,href]) => {
       const cls = key === activeKey ? 'nav-item active' : 'nav-item';
       return '      <a class="' + cls + '" href="' + href + '">\n        <span class="bullet"></span> ' + label + '\n      </a>';
@@ -639,13 +641,20 @@
 
   (function autoLogin(){
     try{
-      const saved = JSON.parse(localStorage.getItem('mt-write-cfg') || 'null');
+      const privateSession = JSON.parse(sessionStorage.getItem('mt-private-access') || 'null');
+      const saved = privateSession && privateSession.token ? {
+        owner: 'miku-tenshi',
+        repo: 'miku-tenshi.github.io',
+        branch: 'main',
+        token: privateSession.token,
+        remember: Boolean(privateSession.remember)
+      } : JSON.parse(localStorage.getItem('mt-write-cfg') || 'null');
       if (saved && saved.token){
         document.getElementById('g-owner').value = saved.owner || 'miku-tenshi';
         document.getElementById('g-repo').value = saved.repo || 'miku-tenshi.github.io';
         document.getElementById('g-branch').value = saved.branch || 'main';
         document.getElementById('g-token').value = saved.token;
-        document.getElementById('g-remember').checked = true;
+        document.getElementById('g-remember').checked = saved.remember !== false;
         tryEnter(true);
       }
     }catch(e){}
