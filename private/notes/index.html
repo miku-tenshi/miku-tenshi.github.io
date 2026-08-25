@@ -11,45 +11,6 @@
   href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
 <link rel="stylesheet" href="/assets/css/style.css">
 <style>
-<<<<<<< HEAD
-  /* 노트 도구 전용 보조 스타일 — 최대한 site style.css의 .window/.entry-list/.wbtn류를 재사용 */
-  .notes-layout{ display:flex; gap:20px; width:100%; max-width:1100px; align-items:flex-start; flex-wrap:wrap; }
-  .notes-list-col{ flex:0 0 300px; min-width:240px; }
-  .notes-editor-col{ flex:1; min-width:320px; }
-
-  .notes-list-card, .notes-editor-card{
-    background: var(--chrome-bg); border:1px solid var(--chrome-border); border-radius: var(--radius);
-    box-shadow: 0 1px 2px rgba(32,31,43,0.04); overflow:hidden;
-  }
-  .notes-list-card .window-chrome, .notes-editor-card .window-chrome{
-    display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid var(--chrome-border);
-    background: linear-gradient(180deg, #fff, #fbfafe);
-  }
-  .notes-list-body{ padding: 10px 10px; max-height: 560px; overflow-y:auto; }
-  .notes-editor-body{ padding: 24px 26px; }
-
-  .note-row{
-    display:flex; flex-direction:column; gap:2px; width:100%; text-align:left; cursor:pointer;
-    padding: 12px 14px; border-radius: 10px; border:none; background:transparent; font-family:inherit;
-  }
-  .note-row:hover{ background: rgba(89, 232, 230, 0.08); }
-  .note-row.active{ background: var(--accent-soft); }
-  .note-row .n-title{ font-weight:700; color: var(--ink); font-size:15px; }
-  .note-row .n-meta{ font-size:12.5px; color: var(--ink-faint); }
-  .notes-empty{ padding: 18px 14px; color: var(--ink-faint); font-size:14px; }
-
-  .field{ margin-bottom: 16px; }
-  .field label{ display:block; font-size: 13.5px; color: var(--ink-faint); margin-bottom: 6px; font-weight:600; }
-  .field input[type=text], .field textarea{
-    width:100%; box-sizing:border-box; border:1px solid var(--chrome-border); border-radius:10px;
-    padding: 10px 13px; font-size: 15.5px; font-family: inherit; background:#fbfafe; color: var(--ink);
-  }
-  .field input:focus, .field textarea:focus{ outline:2px solid var(--accent-soft); border-color: var(--accent-solid); }
-  .field textarea{ resize: vertical; line-height:1.7; min-height: 300px; }
-
-  .wbtn{
-    display:inline-flex; align-items:center; gap:8px; padding: 11px 18px; border-radius: 12px;
-=======
   /* 노트 도구 전용 보조 스타일 — 최대한 site style.css의 .window/.entry-list/.wbtn류를 재사용.
      화면은 항상 세 가지 상태 중 하나만 보인다: 목록(list) / 읽기 전용 상세(detail) / 입력
      폼(form, 새 메모 작성 또는 기존 메모 수정). JS의 setMode()가 이 세 블록의 display를 갈아
@@ -58,7 +19,6 @@
 
   .wbtn{
     display:inline-flex; align-items:center; gap:8px; padding: 11px 20px; border-radius: 20px;
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
     border:none; cursor:pointer; font-family:inherit; font-size: 14.5px; font-weight:700;
   }
   .wbtn-primary{ background: var(--accent-grad); color:#fff; }
@@ -69,21 +29,6 @@
 
   .action-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
 
-<<<<<<< HEAD
-  .status-log{
-    width:100%; margin-top:14px; font-size: 13.5px; line-height:1.9;
-    background:#fbfafe; border:1px dashed var(--chrome-border); border-radius:12px;
-    padding: 12px 16px; white-space:pre-wrap;
-  }
-  .status-log:empty{ display:none; }
-  .status-log .ok{ color: var(--ok); }
-  .status-log .err{ color: var(--danger); }
-  .status-log .info{ color: var(--ink-soft); }
-
-  @media (max-width: 760px){
-    .notes-list-col{ flex-basis: 100%; }
-  }
-=======
   .status-log{ width:100%; margin-top:14px; }
   .status-log:empty{ display:none; }
 
@@ -131,7 +76,6 @@
   }
   .field input:focus, .field textarea:focus{ outline:2px solid var(--accent-soft); border-color: var(--accent-solid); }
   .field textarea{ resize: vertical; line-height:1.7; min-height: 260px; }
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 </style>
 </head>
 <body>
@@ -149,26 +93,6 @@
       <p>혼자 보는 메모입니다. /private/ 에서 인증한 세션을 그대로 사용해요 — 여기서 다시 로그인할 필요가 없습니다.</p>
     </div>
 
-<<<<<<< HEAD
-    <div class="notes-layout">
-      <div class="notes-list-col">
-        <div class="notes-list-card">
-          <div class="window-chrome">
-            <span class="chrome-path">notes / list</span>
-          </div>
-          <div class="notes-list-body" id="notes-list">
-            <div class="notes-empty">불러오는 중...</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="notes-editor-col">
-        <div class="notes-editor-card">
-          <div class="window-chrome">
-            <span class="chrome-path" id="notes-editor-path">notes / 새 메모</span>
-          </div>
-          <div class="notes-editor-body">
-=======
     <div class="notes-card">
       <article class="window" id="notes-window" data-no-autofocus>
         <div class="window-chrome">
@@ -200,7 +124,6 @@
 
           <!-- 상태 3: 입력 폼(새 메모 작성 또는 기존 메모 수정 — btn-delete는 수정 모드에서만 보임) -->
           <div id="view-form" style="display:none;">
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
             <div class="field">
               <label>제목</label>
               <input type="text" id="n-title" placeholder="메모 제목">
@@ -209,19 +132,6 @@
               <label>내용</label>
               <textarea id="n-body" placeholder="자유롭게 적어두세요."></textarea>
             </div>
-<<<<<<< HEAD
-
-            <div class="action-row">
-              <button class="wbtn wbtn-ghost" id="btn-new">새 메모</button>
-              <button class="wbtn wbtn-primary" id="btn-save">저장</button>
-              <button class="wbtn wbtn-danger" id="btn-delete" style="display:none;">삭제</button>
-            </div>
-
-            <div class="status-log" id="notes-log"></div>
-          </div>
-        </div>
-      </div>
-=======
             <div class="action-row">
               <button class="wbtn wbtn-primary" id="btn-save">저장</button>
               <button class="wbtn wbtn-danger" id="btn-delete" style="display:none;">삭제</button>
@@ -232,17 +142,13 @@
 
         </div>
       </article>
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
     </div>
   </main>
 
 </div>
 
 <script src="/assets/js/window.js"></script>
-<<<<<<< HEAD
-=======
 <script src="/assets/js/retro-log.js"></script>
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 <script>
 (function(){
   'use strict';
@@ -252,15 +158,6 @@
     ? GhApi.buildCfgFromSession(SITE_CONFIG.owner, SITE_CONFIG.repo, SITE_CONFIG.branch)
     : null;
 
-<<<<<<< HEAD
-  const listEl = document.getElementById('notes-list');
-  const titleInput = document.getElementById('n-title');
-  const bodyInput = document.getElementById('n-body');
-  const pathLabel = document.getElementById('notes-editor-path');
-  const btnNew = document.getElementById('btn-new');
-  const btnSave = document.getElementById('btn-save');
-  const btnDelete = document.getElementById('btn-delete');
-=======
   const pathLabel = document.getElementById('notes-path');
   const viewList = document.getElementById('view-list');
   const viewDetail = document.getElementById('view-detail');
@@ -277,23 +174,11 @@
   const btnSave = document.getElementById('btn-save');
   const btnDelete = document.getElementById('btn-delete');
   const btnCancel = document.getElementById('btn-cancel');
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
   const log = document.getElementById('notes-log');
 
   let notes = [];
   let notesSha = null;
-<<<<<<< HEAD
-  let activeId = null;
-
-  function logTo(msg, cls){
-    const div = document.createElement('div');
-    if (cls) div.className = cls;
-    div.textContent = msg;
-    log.appendChild(div);
-  }
-=======
   let activeId = null; // 상세/수정 중인 노트의 id
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 
   function esc(s){
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -306,50 +191,6 @@
     return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
   }
 
-<<<<<<< HEAD
-  function renderList(){
-    if (!notes.length){
-      listEl.innerHTML = '<div class="notes-empty">아직 메모가 없어요. "새 메모"로 첫 메모를 남겨보세요.</div>';
-      return;
-    }
-    const sorted = notes.slice().sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''));
-    listEl.innerHTML = sorted.map(n =>
-      '<button class="note-row' + (n.id === activeId ? ' active' : '') + '" data-id="' + n.id + '">' +
-        '<span class="n-title">' + esc(n.title || '(제목 없음)') + '</span>' +
-        '<span class="n-meta">' + fmtDate(n.updatedAt) + '</span>' +
-      '</button>'
-    ).join('');
-  }
-
-  function loadIntoEditor(note){
-    activeId = note ? note.id : null;
-    titleInput.value = note ? note.title : '';
-    bodyInput.value = note ? note.body : '';
-    pathLabel.textContent = 'notes / ' + (note ? (note.title || '(제목 없음)') : '새 메모');
-    btnDelete.style.display = note ? '' : 'none';
-    renderList();
-  }
-
-  listEl.addEventListener('click', (e) => {
-    const row = e.target.closest('.note-row');
-    if (!row) return;
-    const note = notes.find(n => n.id === row.dataset.id);
-    if (note) loadIntoEditor(note);
-  });
-
-  btnNew.addEventListener('click', () => loadIntoEditor(null));
-
-  btnSave.addEventListener('click', async () => {
-    log.innerHTML = '';
-    if (!GH_CFG){ logTo('❌ 로그인 정보가 없어요. /private/ 에서 다시 인증해주세요.', 'err'); return; }
-    const title = titleInput.value.trim();
-    const body = bodyInput.value;
-    if (!title){ logTo('❌ 제목을 입력해주세요.', 'err'); return; }
-
-    btnSave.disabled = true;
-    try{
-      logTo(NOTES_PATH + ' 최신 상태 확인 중...', 'info');
-=======
   // ---------------------------------------------------------------
   // 화면 상태 전환 — list / detail / form 세 블록 중 하나만 보이게 한다.
   // ---------------------------------------------------------------
@@ -459,7 +300,6 @@
     btnSave.disabled = true;
     const rl = RetroLog.start(log, 'saving');
     try{
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
       const fresh = await GhApi.ghGetFile(GH_CFG, NOTES_PATH);
       notes = fresh ? JSON.parse(fresh.content || '[]') : [];
       notesSha = fresh ? fresh.sha : null;
@@ -474,18 +314,6 @@
         }
       } else {
         activeId = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-<<<<<<< HEAD
-        notes.push({ id: activeId, title, body, updatedAt: now });
-      }
-
-      logTo(NOTES_PATH + ' 저장 중...', 'info');
-      const res = await GhApi.ghPutFile(GH_CFG, NOTES_PATH, JSON.stringify(notes, null, 2) + '\n', 'Save note: ' + title, notesSha);
-      notesSha = res && res.content ? res.content.sha : notesSha;
-      logTo('✅ 저장 완료', 'ok');
-      loadIntoEditor(notes.find(n => n.id === activeId));
-    }catch(e){
-      logTo('❌ ' + e.message, 'err');
-=======
         notes.push({ id: activeId, title, body, updatedAt: now, completed: false });
       }
 
@@ -496,51 +324,30 @@
       setTimeout(() => setMode('detail', saved), 500);
     }catch(e){
       rl.fail(e.message);
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
     }finally{
       btnSave.disabled = false;
     }
   });
 
   btnDelete.addEventListener('click', async () => {
-<<<<<<< HEAD
-    log.innerHTML = '';
-    if (!GH_CFG){ logTo('❌ 로그인 정보가 없어요. /private/ 에서 다시 인증해주세요.', 'err'); return; }
-=======
     if (!GH_CFG){ const rl = RetroLog.start(log, 'deleting'); rl.fail('로그인 정보가 없어요. /private/ 에서 다시 인증해주세요.'); return; }
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
     if (!activeId) return;
     if (!confirm('이 메모를 삭제할까요? 되돌릴 수 없어요.')) return;
 
     btnDelete.disabled = true;
-<<<<<<< HEAD
-    try{
-      logTo(NOTES_PATH + ' 최신 상태 확인 중...', 'info');
-=======
     const rl = RetroLog.start(log, 'deleting');
     try{
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
       const fresh = await GhApi.ghGetFile(GH_CFG, NOTES_PATH);
       notes = fresh ? JSON.parse(fresh.content || '[]') : [];
       notesSha = fresh ? fresh.sha : null;
       notes = notes.filter(n => n.id !== activeId);
 
-<<<<<<< HEAD
-      logTo(NOTES_PATH + ' 갱신 중...', 'info');
-      const res = await GhApi.ghPutFile(GH_CFG, NOTES_PATH, JSON.stringify(notes, null, 2) + '\n', 'Delete note', notesSha);
-      notesSha = res && res.content ? res.content.sha : notesSha;
-      logTo('✅ 삭제 완료', 'ok');
-      loadIntoEditor(null);
-    }catch(e){
-      logTo('❌ ' + e.message, 'err');
-=======
       const res = await GhApi.ghPutFile(GH_CFG, NOTES_PATH, JSON.stringify(notes, null, 2) + '\n', 'Delete note', notesSha);
       notesSha = res && res.content ? res.content.sha : notesSha;
       rl.done();
       setTimeout(() => setMode('list'), 500);
     }catch(e){
       rl.fail(e.message);
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
     }finally{
       btnDelete.disabled = false;
     }

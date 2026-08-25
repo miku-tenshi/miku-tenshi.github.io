@@ -113,17 +113,10 @@
      실제 사이트와 비슷한 크기로 바로 커진다. 위 가짜 커서 덕분에, 여기서 글자
      크기를 바꿔도 커서 위치는 항상 정확하게 따라온다. */
   .md-mark{ color: var(--ink-faint); }
-<<<<<<< HEAD
-  .md-h1{ font-size:26px; font-weight:800; color: var(--accent-solid); }
-  .md-h2{ font-size:22px; font-weight:800; color: var(--accent-solid); }
-  .md-h3{ font-size:19px; font-weight:700; color: var(--accent-solid); }
-  .md-h4{ font-size:17px; font-weight:700; color: var(--accent-solid); }
-=======
   .md-h1{ font-family: var(--font-pixel); font-size:24px; font-weight:700; color: var(--accent-solid); }
   .md-h2{ font-family: var(--font-pixel); font-size:20px; font-weight:700; color: var(--accent-solid); }
   .md-h3{ font-family: var(--font-pixel); font-size:17px; font-weight:700; color: var(--accent-solid); }
   .md-h4{ font-family: var(--font-pixel); font-size:15px; font-weight:700; color: var(--accent-solid); }
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
   .md-bold{ font-weight: 700; }
   .md-quote{ color: var(--ink-soft); font-style: italic; }
   .md-code{
@@ -609,8 +602,6 @@
   // 이 스크립트 전체가 멈추고 아래의 모드 전환 버튼 리스너도 등록되지 않았던 버그가 있었음).
   updateEditorPath();
   updatePublishButtonLabel();
-<<<<<<< HEAD
-=======
   loadFolderList();
 
   // ---------------------------------------------------------------
@@ -657,7 +648,6 @@
       });
     });
   }
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 
   function updatePublishButtonLabel(){
     const btn = document.getElementById('btn-publish');
@@ -764,8 +754,6 @@
     syncHighlight();
     updateEditorCaret();
   }
-<<<<<<< HEAD
-=======
   // 현재 커서(진짜 textarea 캐럿) 위치에 텍스트를 끼워 넣는다 — 이미지/PDF 첨부를
   // 업로드한 뒤 마크다운 링크를 자동으로 넣어줄 때 씀.
   function insertAtCursor(text){
@@ -781,7 +769,6 @@
     syncHighlight();
     updateEditorCaret();
   }
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 
   // ---------------------------------------------------------------
   // 가짜 커서 위치 계산 — 실제 캐럿은 항상 "한 가지 글자 크기"만 아는 textarea

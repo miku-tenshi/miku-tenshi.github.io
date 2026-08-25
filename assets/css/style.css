@@ -268,9 +268,6 @@ a{ color: inherit; text-decoration: none; }
    보이도록, 사이드바 자체의 좌우 여백(padding: 68px 56px)만큼 음수 마진으로
    바깥까지 밀어서 채운다. 저작권 문구(.sidebar-footer)도 이 안에 함께 들어가서
    "물 위에 떠 있는" 것처럼 보인다. sidebar.js가 nav-group 바로 다음에 이 div를
-<<<<<<< HEAD
-   그려 넣는다(이 안에 파도 두 겹 + sidebar-footer가 들어있음). */
-=======
    그려 넣는다(이 안에 파도 두 겹 + sidebar-footer가 들어있음).
 
    v3: "파도 모양이 담긴 네모 칸" 느낌이 너무 인위적이라는 피드백을 받고, 참고
@@ -290,7 +287,6 @@ a{ color: inherit; text-decoration: none; }
         받아 밝아 보이는 유리질/투명감을 더한다.
    두 레이어 다 mix-blend-mode:screen이라 짙은 배경 위에서만 밝게 겹쳐 보이고
    sidebar-footer 위로는 z-index로 가려지지 않는다(footer가 z-index:1). */
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 .sidebar-sea{
   flex: 1;
   min-height: 120px;
@@ -301,20 +297,6 @@ a{ color: inherit; text-decoration: none; }
   margin: 0 -56px -68px -56px;
   padding: 34px 56px 22px;
   overflow: hidden;
-<<<<<<< HEAD
-  /* 바닥색(깊은 바다) — 파도 두 겹이 이 색 위에 끝까지(컨테이너 높이 100%) 깔리기
-     때문에, 사이드바 높이가 얼마가 되든(반응형 등) 파도 이미지와 바닥색 사이에
-     이음매(색이 뚝 끊기는 선)가 생기지 않는다. */
-  background: #0a5c54;
-}
-
-/* 파도 두 겹 — 서로 다른 색/속도/방향으로 흐르게 해서 물이 실제로 일렁이는
-   느낌을 준다. inset:0 + background-size 높이 100%로 항상 컨테이너 바닥까지
-   꽉 채우기 때문에(파도 모양은 SVG 위쪽 20%에만 있고 나머지는 평평한 단색),
-   높이가 얼마든 바닥색과의 경계가 보이지 않는다. 폭은 300px 한 칸이 파도
-   한 주기라서 background-repeat: repeat-x로 이어붙여도 이음매가 안 보인다. */
-.sidebar-sea::before,
-=======
   background: linear-gradient(
     180deg,
     #2fd0d6 0%,
@@ -345,31 +327,10 @@ a{ color: inherit; text-decoration: none; }
   pointer-events: none;
 }
 
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 .sidebar-sea::after{
   content: "";
   position: absolute;
   inset: 0;
-<<<<<<< HEAD
-  background-repeat: repeat-x;
-  background-size: 300px 100%;
-  background-position: top left;
-  pointer-events: none;
-}
-.sidebar-sea::before{
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300' preserveAspectRatio='none'%3E%3Cpath fill='%230f9488' d='M0,20 C50,40 100,0 150,20 C200,40 250,0 300,20 L300,300 L0,300 Z'/%3E%3C/svg%3E");
-  animation: sea-wave-a 9s linear infinite;
-  opacity: 0.9;
-}
-.sidebar-sea::after{
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300' preserveAspectRatio='none'%3E%3Cpath fill='%2339c5bb' d='M0,32 C50,10 100,54 150,32 C200,10 250,54 300,32 L300,300 L0,300 Z'/%3E%3C/svg%3E");
-  animation: sea-wave-b 15s linear infinite reverse;
-  opacity: 0.5;
-}
-
-@keyframes sea-wave-a{ from{ background-position-x: 0; } to{ background-position-x: 300px; } }
-@keyframes sea-wave-b{ from{ background-position-x: 0; } to{ background-position-x: 300px; } }
-=======
   background-image:
     radial-gradient(circle 3px at 18% 92%, rgba(255, 255, 255, 0.62), transparent 65%),
     radial-gradient(circle 4px at 52% 78%, rgba(255, 255, 255, 0.46), transparent 65%),
@@ -394,18 +355,13 @@ a{ color: inherit; text-decoration: none; }
   from{ background-position-y: 0; }
   to{ background-position-y: -220px; }
 }
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 
 .sidebar-sea .sidebar-footer{
   position: relative;
   z-index: 1;
   margin-top: 0;
-<<<<<<< HEAD
-  color: rgba(255, 255, 255, 0.82);
-=======
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 }
 
 .sidebar-footer{ margin-top: auto; font-size: 12.5px; color: var(--ink-faint); }
@@ -751,9 +707,6 @@ input, textarea, select{ cursor: text !important; }
     cursor: pointer !important;
   }
   input, textarea, select{ cursor: text !important; }
-<<<<<<< HEAD
-}
-=======
 }
 
 /* ---------- 레트로 진행 표시 (assets/js/retro-log.js) ----------
@@ -778,4 +731,3 @@ input, textarea, select{ cursor: text !important; }
 .retro-detail a{ color: var(--accent-solid); text-decoration: underline; }
 .retro-error{ color: var(--danger); }
 .retro-error::before{ content: "> "; color: var(--ink-faint); }
->>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
