@@ -38,8 +38,12 @@ window.GhApi = (function () {
   }
 
   async function ghGetFile(cfg, path) {
+    // cache:'no-store' 필수 — GitHub Contents API의 GET 응답은 브라우저가 몇십 초간
+    // HTTP 캐시에 저장할 수 있는 헤더를 달고 오는데, 이 옵션이 없으면 직전에 저장한
+    // 새 sha가 아니라 캐시된(오래된) sha를 그대로 돌려줄 수 있음 — 그 상태로 PUT을
+    // 보내면 실제 파일은 이미 바뀌었는데 sha만 안 맞아서 409(does not match)가 남.
     var url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + encodePath(path) + '?ref=' + encodeURIComponent(cfg.branch);
-    var res = await fetch(url, { headers: authHeaders(cfg.token) });
+    var res = await fetch(url, { headers: authHeaders(cfg.token), cache: 'no-store' });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('GET ' + path + ' 실패 (' + res.status + '): ' + (await res.text()));
     var json = await res.json();

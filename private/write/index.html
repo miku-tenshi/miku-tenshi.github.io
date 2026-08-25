@@ -498,8 +498,11 @@
   }
   function encodePath(path){ return path.split('/').map(encodeURIComponent).join('/'); }
   async function ghGetFile(cfg, path){
+    // cache:'no-store' 필수 — 브라우저가 이 GET 응답을 캐시해서 옛날 sha를 돌려주면,
+    // 그 sha로 보낸 PUT이 "does not match"(409)로 거부됨. assets/js/gh-api.js의
+    // ghGetFile()에도 동일하게 적용되어 있음(2026-08-26, notes 저장 409 버그 수정).
     const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + encodePath(path) + '?ref=' + encodeURIComponent(cfg.branch);
-    const res = await fetch(url, { headers: authHeaders(cfg.token) });
+    const res = await fetch(url, { headers: authHeaders(cfg.token), cache: 'no-store' });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('GET ' + path + ' 실패 (' + res.status + '): ' + (await res.text()));
     const json = await res.json();
