@@ -64,6 +64,7 @@ a{ color: inherit; text-decoration: none; }
 
 .avatar{
   width: 100%;
+  max-width: 200px;
   aspect-ratio: 1 / 1;
   border-radius: 28px;
   background: var(--accent-grad);
@@ -263,6 +264,7 @@ a{ color: inherit; text-decoration: none; }
 }
 
 /* 마크다운으로 쓴 본문에서 나올 수 있는 요소들 (글쓰기 도구 산출물 포함) */
+.window-body h1{ font-size: 30px; font-weight: 800; margin: 8px 0 20px; }
 .window-body h3{ font-size: 21px; font-weight: 700; margin: 28px 0 12px; }
 .window-body h4{ font-size: 18px; font-weight: 700; margin: 22px 0 10px; }
 .window-body ul, .window-body ol{ color: var(--ink-soft); line-height: 1.85; font-size: 17.5px; margin: 0 0 16px; padding-left: 24px; }
@@ -333,6 +335,19 @@ a{ color: inherit; text-decoration: none; }
   flex-shrink: 0;
   display: inline-block;
 }
+
+/* ---------- pagination (홈 화면 "최근 글" 목록 등) ---------- */
+
+.pagination{ display:flex; gap:6px; margin-top:20px; flex-wrap:wrap; align-items:center; }
+
+.page-btn{
+  min-width:36px; height:36px; padding:0 10px; border-radius:10px; border:1px solid var(--chrome-border);
+  background:#fff; color: var(--ink-soft); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.page-btn:hover:not(:disabled){ background: rgba(98,89,232,0.08); color: var(--ink); }
+.page-btn.active{ background: var(--accent-grad); color:#fff; border-color:transparent; }
+.page-btn:disabled{ opacity:.4; cursor:default; }
 
 /* ---------- fullscreen focus mode ---------- */
 

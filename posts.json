@@ -1,0 +1,74 @@
+[
+  {
+    "folder": "study",
+    "slug": "css-position-fixed",
+    "title": "CSS position: fixed 와 레이아웃 시프트",
+    "meta": "08.25",
+    "date": "2026-08-25",
+    "href": "/study/css-position-fixed.html"
+  },
+  {
+    "folder": "study/db",
+    "slug": "query-tuning-long-example",
+    "title": "쿼리 튜닝 삽질기 (긴 글 예시)",
+    "meta": "08.24",
+    "date": "2026-08-24",
+    "href": "/study/db/query-tuning-long-example.html"
+  },
+  {
+    "folder": "project",
+    "slug": "homepage-redesign",
+    "title": "miku-tenshi.github.io",
+    "meta": "진행중",
+    "date": "2026-08-22",
+    "href": "/project/homepage-redesign.html"
+  },
+  {
+    "folder": "study/frontend",
+    "slug": "flexbox-gap",
+    "title": "flexbox gap 정리",
+    "meta": "08.21",
+    "date": "2026-08-21",
+    "href": "/study/frontend/flexbox-gap.html"
+  },
+  {
+    "folder": "study/db",
+    "slug": "normalization",
+    "title": "정규화란 무엇인가",
+    "meta": "08.20",
+    "date": "2026-08-20",
+    "href": "/study/db/normalization.html"
+  },
+  {
+    "folder": "study",
+    "slug": "github-pages-routing",
+    "title": "GitHub Pages 라우팅",
+    "meta": "08.18",
+    "date": "2026-08-18",
+    "href": "/study/github-pages-routing.html"
+  },
+  {
+    "folder": "study/db",
+    "slug": "index-vs-fullscan",
+    "title": "인덱스 vs 풀스캔",
+    "meta": "08.14",
+    "date": "2026-08-14",
+    "href": "/study/db/index-vs-fullscan.html"
+  },
+  {
+    "folder": "study/frontend",
+    "slug": "pretendard-variable-font",
+    "title": "Pretendard 가변폰트 로딩",
+    "meta": "08.12",
+    "date": "2026-08-12",
+    "href": "/study/frontend/pretendard-variable-font.html"
+  },
+  {
+    "folder": "study/db",
+    "slug": "transaction-isolation",
+    "title": "트랜잭션 격리 수준",
+    "meta": "08.07",
+    "date": "2026-08-07",
+    "href": "/study/db/transaction-isolation.html"
+  }
+]
