@@ -140,8 +140,8 @@
     <div class="profile">
       <a class="avatar" href="/" title="홈으로 돌아가기"><img src="/assets/img/avatar.jpg" alt="miku-tenshi 프로필 사진"></a>
       <div class="profile-text">
-        <div class="profile-name">miku-tenshi</div>
-        <div class="profile-role">개발 공부 기록 · TIL</div>
+        <div class="profile-name">リミ</div>
+        <div class="profile-role">my page</div>
       </div>
     </div>
 
@@ -975,7 +975,7 @@
     return walk(container).replace(/\n{3,}/g, '\n\n').trim();
   }
   function parsePostHtml(html){
-    const srcMatch = html.match(/<!--\s*md-source:([A-Za-z0-9+/=]+)\s*-->/);
+    const srcMatch = html.match(/<!--\s*md-source:([A-Za-z0-9+\/=]+)\s*-->/);
     const titleMatch = html.match(/<h2>([\s\S]*?)<\/h2>/);
     const dateMatch = html.match(/<div class="entry-date">([\s\S]*?)<\/div>/);
     const title = titleMatch ? unescapeHtmlSimple(titleMatch[1].trim()) : '';
