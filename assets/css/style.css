@@ -1064,25 +1064,54 @@ a{ color: inherit; text-decoration: none; }
     align-items: center;
     padding: 10px 14px;
     gap: 10px;
-    overflow-x: auto;
+    overflow-x: visible;
     overflow-y: visible;
   }
-  /* 테마 스위처(점 5개)도 상단 바에 자리가 좁으니 조금 더 작게 */
-  .theme-switcher{ gap: 5px; flex-shrink: 0; }
-  .theme-swatch{ width: 14px; height: 14px; }
+  /* 테마 스위처(점 5개)는 더 이상 상단 아이콘 바 안에 두지 않고, 화면(뷰포트) 맨
+     아래에 고정(position:fixed)해서 페이지를 아무리 스크롤해도 항상 같은 자리에
+     보이게 함 — 사용자 요청: "테마 설정창은 스크롤 맨 아래에 유지한다." 상단 바에서
+     빼내는 만큼 그 폭을 프로필 이름/메뉴 아이콘 쪽에 쓸 수 있게 되어, 아래
+     ".nav-group"/".profile-name" 조정과 함께 상단 바 전체가 한 화면 안에 들어오게
+     하는 데도 도움이 됨. */
+  .theme-switcher{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 500;
+    gap: 16px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--sidebar-bg);
+    border-top: 1px solid var(--chrome-border);
+  }
+  .theme-swatch{ width: 16px; height: 16px; }
   .avatar{ width: 40px; height: 40px; flex-shrink: 0; max-width: none; border-radius: 12px; }
   .avatar span{ font-size: 16px; }
-  .profile{ flex-direction: row; align-items: center; gap: 10px; }
-  .profile-text{ align-items: flex-start; text-align: left; }
-  .profile-name{ font-size: 14px; }
+  .profile{ flex-direction: row; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
+  .profile-text{ align-items: flex-start; text-align: left; min-width: 0; }
+  /* 이름이 2줄로 넘어가지 않도록(사용자 요청: "이름이 2줄이 되지 않도록 한다,
+     10글자 이하") 한 줄 고정 + 자리가 모자라면 줄임표로 자름. 10글자 이하 이름은
+     아래 메뉴 아이콘 5개가 폭을 차지하고 남는 공간에서 보통 줄임표 없이 그대로
+     한 줄에 다 들어감. */
+  .profile-name{
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
   .profile-role{ display: none; }
-  .nav-group{ flex-direction: row; gap: 2px; margin-left: auto; }
+  /* 폴더(=최상위 메뉴) 아이콘 5개가 한 화면 안에 다 보이도록, 줄어들지 않는
+     고정 크기로 오른쪽 끝에 붙임(사용자 요청: "폴더의 아이콘들이 한 화면에
+     보이도록 한다") — 자리가 모자라면 대신 위 .profile-name이 먼저 줄어듦. */
+  .nav-group{ flex-direction: row; gap: 2px; margin-left: auto; flex-shrink: 0; }
   .nav-item{ padding: 8px 9px; gap: 0; border-radius: 10px; }
   .nav-item .nav-icon{ width: 20px; height: 20px; }
   .nav-item .nav-label{ display: none; }
   .sidebar-footer{ display: none; }
   .sidebar-sea{ display: none; }
-  .main{ padding: 32px 18px; }
+  /* 화면 맨 아래 고정된 테마 스위처 바에 본문 내용이 가리지 않도록 여유 패딩 확보 */
+  .main{ padding: 32px 18px calc(72px + env(safe-area-inset-bottom, 0px)); }
 }
 
 
