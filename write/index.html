@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>글쓰기 도구 (관리자 전용) — miku-tenshi</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
+<link rel="stylesheet" href="/assets/css/style.css">
+<style>
+  /* 이 페이지 전용 관리자 UI 스타일. 오른쪽 미리보기 카드만 site style.css의
+     .window 계열 클래스를 그대로 재사용해서, 실제 사이트와 똑같이 보이게 한다. */
+  body{ background: var(--bg); }
+  .admin-wrap{ max-width: 1360px; margin: 0 auto; padding: 40px 32px 100px; }
+  .admin-top{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom: 20px; }
+  .admin-top h1{ font-size: 26px; margin:0; background: var(--accent-grad); -webkit-background-clip:text; background-clip:text; color:transparent; width:fit-content; }
+  .admin-top a{ font-size: 14px; color: var(--ink-soft); }
+  .admin-top a:hover{ color: var(--accent-solid); }
+
+  .warn{
+    background: #fff6e5; border: 1px solid #f0d99b; color:#6b5620;
+    border-radius: 12px; padding: 14px 18px; font-size: 14px; line-height:1.7; margin-bottom: 28px;
+  }
+  .warn b{ color:#4a3a10; }
+
+  .grid{ display:grid; grid-template-columns: minmax(360px, 460px) 1fr; gap: 28px; align-items:start; }
+  @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: var(--chrome-bg); border:1px solid var(--chrome-border); border-radius: var(--radius);
+    padding: 22px 24px; margin-bottom: 20px;
+  }
+  .panel h2{ font-size:15px; margin:0 0 14px; color: var(--ink); font-weight:700; }
+  .panel h2 small{ font-weight:500; color: var(--ink-faint); margin-left:6px; }
+
+  .field{ margin-bottom: 14px; }
+  .field label{ display:block; font-size: 13px; color: var(--ink-soft); margin-bottom: 5px; font-weight:600; }
+  .field .hint{ font-size:12px; color: var(--ink-faint); margin-top:4px; }
+  .field input[type=text], .field input[type=password], .field input[type=date], .field textarea{
+    width:100%; box-sizing:border-box; border:1px solid var(--chrome-border); border-radius:9px;
+    padding: 9px 11px; font-size: 14px; font-family: inherit; background:#fff; color: var(--ink);
+  }
+  .field textarea{ resize: vertical; min-height: 90px; line-height:1.6; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .checkline{ display:flex; align-items:center; gap:8px; font-size:13px; color: var(--ink-soft); margin-top:6px; }
+
+  .tabs{ display:flex; gap:6px; margin-bottom:18px; }
+  .tab-btn{
+    flex:1; padding:10px 14px; border-radius:10px; border:1px solid var(--chrome-border); background:#fff;
+    font-family:inherit; font-size:14px; font-weight:600; color: var(--ink-soft); cursor:pointer;
+  }
+  .tab-btn.active{ background: var(--accent-soft); color: var(--accent-solid); border-color: transparent; }
+  .mode-panel{ display:none; }
+  .mode-panel.active{ display:block; }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding: 11px 18px; border-radius: 10px; border:none; cursor:pointer;
+    font-family:inherit; font-size: 14px; font-weight:700;
+  }
+  .btn-primary{ background: var(--accent-grad); color:#fff; }
+  .btn-primary:hover{ filter: brightness(1.05); }
+  .btn-ghost{ background: var(--accent-soft); color: var(--accent-solid); }
+  .btn:disabled{ opacity:0.5; cursor:default; }
+  .btn-row{ display:flex; gap:10px; margin-top: 6px; }
+
+  .status-log{
+    margin-top: 14px; font-size: 13px; line-height:1.9; background:#fbfafe;
+    border:1px dashed var(--chrome-border); border-radius:10px; padding: 12px 14px;
+    max-height: 220px; overflow-y:auto; white-space:pre-wrap;
+  }
+  .status-log:empty{ display:none; }
+  .status-log .ok{ color:#1a7d4d; }
+  .status-log .err{ color:#c23b3b; }
+  .status-log .info{ color: var(--ink-soft); }
+
+  .copybox textarea{ font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size:12px; min-height:140px; }
+
+  details.help{ font-size: 13px; color: var(--ink-soft); }
+  details.help summary{ cursor:pointer; font-weight:700; color: var(--accent-solid); margin-bottom:8px; }
+  details.help ol{ margin: 6px 0 0; padding-left: 20px; line-height:1.9; }
+
+  .preview-sticky{ position: sticky; top: 24px; }
+  .preview-label{ font-size:13px; color: var(--ink-faint); margin-bottom:10px; font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="admin-wrap">
+
+  <div class="admin-top">
+    <h1>글쓰기 도구</h1>
+    <a href="/">&larr; miku-tenshi.github.io 로 돌아가기</a>
+  </div>
+
+  <div class="warn">
+    <b>이 페이지는 GitHub 저장소에 직접 파일을 커밋하는 관리자 도구입니다.</b><br>
+    아래 입력한 GitHub 토큰은 이 브라우저에서 GitHub API로만 바로 전송되고, 어디에도 저장되지 않습니다
+    (단, "이 브라우저에 토큰 기억하기"를 체크하면 이 브라우저의 localStorage에만 저장됩니다).
+    이 페이지 주소나 화면을 다른 사람과 공유하지 마세요.
+  </div>
+
+  <div class="panel">
+    <h2>1. GitHub 연결 <small>토큰이 있어야 게시할 수 있어요. 미리보기/복사만 할 거면 건너뛰어도 됩니다.</small></h2>
+    <div class="row2">
+      <div class="field">
+        <label>Owner (계정명)</label>
+        <input type="text" id="gh-owner" value="miku-tenshi">
+      </div>
+      <div class="field">
+        <label>Repository</label>
+        <input type="text" id="gh-repo" value="miku-tenshi.github.io">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Branch</label>
+        <input type="text" id="gh-branch" value="main">
+      </div>
+      <div class="field">
+        <label>Personal Access Token</label>
+        <input type="password" id="gh-token" placeholder="github_pat_... 또는 ghp_...">
+      </div>
+    </div>
+    <label class="checkline"><input type="checkbox" id="gh-remember"> 이 브라우저에 토큰 기억하기</label>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-test-conn">연결 테스트</button>
+    </div>
+    <div class="status-log" id="conn-log"></div>
+
+    <details class="help" style="margin-top:14px;">
+      <summary>토큰은 어떻게 만드나요?</summary>
+      <ol>
+        <li>github.com에 로그인한 상태로 Settings → Developer settings → Personal access tokens →
+        Fine-grained tokens → "Generate new token" 으로 이동합니다.</li>
+        <li>Repository access를 "Only select repositories" 로 설정하고 <code>miku-tenshi.github.io</code> 저장소만 선택합니다.</li>
+        <li>Permissions → Repository permissions 에서 <b>Contents: Read and write</b> 로 설정합니다.</li>
+        <li>만료 기간을 정하고 토큰을 생성한 뒤, 표시되는 토큰 값을 복사해 위 칸에 붙여넣습니다.
+        (토큰은 생성 직후 한 번만 보여줍니다.)</li>
+      </ol>
+    </details>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-mode="post">새 글 추가</button>
+    <button class="tab-btn" data-mode="folder">새 폴더 만들기</button>
+  </div>
+
+  <div class="grid">
+    <div>
+      <!-- ---------- 모드 A: 새 글 추가 ---------- -->
+      <div class="mode-panel active" id="mode-post">
+        <div class="panel">
+          <h2>2. 글 정보</h2>
+          <div class="field">
+            <label>대상 폴더 경로 <small class="hint">예: study/db, project, contact</small></label>
+            <input type="text" id="p-folder" placeholder="study/db">
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label>파일명(슬러그) <small class="hint">영문 권장</small></label>
+              <input type="text" id="p-slug" placeholder="my-post-slug">
+            </div>
+            <div class="field">
+              <label>날짜</label>
+              <input type="date" id="p-date">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label>제목</label>
+              <input type="text" id="p-title" placeholder="글 제목">
+            </div>
+            <div class="field">
+              <label>목록에 표시될 짧은 표기</label>
+              <input type="text" id="p-meta" placeholder="08.30">
+            </div>
+          </div>
+          <div class="field">
+            <label>본문 <small class="hint">빈 줄로 문단 구분 · **굵게** · `코드`</small></label>
+            <textarea id="p-body" rows="10" placeholder="오늘 배운 것을 적어보세요.
+
+**굵게**나 `code` 표시도 쓸 수 있어요."></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="btn-preview-post">미리보기 갱신</button>
+            <button class="btn btn-primary" id="btn-publish-post">GitHub에 올리기</button>
+          </div>
+          <div class="status-log" id="post-log"></div>
+        </div>
+
+        <div class="panel copybox">
+          <h2>복사용 코드 <small>API 호출이 안 될 때 수동으로 붙여넣을 수 있어요</small></h2>
+          <div class="field">
+            <label>새 글 파일 전체 (<span id="p-copy-filename">-</span>)</label>
+            <textarea id="p-copy-file" rows="6" readonly></textarea>
+          </div>
+          <div class="field">
+            <label>폴더 index.html의 entry-list에 추가할 한 줄</label>
+            <textarea id="p-copy-line" rows="3" readonly></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- 모드 B: 새 폴더 만들기 ---------- -->
+      <div class="mode-panel" id="mode-folder">
+        <div class="panel">
+          <h2>2. 폴더 정보</h2>
+          <div class="field">
+            <label>상위 폴더 경로 <small class="hint">예: study</small></label>
+            <input type="text" id="f-parent" placeholder="study">
+          </div>
+          <div class="field">
+            <label>새 폴더 이름(슬러그) <small class="hint">영문 권장</small></label>
+            <input type="text" id="f-slug" placeholder="algorithm">
+          </div>
+          <div class="field">
+            <label>폴더 설명 문구</label>
+            <textarea id="f-desc" rows="3" placeholder="이 폴더에 대한 짧은 소개"></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="btn-preview-folder">미리보기 갱신</button>
+            <button class="btn btn-primary" id="btn-publish-folder">GitHub에 올리기</button>
+          </div>
+          <div class="status-log" id="folder-log"></div>
+        </div>
+
+        <div class="panel copybox">
+          <h2>복사용 코드</h2>
+          <div class="field">
+            <label>새 폴더 index.html 전체 (<span id="f-copy-filename">-</span>)</label>
+            <textarea id="f-copy-file" rows="6" readonly></textarea>
+          </div>
+          <div class="field">
+            <label>상위 폴더 index.html의 entry-list에 추가할 한 줄</label>
+            <textarea id="f-copy-line" rows="3" readonly></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 미리보기 ---------- -->
+    <div class="preview-sticky">
+      <div class="preview-label">실제로 이렇게 보여요 (미리보기)</div>
+      <article class="window" id="window">
+        <div class="window-chrome">
+          <div class="chrome-dots"><span></span><span></span><span></span></div>
+          <span class="chrome-path" id="pv-path">study / index.md</span>
+          <span class="chrome-hint">click to focus &rarr;</span>
+        </div>
+        <div class="window-body" id="pv-body">
+          <div class="entry-date" id="pv-date">2026.08.30</div>
+          <h2 id="pv-title">제목을 입력하세요</h2>
+          <div id="pv-content"></div>
+        </div>
+      </article>
+    </div>
+
+  </div>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<script src="/assets/js/window.js"></script>
+
+<script>
+(function(){
+
+  // ---------------------------------------------------------------
+  // 공통: 섹션 정보, 유틸
+  // ---------------------------------------------------------------
+  const SECTION_INFO = {
+    study:   { h1: 'study/',   sub: '오늘 공부한 것들을 기록합니다.' },
+    project: { h1: 'project/', sub: '만들고 있는 것들, 만든 것들.' },
+    contact: { h1: 'contact/', sub: '연락할 수 있는 곳들.' },
+  };
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function inlineMarkup(s){
+    s = s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    s = s.replace(/`([^`]+?)`/g, '<code>$1</code>');
+    return s;
+  }
+  function paragraphsToHtml(raw, indent){
+    indent = indent || '        ';
+    return raw.split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean)
+      .map(p => indent + '<p>' + inlineMarkup(escapeHtml(p)) + '</p>').join('\n');
+  }
+  function paragraphsToPreviewHtml(raw){
+    return raw.split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean)
+      .map(p => '<p>' + inlineMarkup(escapeHtml(p)) + '</p>').join('');
+  }
+  function cleanPath(s){ return (s||'').trim().replace(/^\/+|\/+$/g, ''); }
+  function slugify(s){
+    return (s||'').trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-_.가-힣]/g,'');
+  }
+  function buildBreadcrumb(pathStr, lastLabel){
+    const segs = cleanPath(pathStr).split('/').filter(Boolean);
+    let acc = '';
+    const linked = segs.map(seg => { acc += '/' + seg; return '<a href="' + acc + '/">' + seg + '</a>'; });
+    linked.push(lastLabel);
+    return linked.join(' / ');
+  }
+  function navHtml(activeKey){
+    const items = [['home','Home','/'], ['study','Study','/study/'], ['project','Project','/project/'], ['contact','Contact','/contact/']];
+    return items.map(([key,label,href]) => {
+      const cls = key === activeKey ? 'nav-item active' : 'nav-item';
+      return '      <a class="' + cls + '" href="' + href + '">\n        <span class="bullet"></span> ' + label + '\n      </a>';
+    }).join('\n');
+  }
+
+  const PAGE_SKELETON = function(opts){
+    return '<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+      '<title>' + opts.pageTitle + '</title>\n' +
+      '<meta name="description" content="' + opts.description + '">\n' +
+      '<link rel="stylesheet" as="style" crossorigin\n  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css">\n</head>\n<body>\n\n<div class="app">\n\n' +
+      '  <aside class="sidebar">\n    <div class="profile">\n      <a class="avatar" href="/" title="홈으로 돌아가기"><span>MT</span></a>\n' +
+      '      <div class="profile-text">\n        <div class="profile-name">miku-tenshi</div>\n        <div class="profile-role">개발 공부 기록 · TIL</div>\n      </div>\n    </div>\n\n' +
+      '    <nav class="nav-group">\n' + navHtml(opts.navKey) + '\n    </nav>\n\n' +
+      '    <div class="sidebar-footer">&copy; miku-tenshi.github.io</div>\n  </aside>\n\n' +
+      '  <main class="main">\n    <div class="main-heading">\n      <h1>' + opts.h1 + '</h1>\n      <p>' + opts.sub + '</p>\n    </div>\n\n' +
+      '    <article class="window" id="window">\n      <div class="window-chrome">\n' +
+      '        <div class="chrome-dots"><span></span><span></span><span></span></div>\n' +
+      '        <span class="chrome-path">' + opts.breadcrumb + '</span>\n' +
+      '        <span class="chrome-hint">click to focus &rarr;</span>\n      </div>\n' +
+      '      <div class="window-body" id="window-body">\n' + opts.bodyHtml + '\n      </div>\n    </article>\n  </main>\n\n</div>\n\n' +
+      '<div class="backdrop" id="backdrop"></div>\n\n<script src="/assets/js/window.js"><\/script>\n</body>\n</html>\n';
+  };
+
+  function upLine(href, label){
+    return '          <a class="entry-list-item clickable up" href="' + href + '"><span class="t">..</span><span class="d">' + label + '</span></a>';
+  }
+  function fileLine(href, title, meta){
+    return '          <a class="entry-list-item clickable" href="' + href + '"><span class="t"><span class="file-icon"></span>' + escapeHtml(title) + '</span><span class="d">' + escapeHtml(meta) + '</span></a>';
+  }
+  function folderLine(href, name, meta){
+    return '          <a class="entry-list-item clickable is-folder" href="' + href + '"><span class="t"><span class="folder-icon"></span>' + escapeHtml(name) + '</span><span class="d">' + escapeHtml(meta) + '</span></a>';
+  }
+
+  // 부모 index.html 원문에 새 entry-list 줄을 끼워넣는다 (up-link 바로 다음 줄에 삽입 = 최신 글이 위로).
+  function insertEntryLine(indexContent, newLine){
+    const lines = indexContent.split('\n');
+    let insertAt = -1;
+    for (let i=0;i<lines.length;i++){
+      if (lines[i].includes('entry-list-item clickable up')){ insertAt = i+1; break; }
+    }
+    if (insertAt === -1){
+      for (let i=0;i<lines.length;i++){
+        if (lines[i].includes('<div class="entry-list">')){ insertAt = i+1; break; }
+      }
+    }
+    if (insertAt === -1) throw new Error('entry-list 위치를 찾지 못했습니다. 폴더의 index.html 구조를 확인해주세요.');
+    lines.splice(insertAt, 0, newLine);
+    return lines.join('\n');
+  }
+
+  // ---------------------------------------------------------------
+  // GitHub API
+  // ---------------------------------------------------------------
+  function b64EncodeUnicode(str){
+    const bytes = new TextEncoder().encode(str);
+    let binary = '';
+    bytes.forEach(b => binary += String.fromCharCode(b));
+    return btoa(binary);
+  }
+  function b64DecodeUnicode(b64){
+    const binary = atob(b64.replace(/\n/g, ''));
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  function ghConfig(){
+    return {
+      owner: document.getElementById('gh-owner').value.trim(),
+      repo: document.getElementById('gh-repo').value.trim(),
+      branch: document.getElementById('gh-branch').value.trim() || 'main',
+      token: document.getElementById('gh-token').value.trim(),
+    };
+  }
+  function authHeaders(token){
+    return { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+  }
+  function encodePath(path){ return path.split('/').map(encodeURIComponent).join('/'); }
+
+  async function ghGetFile(cfg, path){
+    const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + encodePath(path) + '?ref=' + encodeURIComponent(cfg.branch);
+    const res = await fetch(url, { headers: authHeaders(cfg.token) });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('GET ' + path + ' 실패 (' + res.status + '): ' + (await res.text()));
+    const json = await res.json();
+    return { sha: json.sha, content: b64DecodeUnicode(json.content) };
+  }
+  async function ghPutFile(cfg, path, content, message, sha){
+    const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + encodePath(path);
+    const body = { message: message, content: b64EncodeUnicode(content), branch: cfg.branch };
+    if (sha) body.sha = sha;
+    const res = await fetch(url, { method:'PUT', headers: Object.assign({'Content-Type':'application/json'}, authHeaders(cfg.token)), body: JSON.stringify(body) });
+    if (!res.ok) throw new Error('PUT ' + path + ' 실패 (' + res.status + '): ' + (await res.text()));
+    return res.json();
+  }
+
+  function logTo(el, msg, cls){
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ---------------------------------------------------------------
+  // 연결 테스트
+  // ---------------------------------------------------------------
+  const connLog = document.getElementById('conn-log');
+  document.getElementById('btn-test-conn').addEventListener('click', async () => {
+    connLog.innerHTML = '';
+    const cfg = ghConfig();
+    if (!cfg.token){ logTo(connLog, '토큰을 입력해주세요.', 'err'); return; }
+    logTo(connLog, cfg.owner + '/' + cfg.repo + ' 연결 확인 중...', 'info');
+    try{
+      const res = await fetch('https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo, { headers: authHeaders(cfg.token) });
+      if (!res.ok) throw new Error(res.status + ' ' + (await res.text()));
+      const json = await res.json();
+      if (json.default_branch) document.getElementById('gh-branch').value = json.default_branch;
+      logTo(connLog, '✅ 연결 성공 (기본 브랜치: ' + json.default_branch + ', 쓰기 권한: ' + (json.permissions && json.permissions.push ? '있음' : '확인 필요') + ')', 'ok');
+    }catch(e){
+      logTo(connLog, '❌ 연결 실패: ' + e.message, 'err');
+    }
+  });
+
+  // 토큰 기억하기
+  const tokenInput = document.getElementById('gh-token');
+  const rememberBox = document.getElementById('gh-remember');
+  try{
+    const saved = localStorage.getItem('mt-gh-token');
+    if (saved){ tokenInput.value = saved; rememberBox.checked = true; }
+  }catch(e){}
+  function syncRemember(){
+    try{
+      if (rememberBox.checked) localStorage.setItem('mt-gh-token', tokenInput.value);
+      else localStorage.removeItem('mt-gh-token');
+    }catch(e){}
+  }
+  rememberBox.addEventListener('change', syncRemember);
+  tokenInput.addEventListener('input', () => { if (rememberBox.checked) syncRemember(); });
+
+  // ---------------------------------------------------------------
+  // 탭 전환
+  // ---------------------------------------------------------------
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.mode-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('mode-' + btn.dataset.mode).classList.add('active');
+      currentMode = btn.dataset.mode;
+      refreshPreview();
+    });
+  });
+  let currentMode = 'post';
+
+  // ---------------------------------------------------------------
+  // 미리보기
+  // ---------------------------------------------------------------
+  const pvPath = document.getElementById('pv-path');
+  const pvDate = document.getElementById('pv-date');
+  const pvTitle = document.getElementById('pv-title');
+  const pvContent = document.getElementById('pv-content');
+
+  function refreshPreview(){
+    if (currentMode === 'post'){
+      const folder = cleanPath(document.getElementById('p-folder').value) || 'study';
+      const slug = slugify(document.getElementById('p-slug').value) || 'new-post';
+      const title = document.getElementById('p-title').value || '제목을 입력하세요';
+      const dateVal = document.getElementById('p-date').value;
+      const meta = document.getElementById('p-meta').value || dateVal || '';
+      const body = document.getElementById('p-body').value || '';
+      pvPath.innerHTML = buildBreadcrumb(folder, slug + '.md');
+      pvDate.textContent = dateVal ? dateVal.replace(/-/g,'.') + (meta ? ' · ' + meta : '') : (meta || '');
+      pvTitle.textContent = title;
+      pvContent.innerHTML = paragraphsToPreviewHtml(body) || '<p style="color:var(--ink-faint)">본문을 입력하면 여기에 나타납니다.</p>';
+    } else {
+      const parent = cleanPath(document.getElementById('f-parent').value) || 'study';
+      const slug = slugify(document.getElementById('f-slug').value) || 'new-folder';
+      const desc = document.getElementById('f-desc').value || '';
+      const fullPath = parent + '/' + slug;
+      pvPath.innerHTML = buildBreadcrumb(fullPath, 'index.md');
+      pvDate.textContent = parent + ' / ' + slug;
+      pvTitle.textContent = slug + '/';
+      pvContent.innerHTML = (desc ? '<p>' + escapeHtml(desc) + '</p>' : '<p style="color:var(--ink-faint)">폴더 설명을 입력하면 여기에 나타납니다.</p>');
+    }
+  }
+  ['p-folder','p-slug','p-title','p-date','p-meta','p-body'].forEach(id => {
+    document.getElementById(id).addEventListener('input', refreshPreview);
+  });
+  ['f-parent','f-slug','f-desc'].forEach(id => {
+    document.getElementById(id).addEventListener('input', refreshPreview);
+  });
+  document.getElementById('p-date').valueAsDate = new Date();
+  refreshPreview();
+
+  document.getElementById('btn-preview-post').addEventListener('click', refreshPreview);
+  document.getElementById('btn-preview-folder').addEventListener('click', refreshPreview);
+
+  // ---------------------------------------------------------------
+  // 모드 A: 새 글 생성/게시
+  // ---------------------------------------------------------------
+  function buildPostFile(){
+    const folder = cleanPath(document.getElementById('p-folder').value);
+    const slug = slugify(document.getElementById('p-slug').value);
+    const title = document.getElementById('p-title').value.trim();
+    const dateVal = document.getElementById('p-date').value;
+    const meta = document.getElementById('p-meta').value.trim() || (dateVal ? dateVal.replace(/-/g,'.') : '');
+    const body = document.getElementById('p-body').value;
+    if (!folder || !slug || !title) throw new Error('폴더 경로, 파일명, 제목은 필수입니다.');
+    const topKey = folder.split('/')[0];
+    const info = SECTION_INFO[topKey];
+    if (!info) throw new Error('"' + topKey + '" 는 알 수 없는 최상위 섹션입니다 (study / project / contact 중 하나여야 해요).');
+
+    const dateLabel = dateVal ? dateVal.replace(/-/g,'.') : '';
+    const bodyHtml = '\n        <div class="entry-date">' + escapeHtml(dateLabel) + '</div>\n' +
+      '        <h2>' + escapeHtml(title) + '</h2>\n' +
+      paragraphsToHtml(body) + '\n' +
+      '        <div class="entry-list">\n' + upLine('/' + folder + '/', folder.split('/').pop() + '/ 로') + '\n        </div>\n';
+
+    const fileHtml = PAGE_SKELETON({
+      pageTitle: title + ' — ' + folder + ' — miku-tenshi',
+      description: title,
+      navKey: topKey,
+      h1: info.h1,
+      sub: info.sub,
+      breadcrumb: buildBreadcrumb(folder, slug + '.md'),
+      bodyHtml: bodyHtml,
+    });
+
+    const filePath = folder + '/' + slug + '.html';
+    const entryLine = fileLine('/' + filePath, title, meta);
+    return { folder, slug, title, filePath, fileHtml, entryLine };
+  }
+
+  document.getElementById('btn-publish-post').addEventListener('click', async () => {
+    const log = document.getElementById('post-log');
+    log.innerHTML = '';
+    let data;
+    try{
+      data = buildPostFile();
+    }catch(e){ logTo(log, '❌ ' + e.message, 'err'); return; }
+
+    document.getElementById('p-copy-filename').textContent = data.filePath;
+    document.getElementById('p-copy-file').value = data.fileHtml;
+    document.getElementById('p-copy-line').value = data.entryLine;
+
+    const cfg = ghConfig();
+    if (!cfg.token){ logTo(log, '토큰이 없어서 왼쪽 "복사용 코드"에 결과만 채워뒀어요. 토큰을 입력하면 자동으로 올릴 수 있어요.', 'info'); return; }
+
+    const btn = document.getElementById('btn-publish-post');
+    btn.disabled = true;
+    try{
+      logTo(log, data.filePath + ' 파일이 이미 있는지 확인 중...', 'info');
+      const existing = await ghGetFile(cfg, data.filePath);
+      if (existing) throw new Error('이미 같은 이름의 파일이 있어요. 슬러그를 바꿔주세요: ' + data.filePath);
+
+      logTo(log, '새 글 파일 만드는 중...', 'info');
+      await ghPutFile(cfg, data.filePath, data.fileHtml, 'Add post: ' + data.filePath);
+      logTo(log, '✅ ' + data.filePath + ' 생성 완료', 'ok');
+
+      const folderIndexPath = data.folder + '/index.html';
+      logTo(log, folderIndexPath + ' 목록에 추가하는 중...', 'info');
+      const idx = await ghGetFile(cfg, folderIndexPath);
+      if (!idx) throw new Error(folderIndexPath + ' 를 찾지 못했어요. 대상 폴더가 실제로 있는지 확인해주세요.');
+      const updated = insertEntryLine(idx.content, data.entryLine);
+      await ghPutFile(cfg, folderIndexPath, updated, 'List new post in ' + folderIndexPath, idx.sha);
+      logTo(log, '✅ ' + folderIndexPath + ' 업데이트 완료', 'ok');
+
+      logTo(log, '🎉 게시 완료! 1분 정도 후 https://miku-tenshi.github.io/' + data.filePath + ' 에서 확인할 수 있어요.', 'ok');
+    }catch(e){
+      logTo(log, '❌ ' + e.message, 'err');
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // 모드 B: 새 폴더 생성/게시
+  // ---------------------------------------------------------------
+  function buildFolderFiles(){
+    const parent = cleanPath(document.getElementById('f-parent').value);
+    const slug = slugify(document.getElementById('f-slug').value);
+    const desc = document.getElementById('f-desc').value.trim();
+    if (!parent || !slug) throw new Error('상위 폴더 경로와 새 폴더 이름은 필수입니다.');
+    const topKey = parent.split('/')[0];
+    const info = SECTION_INFO[topKey];
+    if (!info) throw new Error('"' + topKey + '" 는 알 수 없는 최상위 섹션입니다 (study / project / contact 중 하나여야 해요).');
+
+    const fullPath = parent + '/' + slug;
+    const bodyHtml = '\n        <div class="entry-date">' + escapeHtml(parent + ' / ' + slug) + '</div>\n' +
+      '        <h2>' + escapeHtml(slug) + '/</h2>\n' +
+      (desc ? '        <p>' + inlineMarkup(escapeHtml(desc)) + '</p>\n' : '') +
+      '        <div class="entry-list">\n' + upLine('/' + parent + '/', '상위 폴더') + '\n        </div>\n';
+
+    const fileHtml = PAGE_SKELETON({
+      pageTitle: fullPath + '/ — miku-tenshi',
+      description: desc || (slug + ' 폴더'),
+      navKey: topKey,
+      h1: info.h1,
+      sub: info.sub,
+      breadcrumb: buildBreadcrumb(fullPath, 'index.md'),
+      bodyHtml: bodyHtml,
+    });
+
+    const filePath = fullPath + '/index.html';
+    const entryLine = folderLine('/' + fullPath + '/', slug, '0개 항목');
+    return { parent, slug, filePath, fileHtml, entryLine };
+  }
+
+  document.getElementById('btn-publish-folder').addEventListener('click', async () => {
+    const log = document.getElementById('folder-log');
+    log.innerHTML = '';
+    let data;
+    try{
+      data = buildFolderFiles();
+    }catch(e){ logTo(log, '❌ ' + e.message, 'err'); return; }
+
+    document.getElementById('f-copy-filename').textContent = data.filePath;
+    document.getElementById('f-copy-file').value = data.fileHtml;
+    document.getElementById('f-copy-line').value = data.entryLine;
+
+    const cfg = ghConfig();
+    if (!cfg.token){ logTo(log, '토큰이 없어서 왼쪽 "복사용 코드"에 결과만 채워뒀어요. 토큰을 입력하면 자동으로 올릴 수 있어요.', 'info'); return; }
+
+    const btn = document.getElementById('btn-publish-folder');
+    btn.disabled = true;
+    try{
+      logTo(log, data.filePath + ' 이 이미 있는지 확인 중...', 'info');
+      const existing = await ghGetFile(cfg, data.filePath);
+      if (existing) throw new Error('이미 같은 이름의 폴더가 있어요: ' + data.parent + '/' + data.slug + '/');
+
+      logTo(log, '새 폴더 index.html 만드는 중...', 'info');
+      await ghPutFile(cfg, data.filePath, data.fileHtml, 'Add folder: ' + data.parent + '/' + data.slug + '/');
+      logTo(log, '✅ ' + data.filePath + ' 생성 완료', 'ok');
+
+      const parentIndexPath = data.parent + '/index.html';
+      logTo(log, parentIndexPath + ' 목록에 추가하는 중...', 'info');
+      const idx = await ghGetFile(cfg, parentIndexPath);
+      if (!idx) throw new Error(parentIndexPath + ' 를 찾지 못했어요. 상위 폴더 경로를 확인해주세요.');
+      const updated = insertEntryLine(idx.content, data.entryLine);
+      await ghPutFile(cfg, parentIndexPath, updated, 'List new folder in ' + parentIndexPath, idx.sha);
+      logTo(log, '✅ ' + parentIndexPath + ' 업데이트 완료', 'ok');
+
+      logTo(log, '🎉 폴더 생성 완료! 1분 정도 후 https://miku-tenshi.github.io/' + data.parent + '/' + data.slug + '/ 에서 확인할 수 있어요.', 'ok');
+    }catch(e){
+      logTo(log, '❌ ' + e.message, 'err');
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>
