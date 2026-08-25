@@ -8,52 +8,40 @@
    오픈소스(SIL OFL) 도트(픽셀) 폰트 패밀리. */
 @import url("https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css");
 
-/* ─────────────────────────────────────────────
-   색상 테마 (5종): 사이드바 위쪽 테마 스위처(.theme-switcher)에서
-   고르면 <html data-theme="..."> 속성이 바뀌고, 그 값에 따라 아래
-   변수들이 통째로 교체됨(사이드바 바다의 밤/새벽/낮/해질녘과 같은
-   원리 — 실제 값 계산은 CSS가, "어떤 테마인지"는 JS(assets/js/
-   sidebar.js)가 담당). :root(속성 없음/"default")가 기본값이고,
-   dark/blue/mint/pink는 :root[data-theme="..."]로 덮어씀.
-
-   --accent-rgb: 호버 배경 · 아바타/커서 글로우처럼 "포인트색 + 낮은
-   투명도"가 필요한 곳에서 rgba(var(--accent-rgb), 0.1) 형태로 재사용
-   하기 위한 R,G,B 숫자 버전(반드시 --accent-solid과 같은 색이어야
-   함 — 새 테마를 추가할 때 이 값 갱신을 잊지 말 것).
-
-   처음 방문(테마를 고른 적 없는 사람)에는 5개 중 무작위로 하나가
-   골라지고 localStorage에 저장됨 — 각 페이지 <head> 맨 위의 인라인
-   스크립트가 담당(페이지가 그려지기 전에 data-theme을 붙여서 깜빡임
-   없이 바로 그 테마로 보이게 함). 새 테마를 추가하려면: 이 파일에
-   :root[data-theme="새키"]{ ... } 블록 추가 + sidebar.js의
-   THEME_LIST 배열 + 모든 페이지 <head>의 인라인 스크립트 T 배열
-   세 곳에 같은 키를 넣어야 함.
-───────────────────────────────────────────── */
-
 :root {
   --font-pixel: "Galmuri11", "Galmuri9", "Galmuri14", monospace;
-
-  /* ── 테마 1) 기본 — 화이트 · 블랙 · 포인트 블루 ── */
+  /* ─────────────────────────
+     기본 배경
+  ───────────────────────── */
 
   /* 오른쪽 메인 배경 */
-  --bg: #ffffff;
+  --bg: #f3faf9;
 
   /* 왼쪽 사이드바 배경 */
-  --sidebar-bg: #f5f6f8;
+  --sidebar-bg: #e8f5f4;
+
+
+  /* ─────────────────────────
+     글자
+  ───────────────────────── */
 
   /* 제목과 본문 */
-  --ink: #14161a;
+  --ink: #183536;
 
   /* 설명 및 보조 글자 */
-  --ink-soft: #54585f;
+  --ink-soft: #577476;
 
   /* 날짜와 비활성 글자 */
-  --ink-faint: #999ea6;
+  --ink-faint: #91aaaa;
 
-  /* 포인트 컬러(블루) */
-  --accent-start: #2f6fe0;
-  --accent-end: #4f8ef7;
-  --accent-rgb: 47, 111, 224;
+
+  /* ─────────────────────────
+     포인트 컬러
+  ───────────────────────── */
+
+  /* 민트 → 하늘색 */
+  --accent-start: #39c5bb;
+  --accent-end: #55a9e8;
 
   --accent-grad: linear-gradient(
     135deg,
@@ -62,104 +50,33 @@
   );
 
   /* 제목, 링크, 아이콘 */
-  --accent-solid: #2f6fe0;
+  --accent-solid: #269fa0;
 
   /* 선택 메뉴 배경 */
-  --accent-soft: #e3ecfd;
+  --accent-soft: #d2f0ed;
+
+
+  /* ─────────────────────────
+     창
+  ───────────────────────── */
 
   /* 창 내부 배경 */
-  --chrome-bg: #ffffff;
+  --chrome-bg: #fffefd;
 
   /* 창 테두리 */
-  --chrome-border: #e2e4e8;
+  --chrome-border: #cfe4e2;
 
   --radius: 16px;
   --sidebar-w: 560px;
 
-  /* 상태 색상(테마 공통 — 위험/성공은 어느 테마에서나 같은 의미) */
+
+  /* ─────────────────────────
+     상태 색상
+  ───────────────────────── */
+
   --danger: #d95763;
   --danger-soft: #fdebed;
 
-  --ok: #218c68;
-  --ok-soft: #def4e9;
-}
-
-/* ── 테마 2) 기본 다크 ── */
-:root[data-theme="dark"]{
-  --bg: #12141a;
-  --sidebar-bg: #191c24;
-  --ink: #eef0f4;
-  --ink-soft: #aab0bd;
-  --ink-faint: #6b7280;
-  --accent-start: #4f8ef7;
-  --accent-end: #7cb0ff;
-  --accent-rgb: 79, 142, 247;
-  --accent-solid: #7cb0ff;
-  --accent-soft: #1e2a44;
-  --chrome-bg: #1a1d26;
-  --chrome-border: #2b2f3a;
-  --danger: #f87171;
-  --danger-soft: #3a1e22;
-  --ok: #34d399;
-  --ok-soft: #163429;
-}
-
-/* ── 테마 3) 블루 — 연한 파란색 그라데이션 ── */
-:root[data-theme="blue"]{
-  --bg: #eef5ff;
-  --sidebar-bg: #e3eefd;
-  --ink: #16324f;
-  --ink-soft: #4d6a86;
-  --ink-faint: #8fa6bd;
-  --accent-start: #4f8ef7;
-  --accent-end: #7db8ff;
-  --accent-rgb: 79, 142, 247;
-  --accent-solid: #2f6fe0;
-  --accent-soft: #d9e9fd;
-  --chrome-bg: #ffffff;
-  --chrome-border: #d3e3f7;
-  --danger: #d95763;
-  --danger-soft: #fdebed;
-  --ok: #218c68;
-  --ok-soft: #def4e9;
-}
-
-/* ── 테마 4) 민트 — 파스텔 민트 그라데이션(이전까지의 기본 색상) ── */
-:root[data-theme="mint"]{
-  --bg: #f3faf9;
-  --sidebar-bg: #e8f5f4;
-  --ink: #183536;
-  --ink-soft: #577476;
-  --ink-faint: #91aaaa;
-  --accent-start: #39c5bb;
-  --accent-end: #55a9e8;
-  --accent-rgb: 57, 197, 187;
-  --accent-solid: #269fa0;
-  --accent-soft: #d2f0ed;
-  --chrome-bg: #fffefd;
-  --chrome-border: #cfe4e2;
-  --danger: #d95763;
-  --danger-soft: #fdebed;
-  --ok: #218c68;
-  --ok-soft: #def4e9;
-}
-
-/* ── 테마 5) 핑크 — 파스텔 핑크 그라데이션 ── */
-:root[data-theme="pink"]{
-  --bg: #fdf3f7;
-  --sidebar-bg: #fbe9f1;
-  --ink: #4a1f34;
-  --ink-soft: #8a5570;
-  --ink-faint: #c191a8;
-  --accent-start: #ec6fac;
-  --accent-end: #f9a8c9;
-  --accent-rgb: 236, 111, 172;
-  --accent-solid: #d94f8f;
-  --accent-soft: #fbdcea;
-  --chrome-bg: #fffbfd;
-  --chrome-border: #f6d7e4;
-  --danger: #d95763;
-  --danger-soft: #fdebed;
   --ok: #218c68;
   --ok-soft: #def4e9;
 }
@@ -214,45 +131,6 @@ a{ color: inherit; text-decoration: none; }
   top: 0;
 }
 
-/* ---------- 테마 스위처 (사이드바 맨 위, 프로필 사진 위) ----------
-   작은 색상 점 5개 — 클릭하면 그 테마로 즉시 바뀌고(assets/js/sidebar.js가
-   처리) localStorage에 저장되어 다음 방문에도 유지됨. 각 점의 배경은
-   "지금 활성화된 테마"가 아니라 "그 점이 나타내는 테마"를 항상 보여줘야
-   하므로 var(--accent-*) 대신 각 테마의 실제 색을 직접 하드코딩함(위
-   :root[data-theme="..."] 블록의 --accent-start/--accent-end 값과
-   반드시 맞춰서 관리할 것 — 새 테마를 추가하면 여기도 함께 추가해야 함). */
-.theme-switcher{
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-}
-
-.theme-swatch{
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: 2px solid var(--chrome-bg);
-  box-shadow: 0 0 0 1px var(--chrome-border);
-  padding: 0;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.theme-swatch:hover{ transform: scale(1.15); }
-
-.theme-swatch.active{
-  box-shadow: 0 0 0 1px var(--chrome-border), 0 0 0 3px var(--accent-solid);
-  transform: scale(1.15);
-}
-
-.theme-swatch[data-theme-btn="default"]{ background: linear-gradient(135deg, #2f6fe0, #4f8ef7); }
-.theme-swatch[data-theme-btn="dark"]{ background: linear-gradient(135deg, #12141a, #4f8ef7); }
-.theme-swatch[data-theme-btn="blue"]{ background: linear-gradient(135deg, #4f8ef7, #7db8ff); }
-.theme-swatch[data-theme-btn="mint"]{ background: linear-gradient(135deg, #39c5bb, #55a9e8); }
-.theme-swatch[data-theme-btn="pink"]{ background: linear-gradient(135deg, #ec6fac, #f9a8c9); }
-
 .profile{
   display: flex;
   flex-direction: column;
@@ -273,7 +151,7 @@ a{ color: inherit; text-decoration: none; }
   font-weight: 700;
   letter-spacing: 0.02em;
   border: none;
-  box-shadow: 0 18px 40px -16px rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 18px 40px -16px rgba(89, 232, 230, 0.5);
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   padding: 0;
@@ -294,7 +172,7 @@ a{ color: inherit; text-decoration: none; }
 
 .avatar:hover{
   transform: translateY(-3px);
-  box-shadow: 0 22px 46px -16px rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 22px 46px -16px rgba(89, 232, 230, 0.5);
 }
 
 .profile-text{ display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
@@ -390,7 +268,7 @@ a{ color: inherit; text-decoration: none; }
 
 .nav-item:hover{
   color: var(--accent-solid);
-  background: rgba(var(--accent-rgb), 0.1);
+  background: rgba(57, 197, 187, 0.1);
   transform: translateX(4px);
 }
 
@@ -841,13 +719,13 @@ a{ color: inherit; text-decoration: none; }
   background: var(--chrome-bg);
   border: 1px solid var(--chrome-border);
   border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgba(15,23,42,0.05), 0 16px 40px -20px rgba(15,23,42,0.18);
+  box-shadow: 0 1px 2px rgba(32,31,43,0.04), 0 16px 40px -20px rgba(80,60,220,0.22);
   overflow: hidden;
   cursor: pointer;
 }
 
 .window:not(.is-fullscreen):hover{
-  box-shadow: 0 1px 2px rgba(15,23,42,0.06), 0 22px 48px -20px rgba(15,23,42,0.22);
+  box-shadow: 0 1px 2px rgba(32,31,43,0.05), 0 22px 48px -20px rgba(80,60,220,0.3);
   transform: translateY(-1px);
 }
 
@@ -857,7 +735,7 @@ a{ color: inherit; text-decoration: none; }
   gap: 14px;
   padding: 20px 24px;
   border-bottom: 1px solid var(--chrome-border);
-  background: var(--chrome-bg);
+  background: linear-gradient(180deg, #fff, #fbfafe);
   flex-shrink: 0;
 }
 
@@ -868,7 +746,7 @@ a{ color: inherit; text-decoration: none; }
   height: 12px;
   border-radius: 50%;
   background: var(--accent-soft);
-  border: 1px solid var(--chrome-border);
+  border: 1px solid #c9c4ee;
 }
 
 .chrome-dots span:nth-child(1){ background: var(--accent-grad); border: none; }
@@ -963,7 +841,7 @@ a{ color: inherit; text-decoration: none; }
 }
 
 .entry-list-item.clickable{ cursor: pointer; }
-.entry-list-item.clickable:hover{ background: rgba(var(--accent-rgb), 0.06); }
+.entry-list-item.clickable:hover{ background: rgba(89, 232, 230, 0.06); }
 .entry-list-item:last-child{ border-bottom: none; }
 .entry-list-item .t{ color: var(--ink); font-weight: 500; display: flex; align-items: center; gap: 8px; }
 .entry-list-item .d{ color: var(--ink-faint); font-size: 14px; white-space: nowrap; }
@@ -1005,10 +883,10 @@ a{ color: inherit; text-decoration: none; }
 
 .page-btn{
   min-width:36px; height:36px; padding:0 10px; border-radius:10px; border:1px solid var(--chrome-border);
-  background: var(--chrome-bg); color: var(--ink-soft); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
+  background:#fff; color: var(--ink-soft); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.page-btn:hover:not(:disabled){ background: rgba(var(--accent-rgb), 0.08); color: var(--ink); }
+.page-btn:hover:not(:disabled){ background:  rgba(89, 232, 230, 0.08); color: var(--ink); }
 .page-btn.active{ background: var(--accent-grad); color:#fff; border-color:transparent; }
 .page-btn:disabled{ opacity:.4; cursor:default; }
 
@@ -1067,9 +945,6 @@ a{ color: inherit; text-decoration: none; }
     overflow-x: auto;
     overflow-y: visible;
   }
-  /* 테마 스위처(점 5개)도 상단 바에 자리가 좁으니 조금 더 작게 */
-  .theme-switcher{ gap: 5px; flex-shrink: 0; }
-  .theme-swatch{ width: 14px; height: 14px; }
   .avatar{ width: 40px; height: 40px; flex-shrink: 0; max-width: none; border-radius: 12px; }
   .avatar span{ font-size: 16px; }
   .profile{ flex-direction: row; align-items: center; gap: 10px; }
@@ -1102,7 +977,7 @@ input, textarea, select{ cursor: text !important; }
   margin: -8px 0 0 -8px;
   border-radius: 50%;
   background: var(--accent-grad);
-  box-shadow: 0 0 14px 2px rgba(var(--accent-rgb), 0.55);
+  box-shadow: 0 0 14px 2px rgba(57, 197, 187, 0.55);
   pointer-events: none;
   z-index: 10000;
   opacity: 0;
@@ -1120,7 +995,7 @@ input, textarea, select{ cursor: text !important; }
 .cursor-sparkle {
   position: fixed;
   z-index: 9999;
-  color: var(--accent-solid);
+  color: #39c5bb;
   font-size: 14px;
   font-weight: bold;
   pointer-events: none;
