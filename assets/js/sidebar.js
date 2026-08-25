@@ -58,6 +58,65 @@
     '</div>' +
     '<nav class="nav-group">' + navHtml + '</nav>' +
     '<div class="sidebar-sea">' +
+      '<div class="sea-sky">' +
+        '<div class="sea-stars"></div>' +
+        '<div class="sea-sun"></div>' +
+        '<div class="sea-cloud c1"></div>' +
+        '<div class="sea-cloud c2"></div>' +
+        '<div class="sea-cloud c3"></div>' +
+        '<div class="sea-island i1"></div>' +
+        '<div class="sea-island i2"></div>' +
+      '</div>' +
+      '<div class="sea-water">' +
+        '<div class="sea-reflection"></div>' +
+        '<div class="sea-waves w1"></div>' +
+        '<div class="sea-waves w2"></div>' +
+      '</div>' +
+      '<div class="sea-sand"></div>' +
+      '<div class="sea-hud">' +
+        '<div class="sea-clock" data-role="sea-clock">--:--</div>' +
+        '<div class="sea-date" data-role="sea-date">----.--.--</div>' +
+      '</div>' +
       '<div class="sidebar-footer">' + escapeHtml(cfg.copyright) + '</div>' +
     '</div>';
+
+  // ── 사이드바 바다의 시간대(밤/새벽/낮/해질녘) + 픽셀 시계·날짜 ──
+  // 사용자 요청: "밤/새벽/낮/해질녘을 설정해서 시간에 맞게 바다 색과 하늘 색이
+  // 변하는 느낌으로... 아래에는 픽셀로 11:28 / 2026.xx.xx 이런 식으로 날짜랑
+  // 시간을 추가." 실제 색상 값은 style.css의 .sidebar-sea[data-time="..."]가
+  // 담당하고, 여기서는 (1) 지금이 몇 시인지 보고 4구간 중 하나로 판정해서
+  // data-time 속성만 붙이고, (2) 시계/날짜 텍스트를 채워 넣는다.
+  // 경계 시각(임의로 정한 값, 필요하면 아래 숫자만 조정하면 됨):
+  //   새벽(dawn) 05:00–07:59 / 낮(day) 08:00–16:59 /
+  //   해질녘(dusk) 17:00–19:59 / 밤(night) 20:00–04:59
+  var seaEl = mount.querySelector('.sidebar-sea');
+  var clockEl = mount.querySelector('[data-role="sea-clock"]');
+  var dateEl = mount.querySelector('[data-role="sea-date"]');
+
+  function timeSegmentFor(hour) {
+    if (hour >= 5 && hour < 8) return 'dawn';
+    if (hour >= 8 && hour < 17) return 'day';
+    if (hour >= 17 && hour < 20) return 'dusk';
+    return 'night';
+  }
+
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+  function updateSeaClock() {
+    if (!seaEl) return;
+    var now = new Date();
+    seaEl.setAttribute('data-time', timeSegmentFor(now.getHours()));
+    if (clockEl) {
+      clockEl.textContent = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    }
+    if (dateEl) {
+      dateEl.textContent =
+        now.getFullYear() + '.' + pad2(now.getMonth() + 1) + '.' + pad2(now.getDate());
+    }
+  }
+
+  updateSeaClock();
+  // 1분마다 다시 확인 — 분이 바뀌거나(시계), 시간대 경계(05/08/17/20시)를
+  // 넘어가면(하늘/바다 색) 페이지를 새로고침하지 않아도 자동으로 갱신됨.
+  setInterval(updateSeaClock, 60 * 1000);
 })();

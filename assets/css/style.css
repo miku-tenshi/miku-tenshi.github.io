@@ -108,10 +108,27 @@ a{ color: inherit; text-decoration: none; }
   flex-shrink: 0;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--chrome-border);
-  padding: 68px 56px;
+  padding: 48px 56px;
   display: flex;
   flex-direction: column;
-  gap: 52px;
+  gap: 34px;
+  /* 사이드바를 화면(뷰포트)에 고정 — 원래는 position 지정이 없어서 .app(flex row)의
+     기본 align-items:stretch 때문에 옆 .main 칼럼과 "같은 높이"로 늘어났음. 글이 많아
+     .main이 한 화면보다 훨씬 길어지는 페이지(홈의 최근 글 목록, study 글 목록 등)에서는
+     사이드바도 그만큼 길게 늘어나 버려서, 맨 아래에 있는 .sidebar-sea(바다)가 페이지
+     맨 아래(main 길이만큼 스크롤해야 하는 곳)까지 밀려나 사실상 안 보이는 문제가
+     있었음(사용자가 "바다가 안 보인다"고 보고한 원인 — 데스크탑 브라우저에서
+     새로고침해도 재현됨). position:sticky + top:0으로 사이드바를 화면 스크롤에
+     붙여두면, main 내용이 아무리 길어도 사이드바(와 그 안의 바다)는 항상 "화면
+     기준"으로만 움직임 — 화면보다 사이드바 내용이 더 큰 경우에도 스크롤해야 하는
+     양이 main 전체 길이가 아니라 사이드바 자신의 초과분만큼으로 줄어듦.
+     아바타·메뉴 폰트/크기 자체는 원래 사용자가 지정한 값 그대로 유지하되(다시
+     줄이지 말라고 했던 부분), 블록 사이 여백(gap 52→34px)과 사이드바 위아래
+     padding(68→48px)만 줄여서 바다가 들어갈 공간을 조금 더 확보함 — 그래도
+     화면이 아주 작으면 여전히 살짝 스크롤은 필요할 수 있지만, 이제 그 스크롤이
+     "고정된 사이드바 안에서 아주 조금"으로 끝나고 main 콘텐츠 길이와는 무관해짐. */
+  position: sticky;
+  top: 0;
 }
 
 .profile{
@@ -172,14 +189,17 @@ a{ color: inherit; text-decoration: none; }
   gap: 5px;
   padding: 20px 22px;
   border-radius: 14px;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--ink-soft);
   cursor: pointer;
   border: none;
   background: transparent;
   text-align: left;
   width: 100%;
-  font-family: inherit;
+  /* 메뉴(사이드바 nav) 글자도 제목처럼 픽셀 레트로 폰트로 통일 — 사용자가 "메뉴창도
+     다 레트로 글씨로" 요청. inherit(본문 Pretendard)이던 것을 --font-pixel로 교체하고,
+     픽셀 폰트가 20px에서는 다소 두꺼워 보여서 다른 픽셀 적용 제목들처럼 18px로 살짝 줄임. */
+  font-family: var(--font-pixel);
   font-weight: 500;
   transition:
     color 0.2s ease,
@@ -263,104 +283,375 @@ a{ color: inherit; text-decoration: none; }
   transform: scale(1.2);
 }
 
-/* 사이드바 아랫부분(메뉴 목록 밑의 남는 공간)이 통째로 "바다"가 되는 장식 —
-   네모난 카드가 아니라 사이드바 왼쪽/오른쪽/아래 끝까지 실제로 물이 차 있는 것처럼
-   보이도록, 사이드바 자체의 좌우 여백(padding: 68px 56px)만큼 음수 마진으로
-   바깥까지 밀어서 채운다. 저작권 문구(.sidebar-footer)도 이 안에 함께 들어가서
-   "물 위에 떠 있는" 것처럼 보인다. sidebar.js가 nav-group 바로 다음에 이 div를
-   그려 넣는다(이 안에 파도 두 겹 + sidebar-footer가 들어있음).
+/* 사이드바 아랫부분(메뉴 목록 밑의 남는 공간) — 픽셀 아트 해변/바다 풍경 (v4)
+   ─────────────────────────────────────────────────────────────────────────
+   사용자가 참고 사진(도트 하늘 + 뭉게구름 + 태양 + 수평선의 섬 실루엣 + 파도치는
+   바다 + 모래사장으로 구성된 픽셀 아트 해변)을 보내며 "바다를 저 사진처럼 픽셀
+   아트로, 하늘이 배경색이랑 이어지도록, 파도가 계속 치는 느낌으로 움직이게,
+   밤/새벽/낮/해질녘에 따라 바다·하늘 색이 바뀌게, 아래에 픽셀 글씨로 시간·날짜를"
+   요청해서 v3(수중 그라데이션 한 덩어리)를 완전히 다시 만든 버전.
 
-   v3: "파도 모양이 담긴 네모 칸" 느낌이 너무 인위적이라는 피드백을 받고, 참고
-   사진(수중 사진 — 위에서 빛줄기가 비스듬히 내려오고, 표면 쪽은 밝은 청록, 아래로
-   갈수록 짙은 남색으로 어두워지고, 잔거품이 위로 떠오르는 느낌)에 맞춰 다시 만든
-   버전. 이제 "파도 모양"을 그리는 대신 통째로 물 속에 들어와 있는 느낌을 낸다:
-     1) 본체 배경 자체가 위(밝은 청록, 빛이 들어오는 수면 쪽)→아래(짙은 남색, 깊은
-        바다)로 이어지는 세로 그라데이션.
-     2) ::before = 비스듬한 빛줄기(light shafts). repeating-linear-gradient를
-        대각선으로 깔고 mix-blend-mode:screen으로 얹어서 빛이 물을 투과하는
-        투명한 느낌을 내고, background-position을 천천히 대각선으로 흘려서
-        빛이 흔들리는(찰랑거리는) 것처럼 움직인다.
-     3) ::after = 자잘한 기포. 여러 개의 작은 radial-gradient를 한 타일에 흩뿌려
-        놓고 세로로 반복(repeat-y)한 뒤, background-position-y를 위로 계속
-        흘려서(loop) 기포가 끊임없이 수면 쪽으로 떠오르는 것처럼 보이게 한다.
-     4) 위쪽 가장자리에 흰색 inset box-shadow를 살짝 얹어서 수면 근처가 빛을
-        받아 밝아 보이는 유리질/투명감을 더한다.
-   두 레이어 다 mix-blend-mode:screen이라 짙은 배경 위에서만 밝게 겹쳐 보이고
-   sidebar-footer 위로는 z-index로 가려지지 않는다(footer가 z-index:1). */
+   실제 래스터 이미지를 쓰지 않고 전부 CSS만으로 그린다(사이트 전체가 CSS만으로
+   픽셀 느낌을 내는 기존 방식과 통일 + 파일 용량 절감). 사이드바 자체의 좌우/아래
+   padding만큼 음수 마진으로 바깥까지 밀어서(v2부터 쓰던 트릭) 카드가 아니라 진짜
+   가장자리까지 풍경이 닿게 한다.
+
+   구조(위→아래로 쌓인 layer, 전부 sidebar.js가 렌더링):
+     .sea-sky    — 하늘. 세로 그라데이션 + 작은 점(halftone) 텍스처 오버레이,
+                   그 안에 태양/달(.sea-sun), 별(.sea-stars, 밤에만), 구름 3개
+                   (.sea-cloud), 수평선의 섬 실루엣 2개(.sea-island)가 들어있음.
+                   flex:1이라 사이드바 남는 공간만큼 위아래로 늘었다 줄었다 함.
+     .sea-water  — 바다. 세로 그라데이션(수면 쪽 밝고 깊은 쪽 어두움) + 태양/달
+                   아래로 비치는 빛기둥(.sea-reflection) + 반복되면서 옆으로
+                   흘러가는 거품 파도 두 겹(.sea-waves, "파도가 계속 치는 느낌"의
+                   핵심). 높이 고정.
+     .sea-sand   — 모래사장. 옅은 점 텍스처가 있는 그라데이션. 높이 고정.
+     .sea-hud    — 왼쪽 아래에 떠 있는 픽셀 글씨 시계/날짜(.sea-clock/.sea-date),
+                   assets/js/sidebar.js가 매 순간 채워 넣고 주기적으로 갱신함.
+     .sidebar-footer — 저작권 문구, 오른쪽 아래(모래 위)에 떠 있게 재배치.
+
+   시간대별 색상: .sidebar-sea[data-time="night|dawn|day|dusk"]에 따라 하늘/바다/
+   모래/태양(=달)/구름 색을 전부 CSS 변수(--sky-a 등)로 바꿔치기한다. 실제 몇 시가
+   어느 구간인지 판정하고 data-time 속성을 붙이는 것, 그리고 시계/날짜 텍스트를
+   채우는 것은 assets/js/sidebar.js의 역할(이 CSS는 "이미 정해진 시간대에 맞는
+   색"만 담당) — 새 시간대를 추가하거나 경계 시각을 바꾸고 싶으면 sidebar.js의
+   해당 로직과 여기 data-time 블록을 함께 고쳐야 함.
+
+   시간대가 바뀔 때 색은 부드럽게 크로스페이드되지 않고 즉시 전환됨(그라데이션의
+   색상 정지점을 애니메이션하는 건 브라우저 지원이 불안정해서 일부러 단순하게
+   감). 대신 페이지를 오래 열어두면 sidebar.js가 주기적으로 시간을 다시 확인해서
+   자정 같은 경계를 넘는 순간 자동으로 갱신됨. */
 .sidebar-sea{
   flex: 1;
-  min-height: 120px;
+  min-height: 150px;
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  margin: 0 -56px -68px -56px;
-  padding: 34px 56px 22px;
+  isolation: isolate; /* 안의 mix-blend-mode(빛기둥)가 이 박스 밖으로 새지 않게 */
   overflow: hidden;
-  background: linear-gradient(
-    180deg,
-    #2fd0d6 0%,
-    #12a0ae 22%,
-    #0e7fa0 45%,
-    #0b5b8d 68%,
-    #0a3d68 86%,
-    #061c33 100%
-  );
-  box-shadow: inset 0 48px 70px -32px rgba(255, 255, 255, 0.32);
+  /* -68px였던 아래쪽 값은 .sidebar의 위아래 padding을 68px→48px로 줄인 것에 맞춰
+     -48px로 함께 조정 — 이 값이 .sidebar의 실제 bottom padding과 정확히 같아야
+     사이드바 진짜 가장자리까지 딱 맞게 뚫고 나감(어긋나면 밑에 여백이 남거나
+     넘쳐서 잘림). */
+  margin: 0 -56px -48px -56px;
+
+  /* 기본값(=day) — JS가 실행되기 전이나 실패했을 때의 안전한 폴백. */
+  --sky-a: #8fd3f4;
+  --sky-b: #d7f1fb;
+  --sky-dot: rgba(255, 255, 255, 0.6);
+  --sun-color: #fff6d2;
+  --sun-glow: rgba(255, 246, 190, 0.55);
+  --sun-size: 30px;
+  --sun-top: 16%;
+  --cloud-color: #ffffff;
+  --cloud-opacity: 0.95;
+  --island-color: #3c5a72;
+  --ocean-a: #4cb6e8;
+  --ocean-b: #1f83c9;
+  --ocean-c: #125a99;
+  --foam-color: rgba(255, 255, 255, 0.92);
+  --sand-a: #f4e0ae;
+  --sand-b: #e2bf85;
 }
 
-.sidebar-sea::before{
-  content: "";
-  position: absolute;
-  inset: -20% -45%;
-  background-image: repeating-linear-gradient(
-    112deg,
-    transparent 0px,
-    transparent 46px,
-    rgba(255, 255, 255, 0.18) 80px,
-    transparent 122px,
-    transparent 192px
-  );
-  mix-blend-mode: screen;
-  opacity: 0.6;
-  animation: sea-rays 17s linear infinite;
-  pointer-events: none;
+/* 새벽 — 옅은 파랑에서 복숭아빛으로, 해가 수평선 가까이 낮게 크게 떠오름 */
+.sidebar-sea[data-time="dawn"]{
+  --sky-a: #7ba7d6;
+  --sky-b: #ffc79a;
+  --sky-dot: rgba(255, 255, 255, 0.5);
+  --sun-color: #ffe6b0;
+  --sun-glow: rgba(255, 190, 120, 0.6);
+  --sun-size: 40px;
+  --sun-top: 56%;
+  --cloud-color: #ffe9d6;
+  --cloud-opacity: 0.9;
+  --island-color: #5c6f86;
+  --ocean-a: #5c9dc9;
+  --ocean-b: #2f6f9e;
+  --ocean-c: #1b4569;
+  --foam-color: rgba(255, 240, 225, 0.85);
+  --sand-a: #f2d3a0;
+  --sand-b: #dba86e;
 }
 
-.sidebar-sea::after{
+/* 낮 — 참고 사진과 같은 밝은 하늘색, 해가 높이 뜸 */
+.sidebar-sea[data-time="day"]{
+  --sky-a: #8fd3f4;
+  --sky-b: #d7f1fb;
+  --sky-dot: rgba(255, 255, 255, 0.6);
+  --sun-color: #fff6d2;
+  --sun-glow: rgba(255, 246, 190, 0.55);
+  --sun-size: 30px;
+  --sun-top: 16%;
+  --cloud-color: #ffffff;
+  --cloud-opacity: 0.95;
+  --island-color: #3c5a72;
+  --ocean-a: #4cb6e8;
+  --ocean-b: #1f83c9;
+  --ocean-c: #125a99;
+  --foam-color: rgba(255, 255, 255, 0.92);
+  --sand-a: #f4e0ae;
+  --sand-b: #e2bf85;
+}
+
+/* 해질녘 — 위는 보랏빛, 수평선 쪽은 짙은 주황, 해가 낮고 크게 짐 */
+.sidebar-sea[data-time="dusk"]{
+  --sky-a: #3c2f66;
+  --sky-b: #ff8a5c;
+  --sky-dot: rgba(255, 255, 255, 0.35);
+  --sun-color: #ffb26b;
+  --sun-glow: rgba(255, 140, 90, 0.6);
+  --sun-size: 40px;
+  --sun-top: 58%;
+  --cloud-color: #ffd3b0;
+  --cloud-opacity: 0.85;
+  --island-color: #2c3448;
+  --ocean-a: #3a5f8a;
+  --ocean-b: #204066;
+  --ocean-c: #111f38;
+  --foam-color: rgba(255, 220, 200, 0.8);
+  --sand-a: #d9b98a;
+  --sand-b: #a9835a;
+}
+
+/* 밤 — 짙은 남색 하늘 + 별, 옅은 달빛, 구름은 숨김 */
+.sidebar-sea[data-time="night"]{
+  --sky-a: #0c1830;
+  --sky-b: #1c2c52;
+  --sky-dot: rgba(255, 255, 255, 0.28);
+  --sun-color: #eef2ff;
+  --sun-glow: rgba(180, 200, 255, 0.45);
+  --sun-size: 26px;
+  --sun-top: 20%;
+  --cloud-color: #405072;
+  --cloud-opacity: 0;
+  --island-color: #0c1524;
+  --ocean-a: #123049;
+  --ocean-b: #081b2c;
+  --ocean-c: #040f1c;
+  --foam-color: rgba(220, 230, 255, 0.55);
+  --sand-a: #6b6450;
+  --sand-b: #4a4436;
+}
+
+/* ── 하늘 ── */
+.sea-sky{
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 28px;
+  /* 맨 위쪽은 사이드바 자체 배경색(--sidebar-bg)에서 시작해서 하늘색으로
+     번져가듯 이어지게 함 — 사용자가 "하늘이 배경 색이랑 이어지도록" 요청한
+     부분. 사이드바 배경과 하늘 사이에 뚝 끊기는 경계선이 생기지 않도록 함. */
+  background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sky-a) 22%, var(--sky-b) 100%);
+  overflow: hidden;
+}
+
+/* 하늘 위에 얹는 작은 점(halftone) 텍스처 — 참고 사진의 "도트 하늘" 느낌 */
+.sea-sky::before{
   content: "";
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle 3px at 18% 92%, rgba(255, 255, 255, 0.62), transparent 65%),
-    radial-gradient(circle 4px at 52% 78%, rgba(255, 255, 255, 0.46), transparent 65%),
-    radial-gradient(circle 2px at 74% 96%, rgba(255, 255, 255, 0.56), transparent 65%),
-    radial-gradient(circle 3.5px at 34% 60%, rgba(255, 255, 255, 0.4), transparent 65%),
-    radial-gradient(circle 2.5px at 90% 86%, rgba(255, 255, 255, 0.5), transparent 65%),
-    radial-gradient(circle 2px at 8% 40%, rgba(255, 255, 255, 0.36), transparent 65%);
-  background-repeat: repeat-y;
-  background-size: 100% 220px;
-  background-position: 0 0;
-  mix-blend-mode: screen;
-  opacity: 0.85;
-  animation: sea-bubbles 8s linear infinite;
+  background-image: radial-gradient(var(--sky-dot) 1px, transparent 1.4px);
+  background-size: 6px 6px;
+  opacity: 0.55;
+  mix-blend-mode: overlay;
   pointer-events: none;
 }
 
-@keyframes sea-rays{
-  from{ background-position: 0 0; }
-  to{ background-position: -230px -150px; }
-}
-@keyframes sea-bubbles{
-  from{ background-position-y: 0; }
-  to{ background-position-y: -220px; }
+/* 태양(낮/새벽/해질녘) 또는 달(밤) — 같은 요소를 시간대별 CSS 변수로 재도색 */
+.sea-sun{
+  position: absolute;
+  right: 18%;
+  top: var(--sun-top);
+  width: var(--sun-size);
+  height: var(--sun-size);
+  border-radius: 50%;
+  background: var(--sun-color);
+  box-shadow: 0 0 18px 8px var(--sun-glow);
+  animation: sea-sun-glow 4s ease-in-out infinite;
 }
 
-.sidebar-sea .sidebar-footer{
+@keyframes sea-sun-glow{
+  0%, 100%{ box-shadow: 0 0 16px 7px var(--sun-glow); }
+  50%{ box-shadow: 0 0 24px 11px var(--sun-glow); }
+}
+
+/* 별(밤에만 보임) — 고정된 작은 점 8개를 한 배경에 흩뿌리고, 밤일 때만 은은하게
+   깜빡이는 애니메이션을 건다(다른 시간대는 opacity:0 그대로 정지). */
+.sea-stars{
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-image:
+    radial-gradient(1.4px 1.4px at 15% 20%, #fff 90%, transparent),
+    radial-gradient(1px 1px at 35% 45%, #fff 90%, transparent),
+    radial-gradient(1.4px 1.4px at 55% 15%, #fff 90%, transparent),
+    radial-gradient(1px 1px at 68% 35%, #fff 90%, transparent),
+    radial-gradient(1.4px 1.4px at 82% 22%, #fff 90%, transparent),
+    radial-gradient(1px 1px at 25% 55%, #fff 90%, transparent),
+    radial-gradient(1.4px 1.4px at 92% 48%, #fff 90%, transparent),
+    radial-gradient(1px 1px at 45% 62%, #fff 90%, transparent);
+  pointer-events: none;
+}
+
+.sidebar-sea[data-time="night"] .sea-stars{
+  animation: sea-twinkle 3.4s ease-in-out infinite;
+}
+
+@keyframes sea-twinkle{
+  0%, 100%{ opacity: 0.5; }
+  50%{ opacity: 1; }
+}
+
+/* 구름 3개 — 사각형(몸통) + 원 2개(::before/::after)를 겹쳐 뭉게구름 실루엣을
+   만드는 방식(추가 이미지·SVG 없이 순수 CSS 도형). 셋 다 천천히 좌우로
+   흔들리며 떠다니고(sea-cloud-drift), 밤에는 --cloud-opacity가 0이라 안 보임. */
+.sea-cloud{
+  position: absolute;
+  background: var(--cloud-color);
+  border-radius: 6px;
+  opacity: var(--cloud-opacity);
+  animation: sea-cloud-drift 10s ease-in-out infinite;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.sea-cloud::before, .sea-cloud::after{
+  content: "";
+  position: absolute;
+  background: var(--cloud-color);
+  border-radius: 50%;
+}
+
+.sea-cloud.c1{ top: 20%; left: 10%; width: 22px; height: 8px; }
+.sea-cloud.c1::before{ width: 12px; height: 12px; top: -6px; left: 2px; }
+.sea-cloud.c1::after{ width: 10px; height: 10px; top: -4px; left: 12px; }
+
+.sea-cloud.c2{ top: 12%; left: 52%; width: 30px; height: 9px; animation-duration: 12s; }
+.sea-cloud.c2::before{ width: 16px; height: 16px; top: -8px; left: 3px; }
+.sea-cloud.c2::after{ width: 13px; height: 13px; top: -6px; left: 17px; }
+
+.sea-cloud.c3{ top: 32%; left: 78%; width: 14px; height: 6px; animation-duration: 8s; animation-delay: -3s; }
+.sea-cloud.c3::before{ width: 9px; height: 9px; top: -5px; left: 1px; }
+.sea-cloud.c3::after{ width: 7px; height: 7px; top: -4px; left: 8px; }
+
+@keyframes sea-cloud-drift{
+  0%, 100%{ transform: translateX(0); }
+  50%{ transform: translateX(6px); }
+}
+
+/* 수평선의 먼 섬/바위 실루엣 — .sea-sky 맨 아래(=수평선)에 붙임 */
+.sea-island{
+  position: absolute;
+  bottom: -1px;
+  background: var(--island-color);
+  opacity: 0.65;
+  pointer-events: none;
+}
+.sea-island.i1{
+  left: 20%;
+  width: 34px;
+  height: 9px;
+  clip-path: polygon(0% 100%, 15% 40%, 35% 70%, 55% 15%, 75% 55%, 100% 100%);
+}
+.sea-island.i2{
+  right: 15%;
+  width: 22px;
+  height: 6px;
+  clip-path: polygon(0% 100%, 30% 25%, 60% 65%, 100% 100%);
+}
+
+/* ── 바다 ── */
+.sea-water{
   position: relative;
-  z-index: 1;
+  flex: 0 0 42px;
+  height: 42px;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--ocean-a), var(--ocean-b) 60%, var(--ocean-c));
+}
+
+/* 태양/달 바로 아래로 비치는 흐릿한 빛기둥(반사광) */
+.sea-reflection{
+  position: absolute;
+  inset: 0 14% 0 auto;
+  right: 14%;
+  width: 26%;
+  background: linear-gradient(180deg, var(--sun-color) 0%, transparent 75%);
+  opacity: 0.4;
+  filter: blur(1.5px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* 옆으로 끊임없이 흘러가는 거품 파도 두 겹(속도·위치·투명도를 다르게 줘서
+   시차 효과) — "파도가 계속 치는 느낌으로 움직이게" 요청의 핵심 구현. 오른쪽을
+   -40px 더 그려서(background-size 40px과 맞춤) 반복 이음매가 안 보이게 함. */
+.sea-waves{
+  position: absolute;
+  left: 0;
+  right: -24px;
+  height: 7px;
+  background-repeat: repeat-x;
+  background-size: 24px 7px;
+  /* 세로 줄무늬(체크무늬처럼 보임) 대신, 작은 반원 거품이 옆으로 죽 늘어선
+     모양(scallop)으로 — 픽셀 아트 파도 특유의 "몽글몽글한 거품 줄" 느낌. */
+  background-image: radial-gradient(circle at 12px 0px, var(--foam-color) 5.5px, transparent 6px);
+  pointer-events: none;
+}
+.sea-waves.w1{ bottom: 16px; opacity: 0.9; animation: sea-wave-scroll 2.6s linear infinite; }
+.sea-waves.w2{
+  bottom: 5px;
+  opacity: 0.55;
+  background-position-x: 12px; /* w1과 절반 어긋나게 시작해서 겹치지 않고 엇갈리게 */
+  animation: sea-wave-scroll 3.8s linear infinite reverse;
+}
+
+@keyframes sea-wave-scroll{
+  from{ background-position-x: 0; }
+  to{ background-position-x: -24px; }
+}
+
+/* ── 모래사장 ── */
+.sea-sand{
+  position: relative;
+  flex: 0 0 26px;
+  height: 26px;
+  background: linear-gradient(180deg, var(--sand-a), var(--sand-b));
+}
+.sea-sand::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1.4px);
+  background-size: 5px 5px;
+  pointer-events: none;
+}
+
+/* ── 시각/날짜 표시(왼쪽 아래) + 저작권(오른쪽 아래) — 둘 다 모래 위에 떠 있는
+   픽셀 글씨. 실제 "HH:MM"/"YYYY.MM.DD" 텍스트를 채우고, data-time 판정과 함께
+   주기적으로 갱신하는 것은 assets/js/sidebar.js가 담당(아래 참고). */
+.sea-hud{
+  position: absolute;
+  left: 14px;
+  bottom: 7px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-family: var(--font-pixel);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+.sea-clock{ font-size: 15px; font-weight: 700; line-height: 1; }
+.sea-date{ font-size: 10px; opacity: 0.85; line-height: 1; }
+
+.sidebar-sea .sidebar-footer{
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  z-index: 2;
   margin-top: 0;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.9);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
@@ -468,7 +759,11 @@ a{ color: inherit; text-decoration: none; }
   width: fit-content;
 }
 
-.window-body h2{ font-family: var(--font-pixel); font-size: 23px; font-weight: 700; margin: 0 0 18px; }
+/* 본문(글) 안의 제목은 레트로 픽셀 폰트를 쓰지 않음 — 사용자가 "본문의 제목은 원래
+   글씨체로(레트로 X)"라고 명확히 요청. 픽셀 느낌은 사이드바 이름/메뉴, 페이지 상단
+   breadcrumb 제목(.main-heading h1)처럼 UI/내비게이션 쪽에만 남기고, 실제로 쓴 글의
+   제목·소제목(h1~h4)은 본문과 같은 기본 폰트(Pretendard)로 되돌림. */
+.window-body h2{ font-size: 23px; font-weight: 700; margin: 0 0 18px; }
 
 .window-body p{ color: var(--ink-soft); line-height: 1.8; font-size: 17.5px; margin: 0 0 16px; }
 .window-body p:last-child{ margin-bottom: 0; }
@@ -483,9 +778,9 @@ a{ color: inherit; text-decoration: none; }
 }
 
 /* 마크다운으로 쓴 본문에서 나올 수 있는 요소들 (글쓰기 도구 산출물 포함) */
-.window-body h1{ font-family: var(--font-pixel); font-size: 26px; font-weight: 700; margin: 8px 0 20px; }
-.window-body h3{ font-family: var(--font-pixel); font-size: 18px; font-weight: 700; margin: 28px 0 12px; }
-.window-body h4{ font-family: var(--font-pixel); font-size: 16px; font-weight: 700; margin: 22px 0 10px; }
+.window-body h1{ font-size: 26px; font-weight: 700; margin: 8px 0 20px; }
+.window-body h3{ font-size: 18px; font-weight: 700; margin: 28px 0 12px; }
+.window-body h4{ font-size: 16px; font-weight: 700; margin: 22px 0 10px; }
 .window-body ul, .window-body ol{ color: var(--ink-soft); line-height: 1.85; font-size: 17.5px; margin: 0 0 16px; padding-left: 24px; }
 .window-body li{ margin-bottom: 4px; }
 .window-body a{ color: var(--accent-solid); text-decoration: underline; text-underline-offset: 2px; }
@@ -611,12 +906,18 @@ a{ color: inherit; text-decoration: none; }
      적게 차지하게 합니다. */
   .app{ flex-direction: column; }
   .sidebar{
+    /* 데스크탑에서 추가한 position:sticky(위 ".sidebar" 규칙 참고)는 모바일의
+       "상단 가로 아이콘 바" 레이아웃에는 맞지 않으므로 여기서 원래대로(문서 흐름에
+       따라 자연스럽게 배치되는 static) 되돌림. */
+    position: static;
+    height: auto;
     width: 100%;
     flex-direction: row;
     align-items: center;
     padding: 10px 14px;
     gap: 10px;
     overflow-x: auto;
+    overflow-y: visible;
   }
   .avatar{ width: 40px; height: 40px; flex-shrink: 0; max-width: none; border-radius: 12px; }
   .avatar span{ font-size: 16px; }
@@ -701,7 +1002,7 @@ input, textarea, select{ cursor: text !important; }
   .custom-cursor {
     display: none;
   }
-  .sidebar-sea::before, .sidebar-sea::after{ animation: none; }
+  .sea-sun, .sea-stars, .sea-cloud, .sea-waves.w1, .sea-waves.w2{ animation: none; }
   *, *::before, *::after{ cursor: auto !important; }
   a, button, .nav-item, .entry-list-item.clickable, .wbtn, .mode-btn, .page-btn:not(:disabled){
     cursor: pointer !important;
