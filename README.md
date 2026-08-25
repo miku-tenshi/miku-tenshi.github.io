@@ -1,5 +1,6 @@
 # miku-tenshi.github.io
 
+[miku-tenshi.github.io](https://miku-tenshi.github.io/)
 TIL(공부 기록)과 프로젝트를 정리하는 개인 홈페이지입니다. 사이드바 메뉴(Home / Study / Project / Contact)가 곧 실제 폴더이고, 그 폴더 안에 또 다른 폴더가 있을 수 있습니다(예: `study/db/`, `study/frontend/`).
 
 이 파일은 GitHub 저장소 설명용이라 사이트 화면에는 나타나지 않습니다.
