@@ -82,3 +82,48 @@
     if (e.key === 'Escape') exitAll();
   });
 })();
+
+
+// 마우스 효과
+(function () {
+  // 같은 코드가 중복 실행되는 것을 방지
+  if (window.cursorSparkleInitialized) return;
+  window.cursorSparkleInitialized = true;
+
+  const sparkles = ["✦", "✧", "⋆", "·"];
+
+  const colors = [
+    "#39c5bb",
+    "#67e8f9",
+    "#60a5fa",
+    "#ffffff"
+  ];
+
+  let lastTime = 0;
+
+  document.addEventListener("mousemove", function (event) {
+    const now = Date.now();
+
+    if (now - lastTime < 45) return;
+    lastTime = now;
+
+    const sparkle = document.createElement("span");
+
+    sparkle.className = "cursor-sparkle";
+
+    sparkle.textContent =
+      sparkles[Math.floor(Math.random() * sparkles.length)];
+
+    sparkle.style.color =
+      colors[Math.floor(Math.random() * colors.length)];
+
+    sparkle.style.left = event.clientX + "px";
+    sparkle.style.top = event.clientY + "px";
+
+    document.body.appendChild(sparkle);
+
+    setTimeout(function () {
+      sparkle.remove();
+    }, 700);
+  });
+})();
