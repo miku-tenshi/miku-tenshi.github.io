@@ -43,6 +43,18 @@
   .field .hint{ display:block; margin-top:5px; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 
+  /* 폴더 입력창 아래에 실제 존재하는 폴더를 칩(pill)으로 보여준다 — 눌러서 채워 넣거나
+     보고 참고만 해도 된다. 저장소 트리를 아직 못 불러왔거나(로그인 전) 폴더가 하나도
+     없으면 조용히 비어있는 채로 둔다(loadFolderList() 참고). */
+  .folder-picker{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .folder-chip{
+    display:inline-flex; align-items:center; gap:4px; padding: 5px 11px; border-radius: 999px;
+    border:1px solid var(--chrome-border); background:#fff; color: var(--ink-soft);
+    font-size: 12.5px; font-family:inherit; cursor:pointer; white-space:nowrap;
+  }
+  .folder-chip:hover{ border-color: var(--accent-solid); color: var(--accent-solid); background: var(--accent-soft); }
+  .folder-chip .depth-dot{ color: var(--ink-faint); }
+
   /* 글쓰기 창(window-body) — 본문만 놓는다. 실제 입력은 평범한 textarea가 받고
      (Enter/undo/IME/붙여넣기 전부 브라우저 기본 동작 그대로라 안전하다), 그 밑에
      똑같은 폰트/여백으로 겹쳐놓은 읽기 전용 레이어가 마크다운 문법을 타이핑하는
@@ -101,10 +113,17 @@
      실제 사이트와 비슷한 크기로 바로 커진다. 위 가짜 커서 덕분에, 여기서 글자
      크기를 바꿔도 커서 위치는 항상 정확하게 따라온다. */
   .md-mark{ color: var(--ink-faint); }
+<<<<<<< HEAD
   .md-h1{ font-size:26px; font-weight:800; color: var(--accent-solid); }
   .md-h2{ font-size:22px; font-weight:800; color: var(--accent-solid); }
   .md-h3{ font-size:19px; font-weight:700; color: var(--accent-solid); }
   .md-h4{ font-size:17px; font-weight:700; color: var(--accent-solid); }
+=======
+  .md-h1{ font-family: var(--font-pixel); font-size:24px; font-weight:700; color: var(--accent-solid); }
+  .md-h2{ font-family: var(--font-pixel); font-size:20px; font-weight:700; color: var(--accent-solid); }
+  .md-h3{ font-family: var(--font-pixel); font-size:17px; font-weight:700; color: var(--accent-solid); }
+  .md-h4{ font-family: var(--font-pixel); font-size:15px; font-weight:700; color: var(--accent-solid); }
+>>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
   .md-bold{ font-weight: 700; }
   .md-quote{ color: var(--ink-soft); font-style: italic; }
   .md-code{
@@ -122,6 +141,9 @@
   .wbtn-danger{ background: var(--danger-soft); color: var(--danger); }
   .wbtn-danger-solid{ background: var(--danger); color:#fff; }
   .wbtn:disabled{ opacity:.5; cursor:default; }
+  .wbtn-small{ padding: 8px 14px; font-size: 13.5px; border-radius: 10px; }
+
+  .attach-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
 
   /* 글쓰기 창 안쪽, 본문 바로 아래에 붙는 툴바 — overflow:auto인
      window-body 안에서 sticky이므로 전체화면으로 펼쳐도 스크롤 없이 항상 보인다. */
@@ -189,7 +211,8 @@
         <div id="fields-post">
           <div class="field">
             <label>대상 폴더 경로 <span class="hint">예: study/db, project, contact</span></label>
-            <input type="text" id="p-folder" placeholder="study/db">
+            <input type="text" id="p-folder" placeholder="study/db" list="folder-suggestions" autocomplete="off">
+            <div class="folder-picker" id="folder-picker-p"></div>
           </div>
           <div class="row2">
             <div class="field">
@@ -217,7 +240,8 @@
         <div id="fields-folder" style="display:none;">
           <div class="field">
             <label>상위 폴더 경로 <span class="hint">예: study</span></label>
-            <input type="text" id="f-parent" placeholder="study">
+            <input type="text" id="f-parent" placeholder="study" list="folder-suggestions" autocomplete="off">
+            <div class="folder-picker" id="folder-picker-f"></div>
           </div>
           <div class="field" style="margin-bottom:0;">
             <label>새 폴더 이름(슬러그) <span class="hint">영문 권장</span></label>
@@ -230,7 +254,8 @@
           <div class="row2">
             <div class="field">
               <label>대상 폴더 경로 <span class="hint">예: study/db</span></label>
-              <input type="text" id="e-folder" placeholder="study/db">
+              <input type="text" id="e-folder" placeholder="study/db" list="folder-suggestions" autocomplete="off">
+              <div class="folder-picker" id="folder-picker-e"></div>
             </div>
             <div class="field">
               <label>파일명(슬러그)</label>
@@ -255,6 +280,11 @@
         </div>
       </div>
 
+      <!-- 폴더 입력창 3개가 공유하는 자동완성 목록 — 실제 저장소에 있는 폴더로 채워진다
+           (아래 loadFolderList()). 키보드로 입력하면서 브라우저 기본 자동완성으로도
+           뜨고, 그 아래 folder-picker 칩을 눌러서 클릭만으로 채울 수도 있다. -->
+      <datalist id="folder-suggestions"></datalist>
+
       <article class="window" id="editor-window" data-no-autofocus>
         <div class="window-chrome" id="editor-chrome">
           <div class="chrome-dots"><span></span><span></span><span></span></div>
@@ -265,6 +295,11 @@
 
           <div class="editor-pane">
             <div class="editor-pane-label" id="body-label">본문 <span class="hint">마크다운 문법을 쓰면 바로 스타일이 적용돼요 — # 제목, **굵게**, `코드`, - 목록, &gt; 인용</span></div>
+            <div class="attach-row">
+              <input type="file" id="attach-file-input" accept="image/*,.pdf,application/pdf" style="display:none;">
+              <button class="wbtn wbtn-ghost wbtn-small" id="btn-attach" type="button">이미지 · PDF 첨부</button>
+              <span class="hint">업로드하면 커서 위치에 마크다운으로 자동 삽입돼요 (3MB 이하)</span>
+            </div>
             <div class="live-editor-wrap">
               <div class="live-editor-highlight" id="editor-highlight" aria-hidden="true"></div>
               <div class="editor-caret" id="editor-caret" aria-hidden="true"></div>
@@ -340,6 +375,7 @@
 <div class="backdrop" id="backdrop"></div>
 <script src="/assets/js/marked.umd.js"></script>
 <script src="/assets/js/window.js"></script>
+<script src="/assets/js/retro-log.js"></script>
 
 <script>
 (function(){
@@ -482,6 +518,28 @@
     if (!res.ok) throw new Error('PUT ' + path + ' 실패 (' + res.status + '): ' + (await res.text()));
     return res.json();
   }
+  // 이미지/PDF 같은 바이너리 첨부 업로드 전용 — ghPutFile()과 달리 content를 텍스트로
+  // 취급해 UTF-8 인코딩하지 않고, 파일에서 직접 뽑아낸 base64를 그대로 보낸다.
+  async function ghPutFileRaw(cfg, path, base64Content, message){
+    const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + encodePath(path);
+    const body = { message: message, content: base64Content, branch: cfg.branch };
+    const res = await fetch(url, { method:'PUT', headers: Object.assign({'Content-Type':'application/json'}, authHeaders(cfg.token)), body: JSON.stringify(body) });
+    if (!res.ok) throw new Error('PUT ' + path + ' 실패 (' + res.status + '): ' + (await res.text()));
+    return res.json();
+  }
+  function fileToBase64(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // readAsDataURL 결과는 "data:image/png;base64,AAAA..." 형태라 콤마 뒤만 취한다.
+        const result = reader.result || '';
+        const comma = result.indexOf(',');
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = () => reject(new Error('파일을 읽지 못했어요.'));
+      reader.readAsDataURL(file);
+    });
+  }
   async function ghDeleteFile(cfg, path, sha, message){
     const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + encodePath(path);
     const res = await fetch(url, {
@@ -551,6 +609,55 @@
   // 이 스크립트 전체가 멈추고 아래의 모드 전환 버튼 리스너도 등록되지 않았던 버그가 있었음).
   updateEditorPath();
   updatePublishButtonLabel();
+<<<<<<< HEAD
+=======
+  loadFolderList();
+
+  // ---------------------------------------------------------------
+  // 폴더 시각화 — 저장소에 어떤 폴더가 이미 있는지 안 보고 텍스트만 입력하면
+  // 오타로 새 폴더가 잘못 생기기 쉬워서, Git Trees API로 폴더 목록을 한 번에
+  // 가져와 datalist(자동완성) + 클릭용 칩으로 보여준다.
+  // ---------------------------------------------------------------
+  async function loadFolderList(){
+    if (!GH_CFG) return;
+    try{
+      const url = 'https://api.github.com/repos/' + GH_CFG.owner + '/' + GH_CFG.repo +
+        '/git/trees/' + encodeURIComponent(GH_CFG.branch) + '?recursive=1';
+      const res = await fetch(url, { headers: authHeaders(GH_CFG.token) });
+      if (!res.ok) return; // 폴더 시각화는 부가 기능이라 실패해도 조용히 넘어감(직접 입력은 계속 가능)
+      const json = await res.json();
+      const folders = (json.tree || [])
+        .filter(item => item.type === 'tree' && /^(study|project|contact)(\/|$)/.test(item.path))
+        .map(item => item.path)
+        .sort();
+
+      const datalist = document.getElementById('folder-suggestions');
+      datalist.innerHTML = folders.map(f => '<option value="' + f.replace(/"/g,'&quot;') + '">').join('');
+
+      renderFolderPicker('folder-picker-p', 'p-folder', folders);
+      renderFolderPicker('folder-picker-f', 'f-parent', folders);
+      renderFolderPicker('folder-picker-e', 'e-folder', folders);
+    }catch(e){
+      // 네트워크 오류 등 — 폴더 칩 없이도 직접 입력으로 계속 쓸 수 있으니 무시
+    }
+  }
+  function renderFolderPicker(containerId, inputId, folders){
+    const el = document.getElementById(containerId);
+    if (!folders.length){ el.innerHTML = ''; return; }
+    el.innerHTML = folders.map(f => {
+      const depth = f.split('/').length - 1;
+      const dots = depth > 0 ? '<span class="depth-dot">' + '· '.repeat(depth) + '</span>' : '';
+      return '<button type="button" class="folder-chip" data-path="' + f.replace(/"/g,'&quot;') + '">' + dots + f.split('/').pop() + '/</button>';
+    }).join('');
+    el.querySelectorAll('.folder-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const input = document.getElementById(inputId);
+        input.value = chip.dataset.path;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    });
+  }
+>>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 
   function updatePublishButtonLabel(){
     const btn = document.getElementById('btn-publish');
@@ -657,6 +764,24 @@
     syncHighlight();
     updateEditorCaret();
   }
+<<<<<<< HEAD
+=======
+  // 현재 커서(진짜 textarea 캐럿) 위치에 텍스트를 끼워 넣는다 — 이미지/PDF 첨부를
+  // 업로드한 뒤 마크다운 링크를 자동으로 넣어줄 때 씀.
+  function insertAtCursor(text){
+    const editorEl = document.getElementById('editor-textarea');
+    const start = editorEl.selectionStart, end = editorEl.selectionEnd;
+    const value = editorEl.value;
+    const needsLeadingBreak = start > 0 && value[start - 1] !== '\n';
+    const insertion = (needsLeadingBreak ? '\n' : '') + text + '\n';
+    editorEl.value = value.slice(0, start) + insertion + value.slice(end);
+    const newPos = start + insertion.length;
+    editorEl.focus();
+    editorEl.setSelectionRange(newPos, newPos);
+    syncHighlight();
+    updateEditorCaret();
+  }
+>>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 
   // ---------------------------------------------------------------
   // 가짜 커서 위치 계산 — 실제 캐럿은 항상 "한 가지 글자 크기"만 아는 textarea
@@ -991,44 +1116,76 @@
   });
   document.getElementById('btn-delete-confirm').addEventListener('click', async () => {
     const log = document.getElementById('publish-log');
-    log.innerHTML = '';
-    if (!editState){ logTo(log, '❌ 삭제할 글 정보가 없어요.', 'err'); return; }
-    if (!GH_CFG){ logTo(log, '❌ 로그인 정보가 없어요.', 'err'); return; }
+    if (!editState){ const rl = RetroLog.start(log, 'deleting'); rl.fail('삭제할 글 정보가 없어요.'); return; }
+    if (!GH_CFG){ const rl = RetroLog.start(log, 'deleting'); rl.fail('로그인 정보가 없어요.'); return; }
     const btn = document.getElementById('btn-delete-confirm');
     btn.disabled = true;
+    const rl = RetroLog.start(log, 'deleting');
     try{
-      logTo(log, editState.path + ' 최신 상태 확인 중...', 'info');
       const fresh = await ghGetFile(GH_CFG, editState.path);
       if (!fresh) throw new Error(editState.path + ' 는 이미 삭제된 것 같아요.');
 
-      logTo(log, editState.path + ' 삭제 중...', 'info');
       await ghDeleteFile(GH_CFG, editState.path, fresh.sha, 'Delete post: ' + editState.path);
-      logTo(log, '✅ ' + editState.path + ' 삭제 완료', 'ok');
 
-      logTo(log, editState.parentIndexPath + ' 목록에서 제거 중...', 'info');
       const idx = await ghGetFile(GH_CFG, editState.parentIndexPath);
       if (idx){
         const updated = removeEntryLine(idx.content, '/' + editState.path);
         if (updated !== null){
           await ghPutFile(GH_CFG, editState.parentIndexPath, updated, 'Remove entry: ' + editState.path, idx.sha);
-          logTo(log, '✅ ' + editState.parentIndexPath + ' 갱신 완료', 'ok');
         }
       }
 
-      logTo(log, 'posts.json 갱신 중...', 'info');
       await syncManifestRemove('/' + editState.path);
-      logTo(log, '✅ posts.json 갱신 완료', 'ok');
 
       document.getElementById('delete-confirm').style.display = 'none';
+      const deletedPath = editState.path;
       editState = null;
       updatePublishButtonLabel();
       setEditorRawText('');
       document.getElementById('e-title').value = '';
       document.getElementById('e-date').value = '';
       document.getElementById('e-meta').value = '';
-      logTo(log, '🎉 삭제가 완료됐어요.', 'ok');
+      rl.done('complete', escapeHtml(deletedPath) + ' 삭제됨');
     }catch(e){
-      logTo(log, '❌ ' + e.message, 'err');
+      rl.fail(e.message);
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // 이미지 · PDF 첨부 — assets/uploads/ 아래로 GitHub에 바로 업로드하고,
+  // 업로드가 끝나면 본문 커서 위치에 마크다운을 자동으로 끼워 넣는다.
+  // ---------------------------------------------------------------
+  const ATTACH_MAX_BYTES = 3 * 1024 * 1024;
+  document.getElementById('btn-attach').addEventListener('click', () => {
+    document.getElementById('attach-file-input').click();
+  });
+  document.getElementById('attach-file-input').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const log = document.getElementById('publish-log');
+    const btn = document.getElementById('btn-attach');
+    if (!GH_CFG){ const rl = RetroLog.start(log, 'uploading'); rl.fail('로그인 정보가 없어요.'); return; }
+    if (file.size > ATTACH_MAX_BYTES){
+      const rl = RetroLog.start(log, 'uploading');
+      rl.fail('파일이 너무 커요 (3MB 이하만 올릴 수 있어요).');
+      return;
+    }
+    btn.disabled = true;
+    const rl = RetroLog.start(log, 'uploading');
+    try{
+      const base64 = await fileToBase64(file);
+      const safeName = file.name.replace(/[^\w.\-가-힣]+/g, '_');
+      const path = 'assets/uploads/' + Date.now().toString(36) + '-' + safeName;
+      await ghPutFileRaw(GH_CFG, path, base64, 'Upload attachment: ' + path);
+      const isImage = /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp|svg)$/i.test(file.name);
+      const md = (isImage ? '![' + file.name + ']' : '[' + file.name + ']') + '(/' + path + ')';
+      insertAtCursor(md);
+      rl.done('complete', '/' + path + ' 로 업로드되어 본문에 삽입했어요.');
+    }catch(err){
+      rl.fail(err.message);
     }finally{
       btn.disabled = false;
     }
@@ -1079,62 +1236,49 @@
   // ---------------------------------------------------------------
   document.getElementById('btn-publish').addEventListener('click', async () => {
     const log = document.getElementById('publish-log');
-    log.innerHTML = '';
     let data;
-    try{ data = currentData(); }catch(e){ logTo(log, '❌ ' + e.message, 'err'); return; }
-    if (!GH_CFG){ logTo(log, '❌ 로그인 정보가 없어요. 새로고침 후 토큰을 다시 입력해주세요.', 'err'); return; }
+    try{ data = currentData(); }catch(e){ const rl = RetroLog.start(log, 'publishing'); rl.fail(e.message); return; }
+    if (!GH_CFG){ const rl = RetroLog.start(log, 'publishing'); rl.fail('로그인 정보가 없어요. 새로고침 후 토큰을 다시 입력해주세요.'); return; }
 
     const btn = document.getElementById('btn-publish');
     btn.disabled = true;
+    const rl = RetroLog.start(log, currentMode === 'edit' ? 'saving' : 'publishing');
     try{
       if (currentMode === 'edit'){
-        logTo(log, data.filePath + ' 최신 상태 확인 중...', 'info');
         const fresh = await ghGetFile(GH_CFG, data.filePath);
         if (!fresh) throw new Error(data.filePath + ' 를 찾을 수 없어요. 이미 삭제되었을 수 있어요.');
 
-        logTo(log, data.filePath + ' 저장 중...', 'info');
         await ghPutFile(GH_CFG, data.filePath, data.fileHtml, 'Update post: ' + data.filePath, fresh.sha);
-        logTo(log, '✅ ' + data.filePath + ' 저장 완료', 'ok');
 
-        logTo(log, data.parentIndexPath + ' 목록 갱신 중...', 'info');
         const idx = await ghGetFile(GH_CFG, data.parentIndexPath);
         if (idx){
           const updated = replaceEntryLine(idx.content, '/' + data.filePath, data.entryLine);
           await ghPutFile(GH_CFG, data.parentIndexPath, updated, 'Update entry: ' + data.filePath, idx.sha);
-          logTo(log, '✅ ' + data.parentIndexPath + ' 갱신 완료', 'ok');
         }
 
-        logTo(log, 'posts.json 갱신 중...', 'info');
         await syncManifestUpsert(data);
-        logTo(log, '✅ posts.json 갱신 완료', 'ok');
 
-        logTo(log, '🎉 수정 완료! https://miku-tenshi.github.io/' + data.filePath + ' 에서 확인할 수 있어요.', 'ok');
+        rl.done('complete', '<a href="/' + data.filePath + '" target="_blank">/' + escapeHtml(data.filePath) + '</a> 에서 확인할 수 있어요.');
       } else {
-        logTo(log, data.filePath + ' 이 이미 있는지 확인 중...', 'info');
         const existing = await ghGetFile(GH_CFG, data.filePath);
         if (existing) throw new Error('이미 같은 이름이 있어요: ' + data.filePath + ' (이름을 바꿔주세요)');
 
-        logTo(log, data.filePath + ' 만드는 중...', 'info');
         await ghPutFile(GH_CFG, data.filePath, data.fileHtml, (currentMode === 'post' ? 'Add post: ' : 'Add folder: ') + data.filePath);
-        logTo(log, '✅ ' + data.filePath + ' 생성 완료', 'ok');
 
-        logTo(log, data.parentIndexPath + ' 목록에 추가하는 중...', 'info');
         const idx = await ghGetFile(GH_CFG, data.parentIndexPath);
         if (!idx) throw new Error(data.parentIndexPath + ' 를 찾지 못했어요. 경로를 확인해주세요.');
         const updated = insertEntryLine(idx.content, data.entryLine);
         await ghPutFile(GH_CFG, data.parentIndexPath, updated, 'List new item in ' + data.parentIndexPath, idx.sha);
-        logTo(log, '✅ ' + data.parentIndexPath + ' 업데이트 완료', 'ok');
 
         if (currentMode === 'post'){
-          logTo(log, 'posts.json 갱신 중...', 'info');
           await syncManifestUpsert(data);
-          logTo(log, '✅ posts.json 업데이트 완료', 'ok');
         }
 
-        logTo(log, '🎉 게시 완료! 1분 정도 후 https://miku-tenshi.github.io/' + data.filePath.replace(/\.html$/, currentMode === 'post' ? '.html' : '/').replace(/index\.html$/,'') + ' 에서 확인할 수 있어요.', 'ok');
+        const liveHref = '/' + data.filePath.replace(/\.html$/, currentMode === 'post' ? '.html' : '/').replace(/index\.html$/,'');
+        rl.done('complete', '1분 정도 후 <a href="' + liveHref + '" target="_blank">' + escapeHtml(liveHref) + '</a> 에서 확인할 수 있어요.');
       }
     }catch(e){
-      logTo(log, '❌ ' + e.message, 'err');
+      rl.fail(e.message);
     }finally{
       btn.disabled = false;
     }

@@ -2,7 +2,14 @@
    폴더 구조를 그대로 사이트 구조로 사용하는 멀티페이지 사이트.
    이 파일 하나를 모든 페이지에서 공유합니다. */
 
+/* 제목/강조 요소 전용 픽셀 레트로 폰트(한글 지원) — 본문은 계속 Pretendard를 쓰고,
+   h1/h2 제목, 프로필 이름, 카드 위 kicker 라벨처럼 "강조하고 싶은 부분"에만
+   --font-pixel 변수로 골라 쓴다. Galmuri는 한글/영문/숫자를 모두 지원하는
+   오픈소스(SIL OFL) 도트(픽셀) 폰트 패밀리. */
+@import url("https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css");
+
 :root {
+  --font-pixel: "Galmuri11", "Galmuri9", "Galmuri14", monospace;
   /* ─────────────────────────
      기본 배경
   ───────────────────────── */
@@ -153,7 +160,7 @@ a{ color: inherit; text-decoration: none; }
 
 .profile-text{ display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 
-.profile-name{ font-weight: 800; font-size: 38px; line-height: 1.3; }
+.profile-name{ font-family: var(--font-pixel); font-weight: 700; font-size: 30px; line-height: 1.4; }
 
 .profile-role{ font-size: 20px; color: var(--ink-soft); letter-spacing: 0.01em; }
 
@@ -261,7 +268,29 @@ a{ color: inherit; text-decoration: none; }
    보이도록, 사이드바 자체의 좌우 여백(padding: 68px 56px)만큼 음수 마진으로
    바깥까지 밀어서 채운다. 저작권 문구(.sidebar-footer)도 이 안에 함께 들어가서
    "물 위에 떠 있는" 것처럼 보인다. sidebar.js가 nav-group 바로 다음에 이 div를
+<<<<<<< HEAD
    그려 넣는다(이 안에 파도 두 겹 + sidebar-footer가 들어있음). */
+=======
+   그려 넣는다(이 안에 파도 두 겹 + sidebar-footer가 들어있음).
+
+   v3: "파도 모양이 담긴 네모 칸" 느낌이 너무 인위적이라는 피드백을 받고, 참고
+   사진(수중 사진 — 위에서 빛줄기가 비스듬히 내려오고, 표면 쪽은 밝은 청록, 아래로
+   갈수록 짙은 남색으로 어두워지고, 잔거품이 위로 떠오르는 느낌)에 맞춰 다시 만든
+   버전. 이제 "파도 모양"을 그리는 대신 통째로 물 속에 들어와 있는 느낌을 낸다:
+     1) 본체 배경 자체가 위(밝은 청록, 빛이 들어오는 수면 쪽)→아래(짙은 남색, 깊은
+        바다)로 이어지는 세로 그라데이션.
+     2) ::before = 비스듬한 빛줄기(light shafts). repeating-linear-gradient를
+        대각선으로 깔고 mix-blend-mode:screen으로 얹어서 빛이 물을 투과하는
+        투명한 느낌을 내고, background-position을 천천히 대각선으로 흘려서
+        빛이 흔들리는(찰랑거리는) 것처럼 움직인다.
+     3) ::after = 자잘한 기포. 여러 개의 작은 radial-gradient를 한 타일에 흩뿌려
+        놓고 세로로 반복(repeat-y)한 뒤, background-position-y를 위로 계속
+        흘려서(loop) 기포가 끊임없이 수면 쪽으로 떠오르는 것처럼 보이게 한다.
+     4) 위쪽 가장자리에 흰색 inset box-shadow를 살짝 얹어서 수면 근처가 빛을
+        받아 밝아 보이는 유리질/투명감을 더한다.
+   두 레이어 다 mix-blend-mode:screen이라 짙은 배경 위에서만 밝게 겹쳐 보이고
+   sidebar-footer 위로는 z-index로 가려지지 않는다(footer가 z-index:1). */
+>>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 .sidebar-sea{
   flex: 1;
   min-height: 120px;
@@ -272,6 +301,7 @@ a{ color: inherit; text-decoration: none; }
   margin: 0 -56px -68px -56px;
   padding: 34px 56px 22px;
   overflow: hidden;
+<<<<<<< HEAD
   /* 바닥색(깊은 바다) — 파도 두 겹이 이 색 위에 끝까지(컨테이너 높이 100%) 깔리기
      때문에, 사이드바 높이가 얼마가 되든(반응형 등) 파도 이미지와 바닥색 사이에
      이음매(색이 뚝 끊기는 선)가 생기지 않는다. */
@@ -284,10 +314,43 @@ a{ color: inherit; text-decoration: none; }
    높이가 얼마든 바닥색과의 경계가 보이지 않는다. 폭은 300px 한 칸이 파도
    한 주기라서 background-repeat: repeat-x로 이어붙여도 이음매가 안 보인다. */
 .sidebar-sea::before,
+=======
+  background: linear-gradient(
+    180deg,
+    #2fd0d6 0%,
+    #12a0ae 22%,
+    #0e7fa0 45%,
+    #0b5b8d 68%,
+    #0a3d68 86%,
+    #061c33 100%
+  );
+  box-shadow: inset 0 48px 70px -32px rgba(255, 255, 255, 0.32);
+}
+
+.sidebar-sea::before{
+  content: "";
+  position: absolute;
+  inset: -20% -45%;
+  background-image: repeating-linear-gradient(
+    112deg,
+    transparent 0px,
+    transparent 46px,
+    rgba(255, 255, 255, 0.18) 80px,
+    transparent 122px,
+    transparent 192px
+  );
+  mix-blend-mode: screen;
+  opacity: 0.6;
+  animation: sea-rays 17s linear infinite;
+  pointer-events: none;
+}
+
+>>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 .sidebar-sea::after{
   content: "";
   position: absolute;
   inset: 0;
+<<<<<<< HEAD
   background-repeat: repeat-x;
   background-size: 300px 100%;
   background-position: top left;
@@ -306,12 +369,43 @@ a{ color: inherit; text-decoration: none; }
 
 @keyframes sea-wave-a{ from{ background-position-x: 0; } to{ background-position-x: 300px; } }
 @keyframes sea-wave-b{ from{ background-position-x: 0; } to{ background-position-x: 300px; } }
+=======
+  background-image:
+    radial-gradient(circle 3px at 18% 92%, rgba(255, 255, 255, 0.62), transparent 65%),
+    radial-gradient(circle 4px at 52% 78%, rgba(255, 255, 255, 0.46), transparent 65%),
+    radial-gradient(circle 2px at 74% 96%, rgba(255, 255, 255, 0.56), transparent 65%),
+    radial-gradient(circle 3.5px at 34% 60%, rgba(255, 255, 255, 0.4), transparent 65%),
+    radial-gradient(circle 2.5px at 90% 86%, rgba(255, 255, 255, 0.5), transparent 65%),
+    radial-gradient(circle 2px at 8% 40%, rgba(255, 255, 255, 0.36), transparent 65%);
+  background-repeat: repeat-y;
+  background-size: 100% 220px;
+  background-position: 0 0;
+  mix-blend-mode: screen;
+  opacity: 0.85;
+  animation: sea-bubbles 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes sea-rays{
+  from{ background-position: 0 0; }
+  to{ background-position: -230px -150px; }
+}
+@keyframes sea-bubbles{
+  from{ background-position-y: 0; }
+  to{ background-position-y: -220px; }
+}
+>>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 
 .sidebar-sea .sidebar-footer{
   position: relative;
   z-index: 1;
   margin-top: 0;
+<<<<<<< HEAD
   color: rgba(255, 255, 255, 0.82);
+=======
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+>>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
 }
 
 .sidebar-footer{ margin-top: auto; font-size: 12.5px; color: var(--ink-faint); }
@@ -330,10 +424,11 @@ a{ color: inherit; text-decoration: none; }
 .main-heading{ width: 100%; max-width: 940px; margin-bottom: 30px; }
 
 .main-heading h1{
-  font-size: 40px;
+  font-family: var(--font-pixel);
+  font-size: 34px;
   font-weight: 700;
-  margin: 0 0 10px;
-  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+  letter-spacing: 0;
   background: var(--accent-grad);
   -webkit-background-clip: text;
   background-clip: text;
@@ -405,7 +500,8 @@ a{ color: inherit; text-decoration: none; }
 }
 
 .window-body .entry-date{
-  font-size: 14px;
+  font-family: var(--font-pixel);
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.03em;
   margin-bottom: 14px;
@@ -416,7 +512,7 @@ a{ color: inherit; text-decoration: none; }
   width: fit-content;
 }
 
-.window-body h2{ font-size: 27px; font-weight: 700; margin: 0 0 18px; }
+.window-body h2{ font-family: var(--font-pixel); font-size: 23px; font-weight: 700; margin: 0 0 18px; }
 
 .window-body p{ color: var(--ink-soft); line-height: 1.8; font-size: 17.5px; margin: 0 0 16px; }
 .window-body p:last-child{ margin-bottom: 0; }
@@ -431,9 +527,9 @@ a{ color: inherit; text-decoration: none; }
 }
 
 /* 마크다운으로 쓴 본문에서 나올 수 있는 요소들 (글쓰기 도구 산출물 포함) */
-.window-body h1{ font-size: 30px; font-weight: 800; margin: 8px 0 20px; }
-.window-body h3{ font-size: 21px; font-weight: 700; margin: 28px 0 12px; }
-.window-body h4{ font-size: 18px; font-weight: 700; margin: 22px 0 10px; }
+.window-body h1{ font-family: var(--font-pixel); font-size: 26px; font-weight: 700; margin: 8px 0 20px; }
+.window-body h3{ font-family: var(--font-pixel); font-size: 18px; font-weight: 700; margin: 28px 0 12px; }
+.window-body h4{ font-family: var(--font-pixel); font-size: 16px; font-weight: 700; margin: 22px 0 10px; }
 .window-body ul, .window-body ol{ color: var(--ink-soft); line-height: 1.85; font-size: 17.5px; margin: 0 0 16px; padding-left: 24px; }
 .window-body li{ margin-bottom: 4px; }
 .window-body a{ color: var(--accent-solid); text-decoration: underline; text-underline-offset: 2px; }
@@ -655,4 +751,31 @@ input, textarea, select{ cursor: text !important; }
     cursor: pointer !important;
   }
   input, textarea, select{ cursor: text !important; }
+<<<<<<< HEAD
 }
+=======
+}
+
+/* ---------- 레트로 진행 표시 (assets/js/retro-log.js) ----------
+   write/notes 등에서 GitHub에 저장·삭제할 때 "최신 상태 확인 중..." 같은 안내 문구를
+   줄줄이 쌓는 대신, 픽셀 폰트로 loading [# --------] 바를 움직이다가 끝나면
+   "> complete_" 한 줄만 남긴다(에러면 "> error: ..."). */
+.retro-log{ min-height: 1.6em; }
+.retro-loading, .retro-complete, .retro-error{
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.retro-loading{ color: var(--ink-soft); }
+.retro-loading .retro-caret{ color: var(--ink-faint); }
+.retro-loading .retro-bar{ color: var(--accent-solid); font-weight: 700; }
+.retro-complete{ color: var(--ok); }
+.retro-complete::before{ content: "> "; color: var(--ink-faint); }
+.retro-detail{
+  font-family: inherit; font-size: 12.5px; color: var(--ink-faint);
+  margin: 4px 0 0 16px; letter-spacing: 0; white-space: normal;
+}
+.retro-detail a{ color: var(--accent-solid); text-decoration: underline; }
+.retro-error{ color: var(--danger); }
+.retro-error::before{ content: "> "; color: var(--ink-faint); }
+>>>>>>> 989af15 (fix: 수정 부분 모두 고친 버전)
