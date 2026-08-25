@@ -19,7 +19,7 @@
   .mode-switch{ display:flex; gap:8px; width:100%; max-width:940px; margin-bottom:14px; flex-wrap:wrap; }
   .mode-btn{
     padding: 10px 18px; border-radius: 12px; border:1px solid var(--chrome-border);
-    background:#fff; font-family:inherit; font-size:14.5px; font-weight:600;
+    background: var(--chrome-bg); font-family:inherit; font-size:14.5px; font-weight:600;
     color: var(--ink-soft); cursor:pointer;
   }
   .mode-btn.active{ background: var(--accent-soft); color: var(--accent-solid); border-color:transparent; }
@@ -37,7 +37,7 @@
   .field label{ display:block; font-size: 13.5px; color: var(--ink-faint); margin-bottom: 6px; font-weight:600; }
   .field input[type=text], .field input[type=password], .field input[type=date], .field textarea{
     width:100%; box-sizing:border-box; border:1px solid var(--chrome-border); border-radius:10px;
-    padding: 10px 13px; font-size: 15.5px; font-family: inherit; background:#fbfafe; color: var(--ink);
+    padding: 10px 13px; font-size: 15.5px; font-family: inherit; background: var(--chrome-bg); color: var(--ink);
   }
   .field input:focus, .field textarea:focus{ outline:2px solid var(--accent-soft); border-color: var(--accent-solid); }
   .field textarea{ resize: vertical; line-height:1.7; }
@@ -50,7 +50,7 @@
   .folder-picker{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .folder-chip{
     display:inline-flex; align-items:center; gap:4px; padding: 5px 11px; border-radius: 999px;
-    border:1px solid var(--chrome-border); background:#fff; color: var(--ink-soft);
+    border:1px solid var(--chrome-border); background: var(--chrome-bg); color: var(--ink-soft);
     font-size: 12.5px; font-family:inherit; cursor:pointer; white-space:nowrap;
   }
   .folder-chip:hover{ border-color: var(--accent-solid); color: var(--accent-solid); background: var(--accent-soft); }
@@ -74,7 +74,7 @@
     white-space:pre-wrap; word-wrap:break-word; overflow:auto;
   }
   .live-editor-highlight{
-    pointer-events:none; color:var(--ink); background:#fbfafe;
+    pointer-events:none; color:var(--ink); background: var(--chrome-bg);
   }
   .live-editor-highlight div{ min-height:1.85em; }
   .live-editor-input{
@@ -149,7 +149,7 @@
 
   .status-log{
     width:100%; margin-top:14px; font-size: 14px; line-height:1.9;
-    background:#fbfafe; border:1px dashed var(--chrome-border); border-radius:12px;
+    background: var(--chrome-bg); border:1px dashed var(--chrome-border); border-radius:12px;
     padding: 14px 18px; white-space:pre-wrap;
   }
   .status-log:empty{ display:none; }

@@ -41,7 +41,7 @@
     border-bottom: 1px dashed var(--chrome-border); border-radius:6px; cursor:pointer;
     transition: background 0.15s ease;
   }
-  .note-row:hover{ background: rgba(89, 232, 230, 0.06); }
+  .note-row:hover{ background: rgba(var(--accent-rgb), 0.06); }
   .note-row:last-child{ border-bottom:none; }
   .note-row .n-main{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; }
   .note-row .n-title{
@@ -73,7 +73,7 @@
   .field label{ display:block; font-size: 13.5px; color: var(--ink-faint); margin-bottom: 6px; font-weight:600; }
   .field input[type=text], .field textarea{
     width:100%; box-sizing:border-box; border:1px solid var(--chrome-border); border-radius:10px;
-    padding: 10px 13px; font-size: 15.5px; font-family: inherit; background:#fbfafe; color: var(--ink);
+    padding: 10px 13px; font-size: 15.5px; font-family: inherit; background: var(--chrome-bg); color: var(--ink);
   }
   .field input:focus, .field textarea:focus{ outline:2px solid var(--accent-soft); border-color: var(--accent-solid); }
   .field textarea{ resize: vertical; line-height:1.7; min-height: 260px; }
