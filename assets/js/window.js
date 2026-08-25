@@ -126,12 +126,20 @@
   // ---- 반짝이 잔상 ----
   const sparkles = ["✦", "✧", "⋆", "·"];
 
-  const colors = [
-    "#39c5bb",
-    "#67e8f9",
-    "#60a5fa",
-    "#ffffff"
-  ];
+  // 반짝이 색은 더 이상 고정된 민트 계열 배열이 아니라, 지금 활성화된 색상
+  // 테마(assets/css/style.css의 --accent-start/--accent-end/--accent-solid,
+  // assets/js/sidebar.js가 <html data-theme="...">로 전환)를 그때그때 읽어서
+  // 정함 — 테마를 바꾸면 이미 화면에 있는 커서 점(.custom-cursor, CSS의
+  // var(--accent-grad))뿐 아니라 새로 생기는 반짝이도 즉시 그 테마의 포인트
+  // 색으로 나옴(페이지 새로고침 필요 없음). 흰색은 어느 테마에서나 잘 보이는
+  // 중립색이라 그대로 유지.
+  function currentAccentColors() {
+    const cs = getComputedStyle(document.documentElement);
+    const a = cs.getPropertyValue("--accent-start").trim() || "#39c5bb";
+    const b = cs.getPropertyValue("--accent-end").trim() || "#55a9e8";
+    const c = cs.getPropertyValue("--accent-solid").trim() || "#269fa0";
+    return [a, b, c, "#ffffff"];
+  }
 
   let lastTime = 0;
 
@@ -148,6 +156,7 @@
     sparkle.textContent =
       sparkles[Math.floor(Math.random() * sparkles.length)];
 
+    const colors = currentAccentColors();
     sparkle.style.color =
       colors[Math.floor(Math.random() * colors.length)];
 
