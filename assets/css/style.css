@@ -8,9 +8,14 @@
   --ink: #201f2b;
   --ink-soft: #6c6a80;
   --ink-faint: #a6a4b8;
-  --accent-start: #4f6df5;
-  --accent-end: #9b5cf6;
-  --accent-grad: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  --accent-start: #20b8b0;
+  --accent-end: #3b82f6;
+
+  --accent-grad: linear-gradient(
+    135deg,
+    var(--accent-start),
+    var(--accent-end));
+    
   --accent-solid: #6259e8;
   --accent-soft: #e3e0fb;
   --chrome-bg: #fffefd;
