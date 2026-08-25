@@ -9,6 +9,36 @@
   href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
 <link rel="stylesheet" href="/assets/css/style.css">
 </head>
+
+<script>
+(function () {
+  const sparkles = ["✦", "✧", "⋆", "·"];
+  let lastTime = 0;
+
+  document.addEventListener("mousemove", function (event) {
+    const now = Date.now();
+
+    // 반짝이가 지나치게 많이 생기는 것 방지
+    if (now - lastTime < 45) return;
+    lastTime = now;
+
+    const sparkle = document.createElement("span");
+    sparkle.className = "cursor-sparkle";
+    sparkle.textContent =
+      sparkles[Math.floor(Math.random() * sparkles.length)];
+
+    sparkle.style.left = event.clientX + "px";
+    sparkle.style.top = event.clientY + "px";
+
+    document.body.appendChild(sparkle);
+
+    setTimeout(function () {
+      sparkle.remove();
+    }, 700);
+  });
+})();
+</script>
+
 <body>
 
 <div class="app">
