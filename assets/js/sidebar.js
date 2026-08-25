@@ -47,6 +47,13 @@
   }).join('');
 
   mount.innerHTML =
+    '<div class="theme-switcher" data-role="theme-switcher">' +
+      '<button type="button" class="theme-swatch" data-theme-btn="default" title="기본(화이트·블랙·블루)" aria-label="기본 테마"></button>' +
+      '<button type="button" class="theme-swatch" data-theme-btn="dark" title="기본 다크" aria-label="다크 테마"></button>' +
+      '<button type="button" class="theme-swatch" data-theme-btn="blue" title="블루" aria-label="블루 테마"></button>' +
+      '<button type="button" class="theme-swatch" data-theme-btn="mint" title="민트" aria-label="민트 테마"></button>' +
+      '<button type="button" class="theme-swatch" data-theme-btn="pink" title="핑크" aria-label="핑크 테마"></button>' +
+    '</div>' +
     '<div class="profile">' +
       '<a class="avatar" href="/" title="홈으로 돌아가기">' +
         '<img src="' + cfg.avatarSrc + '" alt="' + escapeHtml(cfg.avatarAlt) + '">' +
@@ -119,4 +126,35 @@
   // 1분마다 다시 확인 — 분이 바뀌거나(시계), 시간대 경계(05/08/17/20시)를
   // 넘어가면(하늘/바다 색) 페이지를 새로고침하지 않아도 자동으로 갱신됨.
   setInterval(updateSeaClock, 60 * 1000);
+
+  // ── 색상 테마 스위처(사이드바 맨 위 점 5개) ──
+  // 실제 "지금 페이지가 어떤 테마로 보일지"는 각 페이지 <head> 맨 위의 인라인
+  // 스크립트가 이미 처음 방문 시(무작위) 또는 저장된 값으로 <html data-theme="...">를
+  // 붙여둔 상태 — 여기서는 (1) 그 값에 맞춰 점 중 하나를 "활성"으로 표시하고,
+  // (2) 점을 클릭하면 테마를 바꾸고 localStorage에 저장하는 역할만 담당함(같은
+  // THEME_KEY를 써야 함 — 인라인 스크립트/style.css 주석과 반드시 일치시킬 것).
+  var THEME_KEY = 'mt-theme';
+
+  function highlightThemeBtn(theme) {
+    var btns = mount.querySelectorAll('[data-theme-btn]');
+    for (var i = 0; i < btns.length; i++) {
+      var isActive = btns[i].getAttribute('data-theme-btn') === theme;
+      btns[i].classList.toggle('active', isActive);
+    }
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* 개인정보 보호 모드 등 — 무시 */ }
+    highlightThemeBtn(theme);
+  }
+
+  highlightThemeBtn(document.documentElement.getAttribute('data-theme') || 'default');
+
+  var themeBtns = mount.querySelectorAll('[data-theme-btn]');
+  for (var ti = 0; ti < themeBtns.length; ti++) {
+    themeBtns[ti].addEventListener('click', function () {
+      applyTheme(this.getAttribute('data-theme-btn'));
+    });
+  }
 })();
