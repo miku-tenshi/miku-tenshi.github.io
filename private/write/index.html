@@ -167,6 +167,24 @@
   .delete-confirm{ width:100%; margin-top:14px; padding:16px 18px; border-radius:12px; background: var(--danger-soft); }
   .delete-confirm p{ margin:0 0 12px; font-size:14px; color: var(--danger); line-height:1.7; }
 
+  /* 글 순서 바꾸기 목록 — 사용자 요청("글 리스트인 경우 내가 원하는 대로 이동시켜서
+     순서를 바꿀 수 있게")에 맞춰 각 줄을 드래그하거나 ▲▼ 버튼으로 옮길 수 있게 함.
+     사이트 본문의 .entry-list-item과 같은 느낌(점선 구분선, 같은 아이콘)을 쓰되,
+     여기서는 클릭이 아니라 드래그가 목적이라 grab 커서를 쓴다. */
+  .reorder-row{
+    display:flex; align-items:center; gap:12px; padding:12px 6px;
+    border-bottom:1px dashed var(--chrome-border); cursor:grab; background: var(--chrome-bg);
+  }
+  .reorder-row:last-child{ border-bottom:none; }
+  .reorder-row.dragging-row{ opacity:0.4; }
+  .reorder-row.drag-over{ border-top:2px solid var(--accent-solid); }
+  .reorder-handle{ color: var(--ink-faint); font-size:16px; user-select:none; flex-shrink:0; }
+  .reorder-title{ flex:1; min-width:0; color: var(--ink); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .reorder-meta{ color: var(--ink-faint); font-size:13px; white-space:nowrap; flex-shrink:0; }
+  .reorder-btns{ display:flex; gap:4px; flex-shrink:0; }
+  .reorder-btns .wbtn{ padding:6px 10px; font-size:12px; }
+  .reorder-empty{ color: var(--ink-faint); font-size:14px; padding:8px 6px; }
+
   #preview-section{ border-top: 1px solid var(--chrome-border); margin-top: 56px; padding-top: 48px; }
 </style>
 </head>
@@ -196,6 +214,7 @@
         <button class="mode-btn active" data-mode="post">새 글 추가</button>
         <button class="mode-btn" data-mode="folder">새 폴더 만들기</button>
         <button class="mode-btn" data-mode="edit">글 수정 / 삭제</button>
+        <button class="mode-btn" data-mode="reorder">글 순서 바꾸기</button>
       </div>
 
       <!-- 메타 정보(폴더 경로 / 슬러그 / 날짜 / 제목 등) — 본문과 분리된 카드.
@@ -280,6 +299,16 @@
             <input type="text" id="e-thumbnail" placeholder="/assets/uploads/xxxxx.png">
           </div>
         </div>
+
+        <!-- 모드 D: 글 순서 바꾸기 -->
+        <div id="fields-reorder" style="display:none;">
+          <div class="field" style="margin-bottom:0;">
+            <label>대상 폴더 경로 <span class="hint">예: study, study/db, project — 이 폴더 페이지의 목록 순서를 바꿔요</span></label>
+            <input type="text" id="r-folder" placeholder="study" list="folder-suggestions" autocomplete="off">
+            <div class="folder-picker" id="folder-picker-r"></div>
+          </div>
+          <button class="wbtn wbtn-ghost" id="btn-reorder-load" type="button" style="margin-top:14px;">불러오기</button>
+        </div>
       </div>
 
       <!-- 폴더 입력창 3개가 공유하는 자동완성 목록 — 실제 저장소에 있는 폴더로 채워진다
@@ -342,6 +371,21 @@
           </div>
         </div>
       </article>
+
+      <!-- 글 순서 바꾸기 모드 전용 패널 — 마크다운 글쓰기 창(editor-window) 대신
+           이 목록을 보여준다. entry-list 안 각 줄의 원본 HTML을 그대로 들고
+           있다가 순서만 바꿔서 다시 쓰기 때문에, 제목/표기(meta)는 여기서
+           손대지 않고 위 "수정" 모드로만 고칠 수 있다. -->
+      <div class="meta-bar" id="reorder-panel" style="display:none;">
+        <div class="field" style="margin-bottom:14px;">
+          <label>순서 <span class="hint">마우스로 끌어서 옮기거나(데스크톱) ▲▼ 버튼으로 옮긴 뒤 저장하세요. 맨 위 항목이 실제 폴더 페이지에서도 맨 위(".." 바로 다음)에 나타나요.</span></label>
+        </div>
+        <div id="reorder-list"></div>
+        <div class="action-row" style="margin-top:16px;">
+          <button class="wbtn wbtn-primary" id="btn-reorder-save" type="button" disabled>순서 저장</button>
+        </div>
+        <div class="status-log" id="reorder-log"></div>
+      </div>
     </div>
 
   </main>
@@ -612,6 +656,10 @@
   };
   let currentMode = 'post';
   let editState = null; // { folder, slug, path, sha, parentIndexPath } — "수정/삭제" 모드에서 불러온 글
+  let reorderState = null; // { folder, path, items: [{href, raw, isFolder, title, meta}] } — "순서 바꾸기" 모드에서 불러온 폴더
+  // ↑ renderReorderList() 등 아래 "글 순서 바꾸기" 절의 함수들이 이 변수를 참조하는데,
+  // let은 선언 이전에 접근하면 에러가 나므로(editState와 같은 이유) 초기 호출부보다
+  // 먼저 선언해둔다.
 
   // GH_CFG 세팅이 끝나고 currentMode/editState가 초기화된 뒤에 호출해야 함
   // (이 두 함수는 아래에서 currentMode를 참조하는데, let으로 선언된 변수라
@@ -620,6 +668,7 @@
   updateEditorPath();
   updatePublishButtonLabel();
   loadFolderList();
+  renderReorderList();
 
   // ---------------------------------------------------------------
   // 폴더 시각화 — 저장소에 어떤 폴더가 이미 있는지 안 보고 텍스트만 입력하면
@@ -645,6 +694,7 @@
       renderFolderPicker('folder-picker-p', 'p-folder', folders);
       renderFolderPicker('folder-picker-f', 'f-parent', folders);
       renderFolderPicker('folder-picker-e', 'e-folder', folders);
+      renderFolderPicker('folder-picker-r', 'r-folder', folders);
     }catch(e){
       // 네트워크 오류 등 — 폴더 칩 없이도 직접 입력으로 계속 쓸 수 있으니 무시
     }
@@ -688,8 +738,14 @@
       document.getElementById('fields-post').style.display = currentMode === 'post' ? '' : 'none';
       document.getElementById('fields-folder').style.display = currentMode === 'folder' ? '' : 'none';
       document.getElementById('fields-edit').style.display = currentMode === 'edit' ? '' : 'none';
-      document.getElementById('body-label').innerHTML = BODY_LABELS[currentMode];
+      document.getElementById('fields-reorder').style.display = currentMode === 'reorder' ? '' : 'none';
+      // "글 순서 바꾸기" 모드는 본문 에디터가 필요 없으니, 그 창(editor-window)
+      // 대신 reorder-panel(목록 + 저장 버튼)을 보여준다.
+      document.getElementById('editor-window').style.display = currentMode === 'reorder' ? 'none' : '';
+      document.getElementById('reorder-panel').style.display = currentMode === 'reorder' ? '' : 'none';
+      document.getElementById('body-label').innerHTML = BODY_LABELS[currentMode] || BODY_LABELS.post;
       document.getElementById('publish-log').innerHTML = '';
+      document.getElementById('reorder-log').innerHTML = '';
       if (prevMode !== currentMode && (prevMode === 'edit' || currentMode === 'edit')){
         editState = null;
         setEditorRawText('');
@@ -1162,6 +1218,215 @@
       document.getElementById('e-date').value = '';
       document.getElementById('e-meta').value = '';
       rl.done('complete', escapeHtml(deletedPath) + ' 삭제됨');
+    }catch(e){
+      rl.fail(e.message);
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // 글 순서 바꾸기 — 사용자 요청("글 리스트 형식인 경우 내가 원하는 대로
+  // 이동시켜서 글 순서를 바꿀 수 있도록"). 폴더 index.html의 entry-list 안
+  // 항목들을 드래그(데스크톱)나 ▲▼ 버튼(터치/키보드 모두 가능)으로 재배열한
+  // 뒤 저장하면, 그 폴더 페이지에서 보이는 목록 순서 자체가 바뀐다 — 각
+  // 항목의 원본 HTML 줄(제목/표기 포함)은 그대로 두고 줄 순서만 바꿔서 다시
+  // 쓰는 방식이라 제목/표기를 고치는 기존 "수정" 모드와 역할이 겹치지 않는다.
+  // project 갤러리(project/index.html)는 이 entry-list 순서를 그대로 읽어서
+  // 카드를 그리므로 카드 순서도 함께 바뀐다. 홈 화면 "최근 글"은 posts.json을
+  // 항상 날짜순으로 별도 관리하는 목록이라(saveManifest 참고) 여기서는
+  // 건드리지 않는다 — 그쪽은 원래부터 "날짜순 전체 모아보기"가 목적.
+  // ---------------------------------------------------------------
+  // 정규식으로는 .t 안에 아이콘용 <span>이 하나 더 중첩돼 있어서(예:
+  // <span class="t"><span class="file-icon"></span>AAA 글</span>) 첫
+  // </span>에서 멈춰버려 제목을 못 뽑아낸다 — 실제 DOM으로 파싱해서
+  // textContent를 읽는 방식이 중첩 태그에 안전하다.
+  function parseEntryLineText(line){
+    const container = document.createElement('div');
+    container.innerHTML = line.trim();
+    const a = container.querySelector('a.entry-list-item');
+    if (!a) return { title: '', meta: '' };
+    const tEl = a.querySelector('.t');
+    const dEl = a.querySelector('.d');
+    return {
+      title: tEl ? tEl.textContent.trim() : '',
+      meta: dEl ? dEl.textContent.trim() : '',
+    };
+  }
+  function findEntryListBlock(indexContent){
+    const lines = indexContent.split('\n');
+    let startIdx = -1, endIdx = -1;
+    for (let i=0;i<lines.length;i++){
+      if (lines[i].includes('<div class="entry-list">')){ startIdx = i; break; }
+    }
+    if (startIdx === -1) throw new Error('entry-list 위치를 찾지 못했어요.');
+    for (let i=startIdx+1;i<lines.length;i++){
+      if (lines[i].trim() === '</div>'){ endIdx = i; break; }
+    }
+    if (endIdx === -1) throw new Error('entry-list 닫는 태그를 찾지 못했어요.');
+    return { lines, startIdx, endIdx };
+  }
+  function parseEntryListItems(indexContent){
+    const { lines, startIdx, endIdx } = findEntryListBlock(indexContent);
+    let upLineText = null;
+    const items = [];
+    for (let i=startIdx+1;i<endIdx;i++){
+      const line = lines[i];
+      if (!line.trim()) continue;
+      if (line.includes('entry-list-item clickable up')){ upLineText = line; continue; }
+      const hrefM = line.match(/href="([^"]*)"/);
+      const parsedText = parseEntryLineText(line);
+      items.push({
+        href: hrefM ? hrefM[1] : '',
+        raw: line,
+        isFolder: line.includes('is-folder'),
+        title: parsedText.title,
+        meta: parsedText.meta,
+      });
+    }
+    return { upLineText, items };
+  }
+  function rebuildIndexWithOrder(indexContent, upLineText, orderedItems){
+    const { lines, startIdx, endIdx } = findEntryListBlock(indexContent);
+    const block = [];
+    if (upLineText) block.push(upLineText);
+    orderedItems.forEach(it => block.push(it.raw));
+    const newLines = lines.slice(0, startIdx + 1).concat(block, lines.slice(endIdx));
+    return newLines.join('\n');
+  }
+
+  function renderReorderList(){
+    const wrap = document.getElementById('reorder-list');
+    const saveBtn = document.getElementById('btn-reorder-save');
+    if (!reorderState || !reorderState.items.length){
+      wrap.innerHTML = '<div class="reorder-empty">' + (reorderState ? '이 폴더에는 순서를 바꿀 항목이 없어요.' : '먼저 위에서 폴더를 불러와주세요.') + '</div>';
+      saveBtn.disabled = true;
+      return;
+    }
+    const items = reorderState.items;
+    wrap.innerHTML = items.map((it, i) => {
+      const icon = '<span class="' + (it.isFolder ? 'folder-icon' : 'file-icon') + '"></span>';
+      return '<div class="reorder-row" draggable="true" data-idx="' + i + '">' +
+        '<span class="reorder-handle" aria-hidden="true">⠿⠿</span>' +
+        icon +
+        '<span class="reorder-title">' + escapeHtml(it.title || it.href) + (it.isFolder ? '/' : '') + '</span>' +
+        '<span class="reorder-meta">' + escapeHtml(it.meta) + '</span>' +
+        '<span class="reorder-btns">' +
+          '<button type="button" class="wbtn wbtn-ghost wbtn-small" data-act="up" data-idx="' + i + '"' + (i === 0 ? ' disabled' : '') + ' aria-label="위로 이동">▲</button>' +
+          '<button type="button" class="wbtn wbtn-ghost wbtn-small" data-act="down" data-idx="' + i + '"' + (i === items.length - 1 ? ' disabled' : '') + ' aria-label="아래로 이동">▼</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+    saveBtn.disabled = items.length < 2;
+  }
+
+  function moveReorderItem(from, to){
+    if (!reorderState) return;
+    const items = reorderState.items;
+    if (from < 0 || from >= items.length || to < 0 || to >= items.length || from === to) return;
+    const [it] = items.splice(from, 1);
+    items.splice(to, 0, it);
+    renderReorderList();
+  }
+
+  document.getElementById('reorder-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const idx = Number(btn.getAttribute('data-idx'));
+    moveReorderItem(idx, btn.getAttribute('data-act') === 'up' ? idx - 1 : idx + 1);
+  });
+
+  // 드래그 앤 드롭(주로 마우스가 있는 데스크톱용) — 순서 재배열만 하면 되므로
+  // HTML5 기본 dragstart/dragover/drop이면 충분하다(아바타 캐러셀의 가로
+  // 스크롤 드래그와는 다른 문제라 별도로 구현).
+  let reorderDragFrom = null;
+  const reorderListEl = document.getElementById('reorder-list');
+  reorderListEl.addEventListener('dragstart', (e) => {
+    const row = e.target.closest('.reorder-row');
+    if (!row){ e.preventDefault(); return; }
+    reorderDragFrom = Number(row.getAttribute('data-idx'));
+    e.dataTransfer.effectAllowed = 'move';
+    row.classList.add('dragging-row');
+  });
+  reorderListEl.addEventListener('dragend', (e) => {
+    const row = e.target.closest('.reorder-row');
+    if (row) row.classList.remove('dragging-row');
+    reorderListEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    reorderDragFrom = null;
+  });
+  reorderListEl.addEventListener('dragover', (e) => {
+    if (reorderDragFrom === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const row = e.target.closest('.reorder-row');
+    reorderListEl.querySelectorAll('.drag-over').forEach(el => { if (el !== row) el.classList.remove('drag-over'); });
+    if (row) row.classList.add('drag-over');
+  });
+  reorderListEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const row = e.target.closest('.reorder-row');
+    row && row.classList.remove('drag-over');
+    if (!row || reorderDragFrom === null) return;
+    moveReorderItem(reorderDragFrom, Number(row.getAttribute('data-idx')));
+    reorderDragFrom = null;
+  });
+
+  document.getElementById('btn-reorder-load').addEventListener('click', async () => {
+    const log = document.getElementById('reorder-log');
+    log.innerHTML = '';
+    if (!GH_CFG){ logTo(log, '❌ 로그인 정보가 없어요. 새로고침 후 토큰을 다시 입력해주세요.', 'err'); return; }
+    const folder = cleanPath(document.getElementById('r-folder').value);
+    if (!folder){ logTo(log, '❌ 폴더 경로를 입력해주세요.', 'err'); return; }
+    const path = folder + '/index.html';
+    const btn = document.getElementById('btn-reorder-load');
+    btn.disabled = true;
+    try{
+      logTo(log, path + ' 불러오는 중...', 'info');
+      const file = await ghGetFile(GH_CFG, path);
+      if (!file) throw new Error(path + ' 를 찾을 수 없어요. 경로를 확인해주세요.');
+      const parsed = parseEntryListItems(file.content);
+      reorderState = { folder, path, items: parsed.items };
+      renderReorderList();
+      if (parsed.items.length){
+        logTo(log, '✅ ' + parsed.items.length + '개 항목을 불러왔어요. 드래그하거나 ▲▼ 버튼으로 순서를 바꾼 뒤 저장하세요.', 'ok');
+      } else {
+        logTo(log, 'ℹ️ 이 폴더에는 순서를 바꿀 항목이 없어요.', 'info');
+      }
+    }catch(e){
+      reorderState = null;
+      renderReorderList();
+      logTo(log, '❌ ' + e.message, 'err');
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('btn-reorder-save').addEventListener('click', async () => {
+    const log = document.getElementById('reorder-log');
+    log.innerHTML = '';
+    if (!reorderState){ const rl = RetroLog.start(log, 'saving'); rl.fail('먼저 폴더를 불러와주세요.'); return; }
+    if (!GH_CFG){ const rl = RetroLog.start(log, 'saving'); rl.fail('로그인 정보가 없어요.'); return; }
+    const btn = document.getElementById('btn-reorder-save');
+    btn.disabled = true;
+    const rl = RetroLog.start(log, 'saving');
+    try{
+      // 저장 직전에 최신 내용을 한 번 더 받아서(그 사이에 새 글이 발행됐을 수도
+      // 있으니 sha가 오래됐을 수 있음), 최신 entry-list 위에 우리가 재배열한
+      // href 순서를 그대로 다시 입힌다 — 409 충돌 없이, 그 사이 추가/삭제된
+      // 항목도 놓치지 않도록.
+      const fresh = await ghGetFile(GH_CFG, reorderState.path);
+      if (!fresh) throw new Error(reorderState.path + ' 를 찾을 수 없어요.');
+      const freshParsed = parseEntryListItems(fresh.content);
+      const freshByHref = new Map(freshParsed.items.map(it => [it.href, it]));
+      const orderedFresh = reorderState.items.map(it => freshByHref.get(it.href)).filter(Boolean);
+      freshParsed.items.forEach(it => {
+        if (orderedFresh.indexOf(it) === -1) orderedFresh.unshift(it);
+      });
+      const updated = rebuildIndexWithOrder(fresh.content, freshParsed.upLineText, orderedFresh);
+      await ghPutFile(GH_CFG, reorderState.path, updated, 'Reorder entries: ' + reorderState.folder, fresh.sha);
+      reorderState.items = orderedFresh;
+      renderReorderList();
+      rl.done('complete', escapeHtml(reorderState.folder) + '/ 의 글 순서를 저장했어요.');
     }catch(e){
       rl.fail(e.message);
     }finally{
