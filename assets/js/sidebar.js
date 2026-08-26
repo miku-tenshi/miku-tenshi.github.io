@@ -46,6 +46,26 @@
     );
   }).join('');
 
+  // 프로필 사진 여러 장 지원 — cfg.avatarSrcs(배열)가 있으면 그걸 쓰고, 예전
+  // 방식으로 cfg.avatarSrc(문자열) 하나만 있는 경우도 그대로 동작하게 함(하위
+  // 호환). 사진이 1장이면 점(.avatar-dots)은 만들지 않음.
+  var avatarSrcs = (cfg.avatarSrcs && cfg.avatarSrcs.length)
+    ? cfg.avatarSrcs
+    : [cfg.avatarSrc || '/assets/img/avatar.jpg'];
+
+  var avatarSlidesHtml = avatarSrcs.map(function (src, i) {
+    var alt = escapeHtml(cfg.avatarAlt) + (avatarSrcs.length > 1 ? ' (' + (i + 1) + '/' + avatarSrcs.length + ')' : '');
+    return '<div class="avatar-slide"><img src="' + src + '" alt="' + alt + '" draggable="false"></div>';
+  }).join('');
+
+  var avatarDotsHtml = avatarSrcs.length > 1
+    ? ('<div class="avatar-dots" data-role="avatar-dots">' +
+        avatarSrcs.map(function (_, i) {
+          return '<button type="button" class="avatar-dot' + (i === 0 ? ' active' : '') + '" data-dot="' + i + '" aria-label="' + (i + 1) + '번째 사진"></button>';
+        }).join('') +
+      '</div>')
+    : '';
+
   mount.innerHTML =
     '<div class="theme-switcher" data-role="theme-switcher">' +
       '<button type="button" class="theme-swatch" data-theme-btn="default" title="기본(화이트·블랙·블루)" aria-label="기본 테마"></button>' +
@@ -55,9 +75,10 @@
       '<button type="button" class="theme-swatch" data-theme-btn="pink" title="핑크" aria-label="핑크 테마"></button>' +
     '</div>' +
     '<div class="profile">' +
-      '<a class="avatar" href="/" title="홈으로 돌아가기">' +
-        '<img src="' + cfg.avatarSrc + '" alt="' + escapeHtml(cfg.avatarAlt) + '">' +
-      '</a>' +
+      '<div class="avatar" data-role="avatar">' +
+        '<a class="avatar-track" href="/" title="홈으로 돌아가기" data-role="avatar-track">' + avatarSlidesHtml + '</a>' +
+      '</div>' +
+      avatarDotsHtml +
       '<div class="profile-text">' +
         '<div class="profile-name">' + escapeHtml(cfg.profileName) + '</div>' +
         '<div class="profile-role">' + escapeHtml(cfg.profileRole) + '</div>' +
@@ -86,6 +107,39 @@
       '</div>' +
       '<div class="sidebar-footer">' + escapeHtml(cfg.copyright) + '</div>' +
     '</div>';
+
+  // ── 프로필 사진 캐러셀 — 사진이 2장 이상일 때만 의미가 있음 ──
+  // 스크롤(스와이프)로 사진을 넘기면 지금 몇 번째 사진인지 아래 점으로 보여주고,
+  // 점을 직접 눌러도 그 사진으로 이동함. 정확한 픽셀 단위 추적이 필요한 기능이
+  // 아니라서 스크롤이 멈출 때마다 대략적인 위치(스크롤 위치 ÷ 칸 너비)로 가장
+  // 가까운 사진을 계산하는 정도로 충분히 자연스럽게 동작함.
+  (function initAvatarCarousel() {
+    var track = mount.querySelector('[data-role="avatar-track"]');
+    var dotsWrap = mount.querySelector('[data-role="avatar-dots"]');
+    if (!track || !dotsWrap) return;
+    var dots = dotsWrap.querySelectorAll('.avatar-dot');
+    if (!dots.length) return;
+
+    var scrollTimer = null;
+    track.addEventListener('scroll', function () {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function () {
+        var w = track.clientWidth || 1;
+        var idx = Math.round(track.scrollLeft / w);
+        for (var i = 0; i < dots.length; i++) {
+          dots[i].classList.toggle('active', i === idx);
+        }
+      }, 80);
+    });
+
+    for (var di = 0; di < dots.length; di++) {
+      dots[di].addEventListener('click', function (e) {
+        e.preventDefault();
+        var idx = Number(this.getAttribute('data-dot')) || 0;
+        track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+      });
+    }
+  })();
 
   // ── 사이드바 바다의 시간대(밤/새벽/낮/해질녘) + 픽셀 시계·날짜 ──
   // 사용자 요청: "밤/새벽/낮/해질녘을 설정해서 시간에 맞게 바다 색과 하늘 색이
@@ -135,6 +189,31 @@
   // THEME_KEY를 써야 함 — 인라인 스크립트/style.css 주석과 반드시 일치시킬 것).
   var THEME_KEY = 'mt-theme';
 
+  // 모바일 브라우저의 주소창 색을 지금 테마에 맞춤(사용자 요청: "url창이
+  // 회색이라 통일감이 없어. url창의 색도 웹사이트 색으로"). <meta name=
+  // "theme-color">를 지원하는 브라우저(대부분의 모바일 크롬/사파리 등)는 이
+  // 값을 주소창·상단 상태바 배경으로 씀. 여기 색은 모바일에서 사이드바가
+  // 보이는 상단 바의 배경(--sidebar-bg)과 맞춰서, 페이지 맨 위와 주소창이
+  // 하나로 이어지는 느낌이 나게 함 — 각 값은 style.css의 테마별
+  // --sidebar-bg와 반드시 맞춰서 관리할 것(새 테마를 추가하면 여기도 추가).
+  var THEME_COLORS = {
+    default: '#f5f6f8',
+    dark: '#191c24',
+    blue: '#e1f0fb',
+    mint: '#e8f5f4',
+    pink: '#fbe9f1'
+  };
+
+  function updateThemeColorMeta(theme) {
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (!m) {
+      m = document.createElement('meta');
+      m.setAttribute('name', 'theme-color');
+      document.head.appendChild(m);
+    }
+    m.setAttribute('content', THEME_COLORS[theme] || THEME_COLORS.default);
+  }
+
   function highlightThemeBtn(theme) {
     var btns = mount.querySelectorAll('[data-theme-btn]');
     for (var i = 0; i < btns.length; i++) {
@@ -147,9 +226,12 @@
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* 개인정보 보호 모드 등 — 무시 */ }
     highlightThemeBtn(theme);
+    updateThemeColorMeta(theme);
   }
 
-  highlightThemeBtn(document.documentElement.getAttribute('data-theme') || 'default');
+  var initialTheme = document.documentElement.getAttribute('data-theme') || 'default';
+  highlightThemeBtn(initialTheme);
+  updateThemeColorMeta(initialTheme);
 
   var themeBtns = mount.querySelectorAll('[data-theme-btn]');
   for (var ti = 0; ti < themeBtns.length; ti++) {
@@ -157,4 +239,49 @@
       applyTheme(this.getAttribute('data-theme-btn'));
     });
   }
+
+  // ── 모바일에서 테마 스위처를 "웹사이트 맨 아래"로 이동 ──
+  // 사용자 요청: "모바일의 경우, 테마를 변경하는 창이 화면 밑에 떠서 불편해.
+  // 아예 웹사이트 맨 밑에 배치해 줘." 예전에는 CSS position:fixed로 화면
+  // 하단에 항상 떠 있게 했는데, 그게 스크롤 중에도 계속 겹쳐 보여서 불편하다는
+  // 피드백. 테마 스위처는 원래 .sidebar 안, 프로필 사진 위쪽에 있는 DOM
+  // 요소라서(데스크탑 레이아웃에 맞음) CSS만으로는 "페이지 진짜 맨 아래"로
+  // 옮길 수 없음(다른 flex 컨테이너에 속해 있어서 order 같은 걸로는 안 됨) —
+  // 그래서 모바일 폭(.sidebar가 상단 아이콘 바로 바뀌는 지점, style.css의
+  // @media (max-width: 900px)와 반드시 같은 값)일 때만 실제 DOM 노드를
+  // .app의 마지막 자식으로 옮기고(→ .main 본문 다음, 문서 진짜 맨 아래),
+  // 데스크탑 폭으로 돌아오면 원래 있던 자리(사이드바 맨 위)로 되돌려 놓는다.
+  (function initMobileThemeSwitcherPlacement() {
+    var switcherEl = mount.querySelector('[data-role="theme-switcher"]');
+    var appEl = document.querySelector('.app');
+    if (!switcherEl || !appEl) return;
+    var mq = window.matchMedia('(max-width: 900px)');
+
+    function reposition() {
+      if (mq.matches) {
+        if (switcherEl.parentNode !== appEl) {
+          appEl.appendChild(switcherEl);
+        }
+      } else if (switcherEl.parentNode !== mount) {
+        mount.insertBefore(switcherEl, mount.firstChild);
+      }
+    }
+
+    // 주의: 이 스크립트(assets/js/sidebar.js)는 FOUC 방지를 위해 <main>보다
+    // 앞쪽(<aside id="sidebar-mount"> 바로 다음)에서 동기적으로 실행되므로,
+    // 지금 당장 reposition()을 부르면 <main>이 아직 파싱되기 전이라 .app의
+    // "마지막 자식"이 아니라 그 시점까지 존재하는 자식들(사이드바 등) 뒤에만
+    // 붙게 되어 결과적으로 <main>보다 앞에 와 버림(페이지 진짜 맨 아래가
+    // 아니게 됨). 문서 파싱이 끝난 뒤(DOMContentLoaded)에 처음 한 번
+    // 배치하도록 미룸 — 이미 로딩이 끝난 뒤라면(예: 드물게 이 스크립트가
+    // 늦게 실행되는 경우) 바로 실행.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', reposition);
+    } else {
+      reposition();
+    }
+    // 구형 사파리 등 addEventListener를 지원하지 않는 MediaQueryList 대비
+    if (mq.addEventListener) mq.addEventListener('change', reposition);
+    else if (mq.addListener) mq.addListener(reposition);
+  })();
 })();

@@ -2,7 +2,7 @@
 <html lang="ko" class="private-pending">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var T=["default","dark","blue","mint","pink"];var t=localStorage.getItem("mt-theme");if(T.indexOf(t)===-1){t="blue";localStorage.setItem("mt-theme",t);}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<script>(function(){try{var T=["default","dark","blue","mint","pink"];var C={default:"#f5f6f8",dark:"#191c24",blue:"#e1f0fb",mint:"#e8f5f4",pink:"#fbe9f1"};var t=localStorage.getItem("mt-theme");if(T.indexOf(t)===-1){t="blue";localStorage.setItem("mt-theme",t);}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m);}m.setAttribute("content",C[t]);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>notes/ — private — miku-tenshi</title>
 <meta name="robots" content="noindex, nofollow">
@@ -269,26 +269,48 @@
   });
 
   // ---------------------------------------------------------------
-  // 완료(투두) 토글 — 목록에서 바로 저장. 저장 중에는 아래 로그가 없는 화면이라
-  // 버튼 자체를 살짝 흐리게 해서 "처리 중"을 표시한다(전체 폼 로딩 표시까지는 과함).
-  // ---------------------------------------------------------------
+  // 완료(투두) 토글 — 사용자 요청: "노트의 투두 리스트 기능이, 새로 고침을
+  // 해야 체크 표시가 돼." 예전에는 GET(최신 확인)과 PUT(저장) 네트워크
+  // 요청이 둘 다 끝난 뒤에야 renderList()를 불러서, 그 사이(특히 느린
+  // 네트워크에서)에는 클릭해도 화면이 안 바뀐 것처럼 보였음 — 그래서 "새로
+  // 고침해야 반영된다"고 느껴진 것.
+  // 이제는 낙관적(optimistic) 업데이트로 바꿔서 클릭하는 즉시 로컬 notes
+  // 배열을 뒤집고 renderList()로 화면부터 갱신한 다음, 그 상태 그대로
+  // 백그라운드에서 저장을 시도한다 — 저장이 실패하면 원래대로 되돌리고
+  // 화면도 다시 그린 뒤 알려준다.
   async function toggleCompleted(id){
     if (!GH_CFG) return;
     const btn = listEl.querySelector('.note-todo[data-id="' + id + '"]');
     if (btn) btn.disabled = true;
+
+    const note = notes.find(n => n.id === id);
+    if (!note){ if (btn) btn.disabled = false; return; }
+
+    // 1) 화면부터 즉시 반영
+    const prevCompleted = !!note.completed;
+    note.completed = !prevCompleted;
+    renderList();
+
+    // 2) 그 상태를 백그라운드에서 저장
     try{
       const fresh = await GhApi.ghGetFile(GH_CFG, NOTES_PATH);
-      notes = fresh ? JSON.parse(fresh.content || '[]') : [];
+      const freshNotes = fresh ? JSON.parse(fresh.content || '[]') : [];
       notesSha = fresh ? fresh.sha : null;
-      const note = notes.find(n => n.id === id);
-      if (note) note.completed = !note.completed;
-      const res = await GhApi.ghPutFile(GH_CFG, NOTES_PATH, JSON.stringify(notes, null, 2) + '\n', 'Toggle note: ' + id, notesSha);
+      const freshNote = freshNotes.find(n => n.id === id);
+      if (freshNote) freshNote.completed = !prevCompleted;
+      const res = await GhApi.ghPutFile(GH_CFG, NOTES_PATH, JSON.stringify(freshNotes, null, 2) + '\n', 'Toggle note: ' + id, notesSha);
       notesSha = res && res.content ? res.content.sha : notesSha;
+      notes = freshNotes;
       renderList();
     }catch(e){
+      // 3) 저장 실패 — 화면을 원래 상태로 되돌림
+      const stillHere = notes.find(n => n.id === id);
+      if (stillHere) stillHere.completed = prevCompleted;
+      renderList();
       alert('완료 표시를 저장하지 못했어요: ' + e.message);
     }finally{
-      if (btn) btn.disabled = false;
+      const btnAfter = listEl.querySelector('.note-todo[data-id="' + id + '"]');
+      if (btnAfter) btnAfter.disabled = false;
     }
   }
 

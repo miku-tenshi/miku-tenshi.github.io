@@ -12,7 +12,10 @@ window.SITE_CONFIG = {
 
   profileName: 'リミ\'s page',
   profileRole: '2026.08.26~',
-  avatarSrc: '/assets/img/rem.jpg',
+  // 프로필 사진 여러 장 — 순서대로 나열하면 사이드바에서 옆으로 스크롤(스와이프)
+  // 해서 넘겨볼 수 있는 캐러셀이 됩니다(assets/js/sidebar.js가 그림). 사진을
+  // 하나만 쓰고 싶으면 배열에 경로 하나만 남기면 예전처럼 동작합니다.
+  avatarSrcs: ['/assets/img/rem.jpg', '/assets/img/chino.jpg', '/assets/img/avatar.jpg'],
   avatarAlt: 'リミ 프로필 사진',
 
   copyright: '© miku-tenshi.github.io',

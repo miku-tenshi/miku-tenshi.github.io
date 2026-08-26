@@ -104,23 +104,28 @@
   --ok-soft: #163429;
 }
 
-/* ── 테마 3) 블루 — 블루+퍼플 파스텔 그라데이션
-   (이전엔 --bg/--accent가 전부 파란 계열 한 색상 톤이라 흰 배경과 구분이
-   잘 안 된다는 피드백이 있었음 → 배경에도 은은한 라벤더 톤을 섞고, 포인트
-   색은 파랑→보라 그라데이션으로 바꿔서 "블루" 테마임이 한눈에 드러나도록 함) ── */
+/* ── 테마 3) 블루 — 오로라(aurora) 톤 블루+퍼플 그라데이션
+   (1차 수정: 배경에 라벤더를 섞어 흰 배경과 구분되게 함 → 사용자가 자신의
+   todo에 "보라색 테마 너무 밤티임.. 보란색보다 하늘색이 조금 더 주가 된
+   보라색 하늘색"이라고 남겨서, 보라를 줄이고 하늘색을 주색으로 앞세우는
+   2차 수정을 진행함 + "조금 오로라빛으로" 요청 반영. --ink/--sidebar-bg를
+   보라 기운이 짙던 톤에서 맑은 하늘색 계열로 옮기고, 포인트 그라데이션도
+   하늘색(--accent-start)에서 시작해 보라(--accent-end)로 은은하게 번지는
+   순서로 바꿔서 "하늘색이 주, 보라는 보조"가 되도록 함 — 오로라 특유의
+   하늘색↔보라 사이 그러데이션 느낌) ── */
 :root[data-theme="blue"]{
-  --bg: #f2f0ff;
-  --sidebar-bg: #e8e4fc;
-  --ink: #241f4d;
-  --ink-soft: #5c5590;
-  --ink-faint: #9791c4;
-  --accent-start: #6f8ff5;
-  --accent-end: #b48af0;
-  --accent-rgb: 124, 106, 224;
-  --accent-solid: #7c6ae0;
-  --accent-soft: #e4ddfb;
+  --bg: #eef6ff;
+  --sidebar-bg: #e1f0fb;
+  --ink: #17284d;
+  --ink-soft: #4d6a92;
+  --ink-faint: #93a8c4;
+  --accent-start: #4fb3e8;
+  --accent-end: #a888f0;
+  --accent-rgb: 79, 156, 227;
+  --accent-solid: #4f9ce3;
+  --accent-soft: #dcecfb;
   --chrome-bg: #ffffff;
-  --chrome-border: #d9d1f7;
+  --chrome-border: #cfe0f2;
   --danger: #d95763;
   --danger-soft: #fdebed;
   --ok: #218c68;
@@ -252,7 +257,7 @@ a{ color: inherit; text-decoration: none; }
 
 .theme-swatch[data-theme-btn="default"]{ background: linear-gradient(135deg, #2f6fe0, #4f8ef7); }
 .theme-swatch[data-theme-btn="dark"]{ background: linear-gradient(135deg, #12141a, #4f8ef7); }
-.theme-swatch[data-theme-btn="blue"]{ background: linear-gradient(135deg, #6f8ff5, #b48af0); }
+.theme-swatch[data-theme-btn="blue"]{ background: linear-gradient(135deg, #4fb3e8, #a888f0); }
 .theme-swatch[data-theme-btn="mint"]{ background: linear-gradient(135deg, #39c5bb, #55a9e8); }
 .theme-swatch[data-theme-btn="pink"]{ background: linear-gradient(135deg, #ec6fac, #f9a8c9); }
 
@@ -270,14 +275,12 @@ a{ color: inherit; text-decoration: none; }
   border-radius: 28px;
   background: var(--accent-grad);
   color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  position: relative;
   font-weight: 700;
   letter-spacing: 0.02em;
   border: none;
   box-shadow: 0 18px 40px -16px rgba(var(--accent-rgb), 0.5);
-  cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   padding: 0;
   overflow: hidden;
@@ -285,19 +288,72 @@ a{ color: inherit; text-decoration: none; }
 
 .avatar span{ font-size: 72px; font-weight: 800; }
 
-/* 프로필 사진 — assets/img/avatar.jpg 파일을 자신의 사진으로 바꿔치기하면
-   사이트 전체(사이드바)에 바로 반영됩니다. */
-.avatar img{
+/* 프로필 사진(들) — 사진 한 장만 넣으면 예전처럼 그냥 고정된 사진으로 보이고,
+   assets/js/site-config.js의 avatarSrcs 배열에 여러 경로를 넣으면 옆으로
+   스크롤(스와이프)해서 넘겨볼 수 있는 캐러셀이 됩니다(사용자 요청: "프로필
+   부분의 사진을 여러 개로 해서, 스크롤 하면 넘길 수 있도록"). .avatar 자체는
+   더 이상 <a>가 아니라 크기만 잡는 틀이고, 실제 스크롤/링크는 안쪽
+   .avatar-track(가로 스크롤 + snap)이 담당 — 스크롤 위치에 따라 아래
+   .avatar-dots 중 하나가 활성화됩니다(assets/js/sidebar.js가 처리). */
+.avatar-track{
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  cursor: pointer;
+}
+.avatar-track::-webkit-scrollbar{ display: none; }
+
+.avatar-slide{
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: center;
+  display: block;
+}
+
+.avatar-slide img{
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
   border-radius: inherit;
+  -webkit-user-drag: none;
 }
 
 .avatar:hover{
   transform: translateY(-3px);
   box-shadow: 0 22px 46px -16px rgba(var(--accent-rgb), 0.5);
+}
+
+/* 사진이 2장 이상일 때만 sidebar.js가 이 요소를 만들어 붙입니다 — 지금 몇 번째
+   사진인지 보여주는 작은 점들. 클릭하면 그 사진으로 바로 이동합니다. */
+.avatar-dots{
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: -6px;
+}
+.avatar-dot{
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  opacity: 0.5;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.avatar-dot:hover{ opacity: 0.8; }
+.avatar-dot.active{
+  background: var(--accent-solid);
+  opacity: 1;
+  transform: scale(1.3);
 }
 
 .profile-text{ display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
@@ -1002,6 +1058,77 @@ a{ color: inherit; text-decoration: none; }
   display: inline-block;
 }
 
+/* ---------- project 갤러리 (썸네일 카드) ----------
+   사용자 요청: "project 폴더를 갤러리 형식으로 바꾸고 싶어. (썸네일을 고를 수
+   있도록)". project/index.html은 계속 예전처럼 .entry-list(글쓰기 도구가 새
+   프로젝트를 추가할 때 텍스트 한 줄을 끼워 넣는 방식, private/write/index.html의
+   insertEntryLine 참고)를 실제 데이터 저장소로 갖고 있지만, 화면에는 숨겨두고
+   project/index.html 자신의 스크립트가 그 줄들을 읽어 이 카드형 갤러리로 다시
+   그립니다 — 그래서 글쓰기 도구 쪽 코드를 건드리지 않고도(그만큼 실수로 뭔가
+   깨뜨릴 위험이 적음) 갤러리 화면을 얹을 수 있음. 각 카드의 썸네일은
+   posts.json의 해당 글 항목에 있는 optional "thumbnail" 필드에서 가져오고,
+   없으면 아래 .project-thumb-placeholder(제목 첫 글자 + 그라데이션)로 대체됨
+   — "썸네일을 고를 수 있도록"은 글쓰기 도구(private/write/index.html)의 새 글
+   폼에 "썸네일 이미지 경로(선택)" 입력칸으로 구현되어 있음(project 섹션일 때). */
+.project-gallery{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.project-card{
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--chrome-bg);
+  border: 1px solid var(--chrome-border);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.project-card:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px -18px rgba(15,23,42,0.25);
+}
+
+.project-thumb{
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+  background: var(--accent-soft);
+}
+
+.project-thumb-placeholder{
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-grad);
+  color: #fff;
+  font-family: var(--font-pixel);
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.project-card-body{ padding: 16px 18px 18px; }
+
+.project-card-title{
+  font-weight: 700;
+  font-size: 16.5px;
+  color: var(--ink);
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.project-card-meta{ font-size: 13.5px; color: var(--ink-faint); }
+
 /* ---------- pagination (홈 화면 "최근 글" 목록 등) ---------- */
 
 .pagination{ display:flex; gap:6px; margin-top:20px; flex-wrap:wrap; align-items:center; }
@@ -1070,26 +1197,30 @@ a{ color: inherit; text-decoration: none; }
     overflow-x: visible;
     overflow-y: visible;
   }
-  /* 테마 스위처(점 5개)는 더 이상 상단 아이콘 바 안에 두지 않고, 화면(뷰포트) 맨
-     아래에 고정(position:fixed)해서 페이지를 아무리 스크롤해도 항상 같은 자리에
-     보이게 함 — 사용자 요청: "테마 설정창은 스크롤 맨 아래에 유지한다." 상단 바에서
+  /* 테마 스위처(점 5개)는 더 이상 상단 아이콘 바 안에 두지 않습니다 — 상단 바에서
      빼내는 만큼 그 폭을 프로필 이름/메뉴 아이콘 쪽에 쓸 수 있게 되어, 아래
      ".nav-group"/".profile-name" 조정과 함께 상단 바 전체가 한 화면 안에 들어오게
-     하는 데도 도움이 됨. */
+     하는 데도 도움이 됨.
+     이전에는 position:fixed로 화면(뷰포트) 맨 아래에 항상 떠 있게 했었는데,
+     사용자가 "화면 밑에 떠서 불편해. 아예 웹사이트 맨 밑에 배치해 줘"라고
+     요청 — 스크롤 중 계속 떠 있는 오버레이 대신, 문서 흐름을 따라 페이지
+     본문(.main) 다음에 오는 "진짜 페이지 맨 아래" 요소로 바꿈. 실제로 DOM에서
+     .theme-switcher를 그 위치로 옮기는 것은 assets/js/sidebar.js가 담당하고
+     (모바일 폭에서만 .app의 마지막 자식으로 이동), 여기서는 그 상태에서 어떻게
+     보일지(고정 아님, 일반 문서 흐름 속 가로 바)만 정의함. */
   .theme-switcher{
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 500;
+    width: 100%;
     gap: 16px;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 14px calc(16px + env(safe-area-inset-bottom, 0px));
     background: var(--sidebar-bg);
     border-top: 1px solid var(--chrome-border);
   }
   .theme-swatch{ width: 16px; height: 16px; }
   .avatar{ width: 40px; height: 40px; flex-shrink: 0; max-width: none; border-radius: 12px; }
   .avatar span{ font-size: 16px; }
+  /* 상단 아이콘 바 안의 작은 아바타에서는 점 표시가 들어갈 자리가 없어서 숨김
+     (스와이프로 사진을 넘기는 기능 자체는 모바일에서도 그대로 동작함). */
+  .avatar-dots{ display: none; }
   .profile{ flex-direction: row; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
   .profile-text{ align-items: flex-start; text-align: left; min-width: 0; }
   /* 이름이 2줄로 넘어가지 않도록(사용자 요청: "이름이 2줄이 되지 않도록 한다,
@@ -1113,8 +1244,9 @@ a{ color: inherit; text-decoration: none; }
   .nav-item .nav-label{ display: none; }
   .sidebar-footer{ display: none; }
   .sidebar-sea{ display: none; }
-  /* 화면 맨 아래 고정된 테마 스위처 바에 본문 내용이 가리지 않도록 여유 패딩 확보 */
-  .main{ padding: 32px 18px calc(72px + env(safe-area-inset-bottom, 0px)); }
+  /* 테마 스위처가 더 이상 화면에 고정되어 본문을 가리지 않으므로(페이지 맨 아래로
+     이동, 위 .theme-switcher 참고), 그걸 피하기 위한 여유 하단 패딩은 필요 없음. */
+  .main{ padding: 32px 18px; }
 }
 
 
@@ -1206,7 +1338,7 @@ input, textarea, select{ cursor: text !important; }
 .retro-loading{ color: var(--ink-soft); }
 .retro-loading .retro-caret{ color: var(--ink-faint); }
 .retro-loading .retro-bar{ color: var(--accent-solid); font-weight: 700; }
-.retro-complete{ color: var(--ok); }
+.retro-complete{ color: var(--ok); font-weight: 700; }
 .retro-complete::before{ content: "> "; color: var(--ink-faint); }
 .retro-detail{
   font-family: inherit; font-size: 12.5px; color: var(--ink-faint);

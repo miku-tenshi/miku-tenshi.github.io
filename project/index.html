@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var T=["default","dark","blue","mint","pink"];var t=localStorage.getItem("mt-theme");if(T.indexOf(t)===-1){t="blue";localStorage.setItem("mt-theme",t);}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<script>(function(){try{var T=["default","dark","blue","mint","pink"];var C={default:"#f5f6f8",dark:"#191c24",blue:"#e1f0fb",mint:"#e8f5f4",pink:"#fbe9f1"};var t=localStorage.getItem("mt-theme");if(T.indexOf(t)===-1){t="blue";localStorage.setItem("mt-theme",t);}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m);}m.setAttribute("content",C[t]);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>project/ — miku-tenshi</title>
 <meta name="description" content="프로젝트 아카이브">
@@ -35,9 +35,20 @@
         <div class="entry-date">pinned</div>
         <h2>project/</h2>
         <p>만들고 있는 것들, 만든 것들을 정리합니다.</p>
+
+        <!-- 이 목록 자체는 화면에 보이지 않습니다(아래 project-gallery로 대체) —
+             private/write/index.html이 새 프로젝트 글을 올릴 때 "<div class=
+             "entry-list">" 라는 줄을 정확히 텍스트로 찾아서 그 바로 다음 줄에
+             새 항목을 끼워 넣도록 만들어져 있어서(insertEntryLine 함수 참고),
+             그 안쪽 div 태그 자체는 속성을 추가하지 않고 그대로 두고, 숨기는
+             역할은 바깥 wrapper가 담당합니다. 실제 화면은 아래 스크립트가 이
+             목록을 읽어서 썸네일 갤러리 카드로 다시 그립니다. -->
+        <div id="project-entry-list-wrap" style="display:none;" aria-hidden="true">
         <div class="entry-list">
           <a class="entry-list-item clickable" href="/project/homepage-redesign.html"><span class="t"><span class="file-icon"></span>miku-tenshi.github.io</span><span class="d">진행중</span></a>
         </div>
+        </div>
+        <div class="project-gallery" id="project-gallery"></div>
       </div>
     </article>
   </main>
@@ -47,5 +58,69 @@
 <div class="backdrop" id="backdrop"></div>
 
 <script src="/assets/js/window.js"></script>
+<script>
+(function(){
+  // project/ 갤러리 렌더러 — 사용자 요청: "project 폴더를 갤러리 형식으로
+  // 바꾸고 싶어. (썸네일을 고를 수 있도록)". 위 #project-entry-list(원래
+  // entry-list 방식, 글쓰기 도구가 계속 이 형식으로 새 항목을 끼워 넣음)를
+  // 읽어서 카드 그리드로 다시 그리고, 각 카드의 썸네일은 posts.json에서
+  // 해당 글의 optional "thumbnail" 필드를 찾아 채웁니다(글쓰기 도구의 "새 글"
+  // 폼에서 project 섹션일 때 "썸네일 이미지 경로"를 입력하면 여기 반영돼요).
+  // 썸네일이 없으면 제목 첫 글자 + 그라데이션 placeholder로 대체합니다.
+  var listEl = document.getElementById('project-entry-list-wrap');
+  var galleryEl = document.getElementById('project-gallery');
+  if (!listEl || !galleryEl) return;
+
+  function escapeHtml(s){
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  var rows = Array.prototype.slice.call(listEl.querySelectorAll('a.entry-list-item:not(.up)'));
+  if (!rows.length){
+    galleryEl.innerHTML = '<p style="color:var(--ink-faint);">아직 프로젝트가 없어요.</p>';
+    return;
+  }
+
+  var items = rows.map(function(a){
+    var titleEl = a.querySelector('.t');
+    var metaEl = a.querySelector('.d');
+    return {
+      href: a.getAttribute('href'),
+      title: titleEl ? titleEl.textContent.trim() : a.textContent.trim(),
+      meta: metaEl ? metaEl.textContent.trim() : ''
+    };
+  });
+
+  function renderCards(thumbByHref){
+    galleryEl.innerHTML = items.map(function(it){
+      var thumb = thumbByHref[it.href];
+      var thumbHtml = thumb
+        ? '<img class="project-thumb" src="' + thumb + '" alt="' + escapeHtml(it.title) + ' 썸네일">'
+        : '<div class="project-thumb-placeholder">' + escapeHtml((it.title || '?').trim().charAt(0) || '?') + '</div>';
+      return (
+        '<a class="project-card" href="' + it.href + '">' +
+          thumbHtml +
+          '<div class="project-card-body">' +
+            '<div class="project-card-title">' + escapeHtml(it.title) + '</div>' +
+            '<div class="project-card-meta">' + escapeHtml(it.meta) + '</div>' +
+          '</div>' +
+        '</a>'
+      );
+    }).join('');
+  }
+
+  // posts.json을 기다리지 않고 일단 placeholder로 즉시 그린 다음(빈 화면 방지),
+  // 불러와지면 썸네일이 있는 카드만 이미지로 바꿔치기함.
+  renderCards({});
+  fetch('/posts.json', { cache: 'no-store' })
+    .then(function(res){ return res.ok ? res.json() : []; })
+    .then(function(list){
+      var map = {};
+      (list || []).forEach(function(p){ if (p && p.thumbnail) map[p.href] = p.thumbnail; });
+      renderCards(map);
+    })
+    .catch(function(){ /* posts.json을 못 불러와도 placeholder 카드는 이미 보임 */ });
+})();
+</script>
 </body>
 </html>
