@@ -120,15 +120,18 @@
     var dots = dotsWrap.querySelectorAll('.avatar-dot');
     if (!dots.length) return;
 
+    function setActiveDot(idx) {
+      for (var i = 0; i < dots.length; i++) {
+        dots[i].classList.toggle('active', i === idx);
+      }
+    }
+
     var scrollTimer = null;
     track.addEventListener('scroll', function () {
       if (scrollTimer) clearTimeout(scrollTimer);
       scrollTimer = setTimeout(function () {
         var w = track.clientWidth || 1;
-        var idx = Math.round(track.scrollLeft / w);
-        for (var i = 0; i < dots.length; i++) {
-          dots[i].classList.toggle('active', i === idx);
-        }
+        setActiveDot(Math.round(track.scrollLeft / w));
       }, 80);
     });
 
@@ -139,6 +142,58 @@
         track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
       });
     }
+
+    // 마우스로 눌러서 좌우로 끌면(드래그) 사진이 넘어가도록. 터치스크린이나
+    // 트랙패드의 좌우 스와이프는 브라우저가 overflow-x:auto만으로도 알아서
+    // 스크롤해주지만, 마우스 클릭 후 드래그는 브라우저가 기본으로 스크롤을
+    // 시켜주지 않아서(스크롤바도 숨겨둠) 데스크톱에서는 "스크롤이 안 된다"고
+    // 느껴졌던 부분 — 여기서 직접 pointer 이벤트로 굴려줌(마우스에서만
+    // 동작하도록 제한해서 터치의 원래 자연스러운 스크롤은 그대로 둠).
+    track.addEventListener('dragstart', function (e) { e.preventDefault(); });
+
+    var dragging = false;
+    var movedFar = false;
+    var startX = 0;
+    var startScroll = 0;
+
+    track.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      dragging = true;
+      movedFar = false;
+      startX = e.clientX;
+      startScroll = track.scrollLeft;
+      track.classList.add('dragging');
+      if (track.setPointerCapture) {
+        try { track.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+      }
+    });
+
+    track.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) movedFar = true;
+      track.scrollLeft = startScroll - dx;
+    });
+
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false;
+      track.classList.remove('dragging');
+      var w = track.clientWidth || 1;
+      var idx = Math.max(0, Math.min(dots.length - 1, Math.round(track.scrollLeft / w)));
+      track.scrollTo({ left: idx * w, behavior: 'smooth' });
+      setActiveDot(idx);
+    }
+    track.addEventListener('pointerup', endDrag);
+    track.addEventListener('pointercancel', endDrag);
+    track.addEventListener('pointerleave', endDrag);
+
+    // 드래그로 사진을 넘긴 뒤 손을 뗐을 때는(움직인 거리가 일정 이상이면)
+    // <a href="/">인 avatar-track이 홈으로 이동해버리지 않도록 막음 — 제자리
+    // 클릭(드래그 없이)일 때만 원래대로 홈 링크가 동작함.
+    track.addEventListener('click', function (e) {
+      if (movedFar) e.preventDefault();
+    });
   })();
 
   // ── 사이드바 바다의 시간대(밤/새벽/낮/해질녘) + 픽셀 시계·날짜 ──

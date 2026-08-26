@@ -305,8 +305,15 @@ a{ color: inherit; text-decoration: none; }
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .avatar-track::-webkit-scrollbar{ display: none; }
+/* 사진이 여러 장일 때 마우스로 눌러서 끄는(드래그) 중 표시 — 터치/트랙패드
+   스와이프는 브라우저가 알아서 처리해주지만, 마우스 클릭-드래그는
+   sidebar.js가 pointer 이벤트로 직접 굴려줘야 동작함(마우스로는 스크롤이
+   전혀 안 움직이던 원인). */
+.avatar-track.dragging{ cursor: grabbing; scroll-snap-type: none; }
 
 .avatar-slide{
   flex: 0 0 100%;
