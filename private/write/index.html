@@ -1134,16 +1134,21 @@
     return { title, meta: metaRaw, dateVal, markdown, recoveredExactly };
   }
 
-  document.getElementById('btn-load').addEventListener('click', async () => {
+  // 실제 "불러오기" 동작 — 아래 버튼 클릭과, 공개 페이지의 "수정"/"삭제"
+  // 링크로 이 페이지에 들어왔을 때(applyDeepLinkFromQuery(), 이 파일 맨 아래)
+  // 자동으로 한 번 불러오는 경우 둘 다에서 쓰기 위해 함수로 분리해뒀다.
+  // 성공하면 true, 실패(폴더/슬러그 미입력, 파일 없음 등)하면 false를 돌려준다.
+  async function doLoadForEdit(){
     const log = document.getElementById('publish-log');
     log.innerHTML = '';
-    if (!GH_CFG){ logTo(log, '❌ 로그인 정보가 없어요. 새로고침 후 토큰을 다시 입력해주세요.', 'err'); return; }
+    if (!GH_CFG){ logTo(log, '❌ 로그인 정보가 없어요. 새로고침 후 토큰을 다시 입력해주세요.', 'err'); return false; }
     const folder = cleanPath(document.getElementById('e-folder').value);
     const slug = slugify(document.getElementById('e-slug').value);
-    if (!folder || !slug){ logTo(log, '❌ 폴더 경로와 파일명을 입력해주세요.', 'err'); return; }
+    if (!folder || !slug){ logTo(log, '❌ 폴더 경로와 파일명을 입력해주세요.', 'err'); return false; }
     const path = folder + '/' + slug + '.html';
     const btn = document.getElementById('btn-load');
     btn.disabled = true;
+    let ok = false;
     try{
       logTo(log, path + ' 불러오는 중...', 'info');
       const file = await ghGetFile(GH_CFG, path);
@@ -1170,12 +1175,15 @@
       if (!parsed.recoveredExactly){
         logTo(log, 'ℹ️ 이 글은 원문 마크다운이 따로 저장되어 있지 않아서(예전 글이거나 도구 밖에서 만든 글) 본문을 최대한 비슷하게 복원했어요 — 서식이 완전히 같지 않을 수 있으니 확인해주세요.', 'info');
       }
+      ok = true;
     }catch(e){
       logTo(log, '❌ ' + e.message, 'err');
     }finally{
       btn.disabled = false;
     }
-  });
+    return ok;
+  }
+  document.getElementById('btn-load').addEventListener('click', doLoadForEdit);
 
   // ---------------------------------------------------------------
   // 삭제 (2단계 확인 — 브라우저 기본 confirm() 대신 화면 안에서 확인)
@@ -1564,6 +1572,45 @@
       btn.disabled = false;
     }
   });
+
+  // ---------------------------------------------------------------
+  // URL 쿼리로 바로 이어서 쓰기 — 각 글/폴더 페이지에 새로 생긴 "글쓰기"/
+  // "수정"/"삭제" 링크(assets/js/sidebar.js의 initInlineAdminControls())가
+  // ?mode=post&folder=..  또는  ?mode=edit&folder=..&slug=..(선택 &action=delete)
+  // 형태로 이 페이지에 들어온다. 폴더/파일명을 다시 타이핑하거나 "불러오기"를
+  // 따로 누르지 않아도 바로 이어서 쓸 수 있게, 도착하자마자 같은 걸 자동으로
+  // 해준다. action=delete여도 실제 삭제는 하지 않고 삭제 확인 패널만 열어둔다
+  // — 되돌릴 수 없는 동작이라 마지막 확인은 항상 사람이 직접 눌러야 함.
+  // ---------------------------------------------------------------
+  (async function applyDeepLinkFromQuery(){
+    const qs = new URLSearchParams(location.search);
+    const qMode = qs.get('mode');
+    const qFolder = qs.get('folder');
+    const qSlug = qs.get('slug');
+    const qAction = qs.get('action');
+    if (!qMode) return;
+
+    if (qMode === 'post' && qFolder){
+      const postBtn = document.querySelector('.mode-btn[data-mode="post"]');
+      if (postBtn) postBtn.click();
+      const folderInput = document.getElementById('p-folder');
+      folderInput.value = qFolder;
+      folderInput.dispatchEvent(new Event('input', { bubbles: true }));
+      document.getElementById('editor-textarea').focus();
+    } else if (qMode === 'edit' && qFolder && qSlug){
+      const editBtn = document.querySelector('.mode-btn[data-mode="edit"]');
+      if (editBtn) editBtn.click();
+      document.getElementById('e-folder').value = qFolder;
+      document.getElementById('e-slug').value = qSlug;
+      updateEditorPath();
+      const loaded = await doLoadForEdit();
+      if (loaded && qAction === 'delete'){
+        document.getElementById('btn-delete').click();
+        const dc = document.getElementById('delete-confirm');
+        if (dc) dc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  })();
 
 })();
 </script>

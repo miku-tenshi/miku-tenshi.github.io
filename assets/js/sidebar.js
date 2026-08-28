@@ -438,4 +438,114 @@
     // 사라지니 버튼도 계속 남아있음), 화면 기준 위치만 CSS로 그대로 잡힘.
     appEl.appendChild(btn);
   })();
+
+  // ── 로그인한 소유자에게만 보이는 "글쓰기"/"수정·삭제" 바로가기 ──
+  // 사용자 요청: "글 수정/삭제: 글마다 밑에 적혀져 있어서 누르면 자동으로
+  // 가능하게(메모처럼) 수정 가능해? 글 추가도, 폴더마다 옆에 적혀져 있어서,
+  // 누르면 자동으로 글 쓰기가 가능하게... private 폴더는 건드리지 말고."
+  //
+  // /private/ 아래는 이미 자체 도구(notes, write)가 있으므로 이 스크립트는
+  // 그 바깥(공개 페이지들)에서만 동작하고, /private/에서 인증된 세션
+  // (mt-private-access, private-guard.js와 같은 검사)이 있을 때만 — 즉 사이트
+  // 주인 본인이 보고 있을 때만 — 버튼을 만든다. 세션이 없으면 아예 DOM에
+  // 아무것도 추가하지 않으므로(CSS로 숨기는 게 아님) 일반 방문자에게는 절대
+  // 보이지 않는다.
+  //
+  // "메모처럼" 완전히 그 자리에서 고치는 것(private/notes/ 같은 단일 페이지
+  // 앱)은 각 글이 posts.json 안의 데이터가 아니라 실제 개별 .html 파일이라
+  // 구조가 달라서 그대로 옮기기 어려움 — 대신 이미 있는 private/write/의
+  // "수정" 모드로 폴더/슬러그까지 채워서 바로 이동시켜(?mode=edit&folder=..
+  // &slug=..), 폴더 경로를 다시 입력하고 "불러오기"를 따로 누르는 수고를
+  // 없앴다. 그 페이지 쪽 변경은 private/write/index.html의
+  // applyDeepLinkFromQuery() 참고.
+  (function initInlineAdminControls() {
+    var path = location.pathname;
+    if (path.indexOf('/private/') === 0) return;
+
+    // private-guard.js(assets/js/private-guard.js)와 완전히 같은 세션 검사 —
+    // 다만 여긴 세션이 없다고 리다이렉트하지 않고 그냥 아무것도 안 만들고
+    // 조용히 끝낸다(여긴 원래 누구나 볼 수 있는 공개 페이지라서).
+    function hasValidOwnerSession() {
+      try {
+        var SESSION_KEY = 'mt-private-access';
+        var MAX_SESSION_AGE = 8 * 60 * 60 * 1000;
+        var owner = (cfg && cfg.owner) || 'miku-tenshi';
+        var repo = (cfg && cfg.repo) || 'miku-tenshi.github.io';
+        var data = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+        if (!data || data.repo !== owner + '/' + repo || !data.token) return false;
+        if (Date.now() - Number(data.unlockedAt || 0) > MAX_SESSION_AGE) return false;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // 폴더 목록 페이지는 항상 '/'로 끝나는 URL로 서빙되고(예: /study/,
+    // /study/db/), 개별 글은 항상 .html로 끝나는 파일명 URL이라(예:
+    // /study/css-position-fixed.html) 이 둘을 구분하는 데 DOM 구조 대신
+    // URL 경로만으로 충분함 — 홈("/")과 contact/index.html("links.md"로 표시)
+    // 처럼 chrome-path 표기가 서로 다른 특수 페이지가 있어서 DOM 휴리스틱보다
+    // 이쪽이 더 안전함.
+    function isFolderListingPage() {
+      return path.charAt(path.length - 1) === '/';
+    }
+
+    function folderFromPath() {
+      return path.replace(/^\/+|\/+$/g, '');
+    }
+
+    // 폴더 목록 페이지(예: /study/, /study/db/, /contact/) — 제목 옆에
+    // "+ 글쓰기" 버튼을 붙여서 private/write/로 그 폴더가 이미 채워진 채
+    // 넘어가게 한다. 홈("/")은 특정 폴더를 가리키지 않는 "최근 글 모음"이라
+    // 대상에서 제외(글쓰기 대상 폴더가 명확하지 않음).
+    function injectWriteButton() {
+      var heading = document.querySelector('.main-heading');
+      var folder = folderFromPath();
+      if (!heading || !folder) return;
+      var a = document.createElement('a');
+      a.className = 'admin-write-btn';
+      a.href = '/private/write/?mode=post&folder=' + encodeURIComponent(folder);
+      a.innerHTML = '<span class="admin-write-icon" aria-hidden="true">+</span>글쓰기';
+      heading.appendChild(a);
+    }
+
+    // 개별 글 페이지(예: /study/css-position-fixed.html) — 본문 목록
+    // (.entry-list, ".." 로 돌아가는 링크가 있는 자리) 바로 아래에 "수정"/
+    // "삭제" 링크를 붙인다. 둘 다 private/write/로 폴더·슬러그까지 채워서
+    // 넘어가고, "삭제"는 도착하자마자 불러오기까지 자동으로 끝낸 뒤 삭제
+    // 확인 패널만 열어둔다(실제 삭제는 거기서 한 번 더 확인해야 함 — 되돌릴
+    // 수 없는 동작이라 즉시 실행하지 않음).
+    function injectEditControls() {
+      var m = path.match(/^\/(.+)\/([^\/]+)\.html$/);
+      if (!m) return;
+      var folder = m[1];
+      var slug = m[2];
+      var list = document.querySelector('#window-body .entry-list') || document.querySelector('.window-body .entry-list');
+      if (!list || !list.parentNode) return;
+      var editHref = '/private/write/?mode=edit&folder=' + encodeURIComponent(folder) + '&slug=' + encodeURIComponent(slug);
+      var wrap = document.createElement('div');
+      wrap.className = 'admin-edit-controls';
+      wrap.innerHTML =
+        '<a class="admin-edit-link" href="' + editHref + '">수정</a>' +
+        '<a class="admin-delete-link" href="' + editHref + '&action=delete">삭제</a>';
+      list.parentNode.insertBefore(wrap, list.nextSibling);
+    }
+
+    function run() {
+      if (!hasValidOwnerSession()) return;
+      if (isFolderListingPage()) {
+        injectWriteButton();
+      } else if (/\.html$/.test(path)) {
+        injectEditControls();
+      }
+    }
+
+    // .main-heading / .window-body(.entry-list)는 이 스크립트보다 뒤에
+    // 파싱되므로(파일 맨 위 FOUC 설명 참고) DOMContentLoaded 이후로 미룸.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', run);
+    } else {
+      run();
+    }
+  })();
 })();
