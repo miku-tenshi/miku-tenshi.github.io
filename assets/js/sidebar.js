@@ -505,7 +505,7 @@
       var a = document.createElement('a');
       a.className = 'admin-write-btn';
       a.href = '/private/write/?mode=post&folder=' + encodeURIComponent(folder);
-      a.innerHTML = '<span class="admin-write-icon" aria-hidden="true">+</span>글쓰기';
+      a.innerHTML = '<span class="admin-write-icon" aria-hidden="true">+</span>write';
       heading.appendChild(a);
     }
 
@@ -526,8 +526,8 @@
       var wrap = document.createElement('div');
       wrap.className = 'admin-edit-controls';
       wrap.innerHTML =
-        '<a class="admin-edit-link" href="' + editHref + '">수정</a>' +
-        '<a class="admin-delete-link" href="' + editHref + '&action=delete">삭제</a>';
+        '<a class="admin-edit-link" href="' + editHref + '">ed.</a>' +
+        '<a class="admin-delete-link" href="' + editHref + '&action=delete">del</a>';
       list.parentNode.insertBefore(wrap, list.nextSibling);
     }
 
