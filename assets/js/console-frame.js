@@ -115,47 +115,20 @@
 
   // ── "글 쓰는 창"(.window) 높이를 화면 안에 딱 맞춤 ──
   // 사용자 요청: "글 쓰는 창은 가로 길이만 늘리고, 세로 길이는 콘솔 창
-  // 안에 들어가도록 해 줘" — 가로는 CSS(style.css의 관련 섹션 참고)만으로
-  // 풀 수 있지만, 세로로 "화면 안에 남은 공간만큼"은 카드 위치·화면 크기에
-  // 따라 매번 달라져서 CSS만으로는 정확히 못 구한다. 여기서 카드의 실제
-  // 화면상 위치(getBoundingClientRect)와 화면(.console-screen) 바닥까지
-  // 남은 거리를 재서 그만큼만 max-height로 준다 — 카드 자체는 그 안에
-  // 딱 맞고, 내용이 더 길면 카드 안(.window-body, style.css에서
-  // overflow-y:auto)에서만 스크롤된다(화면 전체를 또 스크롤할 필요 없음).
-  function fitWindowCards() {
-    var screenRect = screen.getBoundingClientRect();
-    var wins = screen.querySelectorAll('.window:not(.is-fullscreen)');
-    for (var i = 0; i < wins.length; i++) {
-      var w = wins[i];
-      var top = w.getBoundingClientRect().top;
-      var avail = screenRect.bottom - top - 16;
-      if (avail > 200) w.style.maxHeight = avail + 'px';
-    }
-  }
-  fitWindowCards();
-  // 폰트/이미지가 늦게 로드되면서 위쪽 레이아웃이 살짝 밀릴 수 있어 한 번 더.
-  window.addEventListener('load', fitWindowCards);
-  window.addEventListener('resize', fitWindowCards);
-
-  // 카드를 클릭해서 "전체화면"으로 펼치면(assets/js/window.js가
-  // .is-fullscreen 클래스를 붙임) 그 카드는 화면 전체 크기로 커져야 하는데,
-  // 방금 위에서 인라인으로 걸어둔 style.maxHeight가 남아있으면 인라인
-  // 스타일이 우선순위가 더 높아서 style.css의 ".window.is-fullscreen{
-  // max-height:none }"보다 세져 버려 전체화면이 작게 눌려 보이는 문제가
-  // 생긴다. class 변화를 감시하다가 전체화면이 되는 순간 인라인 스타일을
-  // 지우고, 다시 카드로 돌아오면 그때 다시 맞춰준다.
-  var fitTargets = screen.querySelectorAll('.window:not([data-no-autofocus])');
-  for (var fi = 0; fi < fitTargets.length; fi++) {
-    (function (winEl) {
-      new MutationObserver(function () {
-        if (winEl.classList.contains('is-fullscreen')) {
-          winEl.style.maxHeight = '';
-        } else {
-          fitWindowCards();
-        }
-      }).observe(winEl, { attributes: true, attributeFilter: ['class'] });
-    })(fitTargets[fi]);
-  }
+  // 안에 들어가도록 해 줘" — 처음엔(2026-08-28 1차) 여기서 JS로 카드의
+  // 실제 화면상 위치(getBoundingClientRect)를 재서 인라인 style.maxHeight를
+  // 매번 계산해 넣는 방식으로 풀었는데, 그 인라인 스타일이 전체화면
+  // (.is-fullscreen) 상태에서도 남아 style.css의 우선순위를 이겨버려
+  // 전체화면이 작게 눌려 보이는 버그가 있었다(MutationObserver로 그때그때
+  // 지워주는 식으로 임시 대응했었음).
+  // 2026-08-28 재작업(사용자 보고: "콘솔 안에 글 쓰기 창 제외하고 스크롤
+  // 바가 생겨" 조사 중 함께 정리): .app/.main을 순수 CSS(flex + height:100%
+  // + min-height:0)로 화면에 정확히 맞춰지도록 고치면서, 이 카드 높이도
+  // style.css의 ".console-screen .window:not(.is-fullscreen){ flex:1;
+  // min-height:0; }"만으로 화면에 딱 맞게 계산되게 바꿨다 — 인라인
+  // 스타일이 아예 안 생기므로 위 전체화면 충돌 버그도 원천적으로 없어짐.
+  // 그래서 이 자리에 있던 fitWindowCards()/리사이즈-로드 리스너/
+  // MutationObserver는 전부 제거함(더 이상 필요 없음).
 
   // ── 마퀴 제목: 실제 프로필 이름(site-config.js) ──
   var titleEl = document.getElementById('console-title');
