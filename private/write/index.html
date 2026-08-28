@@ -482,7 +482,8 @@
       '        <span class="chrome-path">' + opts.breadcrumb + '</span>\n' +
       '        <span class="chrome-hint">click to focus &rarr;</span>\n      </div>\n' +
       '      <div class="window-body" id="window-body">\n' + opts.bodyHtml + '\n      </div>\n    </article>\n  </main>\n\n</div>\n\n' +
-      '<div class="backdrop" id="backdrop"></div>\n\n<script src="/assets/js/window.js"><\/script>\n</body>\n</html>\n';
+      '<div class="backdrop" id="backdrop"></div>\n\n<script src="/assets/js/window.js"><\/script>\n' +
+      '<script src="/assets/js/console-frame.js"><\/script>\n</body>\n</html>\n';
   };
   function upLine(href, label){
     return '          <a class="entry-list-item clickable up" href="' + href + '"><span class="t">..</span><span class="d">' + label + '</span></a>';
@@ -1614,6 +1615,7 @@
 
 })();
 </script>
+<script src="/assets/js/console-frame.js"></script>
 
 </body>
 </html>

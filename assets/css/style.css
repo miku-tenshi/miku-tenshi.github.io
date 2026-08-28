@@ -33,6 +33,28 @@
 :root {
   --font-pixel: "Galmuri11", "Galmuri9", "Galmuri14", monospace;
 
+  /* 게임기 콘솔 프레임(.console-shell) 치수 — 아래 "게임기 콘솔 프레임" 섹션
+     (파일 맨 끝) 참고. */
+  --console-pad-border: 5px;
+  --console-pad-shell: 22px;
+  --console-pad-bezel: 13px;
+  /* 콘솔 화면 안에서만 쓰는 축소된 사이드바(메뉴) 폭 — "콘솔 화면 안
+     사이드바/본문 축소" 섹션과 #console-shell .sidebar-toggle-btn 위치
+     계산(사이드바 오른쪽 위 안쪽) 둘 다 이 값 하나를 같이 참조해서,
+     사이드바 폭을 나중에 또 조정하더라도 버튼 위치가 저절로 같이 맞음. */
+  --console-sidebar-w: 280px;
+
+  /* 콘솔 본체(껍데기) 색 — 컨셉 시안(https://claude.ai/code/artifact/e9df0cae-0c50-40e9-8ace-e6f8a7d9ec0b)의
+     "화이트" 스킨 값 그대로. 테마를 바꾸면 아래 각 :root[data-theme="..."]
+     블록의 같은 변수들로 통째로 바뀜(순수 CSS 캐스케이드, JS는 색을 계산하지
+     않음). */
+  --console-s1: #a8e8ff;
+  --console-s2: #c9b8fb;
+  --console-s3: #ffc2e8;
+  --console-bezel: #beb2ed;
+  --console-ring: #8382e6;
+  --console-deck-ink: #3d2f7a;
+
   /* ── 테마 1) 기본 — 화이트 · 블랙 · 포인트 블루 ── */
 
   /* 오른쪽 메인 배경 */
@@ -102,6 +124,14 @@
   --danger-soft: #3a1e22;
   --ok: #34d399;
   --ok-soft: #163429;
+
+  /* 콘솔 "다크" 스킨 — 시안의 dark 스킨 값 그대로 */
+  --console-s1: #eedcff;
+  --console-s2: #dec3fb;
+  --console-s3: #d0aff7;
+  --console-bezel: #bda5ea;
+  --console-ring: #7a56c9;
+  --console-deck-ink: #4a2f80;
 }
 
 /* ── 테마 3) 블루 — 오로라(aurora) 톤 블루+퍼플 그라데이션
@@ -130,6 +160,14 @@
   --danger-soft: #fdebed;
   --ok: #218c68;
   --ok-soft: #def4e9;
+
+  /* 콘솔 "블루" 스킨 — 시안의 blue 스킨 값 그대로 */
+  --console-s1: #dcf7fd;
+  --console-s2: #bdedfb;
+  --console-s3: #a3e0f7;
+  --console-bezel: #8dcfea;
+  --console-ring: #4f9ce3;
+  --console-deck-ink: #1c5c78;
 }
 
 /* ── 테마 4) 민트 — 파스텔 민트 그라데이션(이전까지의 기본 색상) ── */
@@ -150,6 +188,15 @@
   --danger-soft: #fdebed;
   --ok: #218c68;
   --ok-soft: #def4e9;
+
+  /* 콘솔 "민트" 스킨 — 시안(4개 스킨)에는 없는 조합이라, 민트 테마의 실제
+     accent(#39c5bb/#55a9e8)에 맞춰 같은 파스텔-글라스 톤으로 새로 만듦. */
+  --console-s1: #d6f9f0;
+  --console-s2: #c3f0e8;
+  --console-s3: #bfe6fb;
+  --console-bezel: #8fd9cf;
+  --console-ring: #269fa0;
+  --console-deck-ink: #0f4a4b;
 }
 
 /* ── 테마 5) 핑크 — 파스텔 핑크 그라데이션 ── */
@@ -170,6 +217,14 @@
   --danger-soft: #fdebed;
   --ok: #218c68;
   --ok-soft: #def4e9;
+
+  /* 콘솔 "핑크" 스킨 — 시안의 pink 스킨 값 그대로 */
+  --console-s1: #ffdcf4;
+  --console-s2: #ffc5ec;
+  --console-s3: #ffb0e1;
+  --console-bezel: #f5a8d4;
+  --console-ring: #d94f8f;
+  --console-deck-ink: #99175f;
 }
 
 *{ box-sizing: border-box; }
@@ -242,6 +297,10 @@ a{ color: inherit; text-decoration: none; }
 .sidebar-toggle-btn{
   position: fixed;
   top: 24px;
+  /* 게임기 콘솔 프레임이 적용된 페이지에서는 이 버튼을 아예 다른 위치(콘솔
+     화면 오른쪽 위 모서리, position:absolute)로 옮기고 이 규칙을 덮어씀 —
+     파일 맨 끝 "게임기 콘솔 프레임" 섹션의 "#console-shell .sidebar-toggle-btn"
+     참고. 여기 기본값은 콘솔 프레임이 없는 페이지(/private/ 등) 전용. */
   left: calc(var(--sidebar-w) - 60px);
   z-index: 60;
   width: 40px;
@@ -1050,7 +1109,7 @@ a{ color: inherit; text-decoration: none; }
 
 .chrome-dots span:nth-child(1){ background: var(--accent-grad); border: none; }
 
-.chrome-path{ font-size: 15px; color: var(--ink-faint); margin-left: 4px; }
+.chrome-path{ font-family: var(--font-pixel); font-size: 13px; color: var(--ink-faint); margin-left: 4px; }
 .chrome-path a{ color: var(--ink-soft); }
 .chrome-path a:hover{ color: var(--accent-solid); text-decoration: underline; }
 
@@ -1089,6 +1148,14 @@ a{ color: inherit; text-decoration: none; }
    breadcrumb 제목(.main-heading h1)처럼 UI/내비게이션 쪽에만 남기고, 실제로 쓴 글의
    제목·소제목(h1~h4)은 본문과 같은 기본 폰트(Pretendard)로 되돌림. */
 .window-body h2{ font-size: 23px; font-weight: 700; margin: 0 0 18px; }
+/* 글 본문 제목(h1~h4)에도 레트로 픽셀 폰트 적용(2026-08-28) — 사용자 요청:
+   "레트로 폰트도 제목이나 메뉴와 같은 부분에 다 적용해 주고" — 메뉴(.nav-
+   item)·프로필 이름(.profile-name)은 이미 --font-pixel을 쓰고 있었는데,
+   글 내용 안의 제목들은 빠져 있었음. 콘솔 전용이 아니라 사이트 전체(이미
+   레트로 폰트가 부분 적용돼 있던 흐름과 맞춰) 공통 규칙으로 추가. */
+.window-body h1, .window-body h2, .window-body h3, .window-body h4{
+  font-family: var(--font-pixel);
+}
 
 .window-body p{ color: var(--ink-soft); line-height: 1.8; font-size: 17.5px; margin: 0 0 16px; }
 .window-body p:last-child{ margin-bottom: 0; }
@@ -1142,7 +1209,7 @@ a{ color: inherit; text-decoration: none; }
 .entry-list-item.clickable{ cursor: pointer; }
 .entry-list-item.clickable:hover{ background: rgba(var(--accent-rgb), 0.06); }
 .entry-list-item:last-child{ border-bottom: none; }
-.entry-list-item .t{ color: var(--ink); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.entry-list-item .t{ font-family: var(--font-pixel); color: var(--ink); font-weight: 500; display: flex; align-items: center; gap: 8px; }
 .entry-list-item .d{ color: var(--ink-faint); font-size: 14px; white-space: nowrap; }
 
 /* 폴더 항목: 이름 끝에 슬래시가 붙고 살짝 강조됩니다 */
@@ -1340,7 +1407,13 @@ a{ color: inherit; text-decoration: none; }
      (스와이프로 사진을 넘기는 기능 자체는 모바일에서도 그대로 동작함). */
   .avatar-dots{ display: none; }
   .profile{ flex-direction: row; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
-  .profile-text{ align-items: flex-start; text-align: left; min-width: 0; }
+  /* align-items: flex-start(가로축 기준 "내용만큼만" 크기)가 아니라 stretch를 써야
+     자식 .profile-name이 실제로 이 컨테이너 폭까지 눌려서 그 안에서 줄임표가
+     동작함 — flex-start면 이름 글자가 항상 자기 원래 폭대로 그려져서
+     overflow:hidden/text-overflow:ellipsis가 적용될 폭 제한이 없어지고, 자리가
+     좁아지면(게임기 콘솔 프레임이 만드는 좌우 여백만큼) 옆 메뉴 아이콘과
+     겹쳐버림. text-align:left라 stretch를 써도 글자는 그대로 왼쪽 정렬. */
+  .profile-text{ align-items: stretch; text-align: left; min-width: 0; }
   /* 이름이 2줄로 넘어가지 않도록(사용자 요청: "이름이 2줄이 되지 않도록 한다,
      10글자 이하") 한 줄 고정 + 자리가 모자라면 줄임표로 자름. 10글자 이하 이름은
      아래 메뉴 아이콘 5개가 폭을 차지하고 남는 공간에서 보통 줄임표 없이 그대로
@@ -1464,4 +1537,460 @@ input, textarea, select{ cursor: text !important; }
 }
 .retro-detail a{ color: var(--accent-solid); text-decoration: underline; }
 .retro-error{ color: var(--danger); }
+
+/* ─────────────────────────────────────────────
+   2026-08-28 — 게임기 콘솔 프레임 (사이트 전체 적용, v2: 고정 콘솔 + 내부
+   스크린 스크롤)
+
+   시안: https://claude.ai/code/artifact/e9df0cae-0c50-40e9-8ace-e6f8a7d9ec0b
+   (assets/js/console-frame.js가 .app 전체를 이 틀로 감싼다 — 기존 사이트의
+   레이아웃·색·기능은 그대로 두고 바깥에 새 장식 껍데기만 씌우는 방식).
+
+   v1(2026-08-28 첫 버전)은 콘솔이 페이지 전체 길이만큼 같이 늘어나는
+   방식이었는데, 사용자 피드백("웹 사이트 부분이 화면이 너무 커서 실제
+   게임기 같아 보이지 않아. 16:9 화면에서 봤을 때에도 아름답지 않아")을 받고
+   구조를 바꿈 — 이제 콘솔 틀(.console-shell) 자체는 화면 크기에 맞는 고정
+   비율을 유지하고, 실제 사이트 내용(.app)은 그 안의 화면(.console-screen)
+   영역에서만 스크롤된다. 진짜 오락기 화면처럼 "틀은 항상 같은 모양, 내용만
+   안에서 움직임".
+
+   색·치수는 시안의 CSS 값을 그대로 옮겼고, 아래 항목만 시안과 다르게
+   "의도적으로" 바꿨다:
+
+   1) 시안의 .console에는 6초 주기로 위아래로 살짝 떠오르는 숨쉬기 애니메이션
+      (transform: translateY(...))이 있는데, 여기서는 뺐다 — .console-screen-
+      bezel 안에 절대위치로 떠 있는 .sidebar-toggle-btn(사이드바 접기 버튼,
+      아래 참고)이 있고, 조상 요소에 transform이 걸리면 그 순간 그 조상이
+      absolute/fixed 자손의 새 기준점이 되어버려서 버튼 위치가 깨진다. 대신
+      배경 그라데이션이 움직이는 shell-drift 애니메이션은 transform을 안
+      쓰므로 그대로 살렸다.
+   2) 시안 상단의 "ARCADE CONCEPT" 제목/설명, 하단의 "컨셉 설명" 캡션, 방 배경의
+      점선 패턴과 반짝이 스티커는 시안(그 자체를 리뷰하기 위한 목업 페이지)의
+      설명용 요소라 실제 사이트에는 옮기지 않았다 — 콘솔 자체(마퀴/HUD/화면/
+      데크)만 사이트에 들어간다.
+   3) 시안은 폭 min(880px,100%)의 고정폭 미니 미리보기였지만, 실제 사이트는
+      진짜 사이드바(560px)+본문이 통째로 들어가야 해서 화면 자체가 훨씬
+      크다 — 그래서 콘솔 전체 크기는 시안 그대로 베끼지 않고 "16:9 등 실제
+      모니터 화면에 보기 좋은 크기"로 새로 잡았다(아래 .console-viewport/
+      .console-shell 참고). 흰 테두리(trim) · HUD 3칸(POSTS/UPTIME/SKIN) ·
+      십자키·스킨버튼 크기 · 데크 하단(저작권+SCORE) 배치 같은 "부품" 하나
+      하나의 생김새는 시안 수치 그대로 맞췄다.
+
+   ⚠️ 주의: 아래 .console-shell/.console-screen-bezel/.console-screen에는
+   transform · filter · backdrop-filter를 절대 걸지 않는다(위 1번 이유와 동일). */
+
+/* 콘솔을 화면 한가운데에 띄우는 바깥 레이어 — body 자체의 display는 안
+   건드리고(다른 body 직계 요소인 .backdrop/.custom-cursor는 전부
+   position:fixed라 원래도 이 레이어와 무관하게 잘 동작함) 새 래퍼 하나만
+   추가해서 그 안에서만 flex 중앙정렬한다. */
+.console-viewport{
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 2026-08-28 재조정: "콘솔 자체는 크게, 화면 꽉 차게" 피드백 — 바깥
+     여백(패딩)을 최소로 줄여서 콘솔 틀이 브라우저 창을 거의 가득 채우게
+     한다(24px에서 축소, 완전히 0으로는 안 함 — 흰 테두리 바깥 그림자가
+     화면 밖으로 잘려서 콘솔이 잘린 것처럼 보이는 걸 막기 위한 최소한의
+     여백). */
+  padding: 10px;
+  box-sizing: border-box;
+  background: var(--bg);
+  transition: background 0.4s ease;
+}
+
+.console-shell{
+  --btn-ring: var(--console-ring);
+  /* 2026-08-28 조정 이력:
+     1) 1차: 사용자 피드백("내부 스크린 자체가 너무 커서 스크롤하기
+        힘들 것 같아")을 받고 콘솔 틀을 1240×800 → 1080×700으로 줄이고,
+        대신 콘솔 화면 안 사이드바(메뉴) 폭만 별도로 축소했었다(아래
+        "콘솔 화면 안 사이드바/본문 축소" 참고).
+     2) 2차(최종): 그 결과를 본 사용자가 "아니야, 콘솔 자체는 크게 해 줘.
+        화면 꽉 차게, 글 쓰는 창(화면 안 콘텐츠 카드)도 더 길게"라고
+        정정 — 화면을 작게 줄이는 방향이 아니라 콘솔 틀 자체를 뷰포트에
+        거의 꽉 차게 키우는 방향이 맞았다. 콘솔 틀을 다시 크게 키우고(위
+        .console-viewport 바깥 여백도 최소로 줄임), 안쪽 사이드바 축소는
+        그대로 유지 — 콘솔이 커진 만큼 화면(.console-screen) 세로 길이도
+        커져서 "글 쓰는 창"이 자연히 더 길게 보인다.
+     트랜스폼(transform:scale)으로 안쪽을 시각적으로 줄이는 방법은 여전히
+     쓰지 않는다 — /project 등 페이지의 "창(.window) 전체화면" 기능이
+     position:fixed + JS가 계산한 실제 뷰포트 픽셀값에 의존하는데, 조상에
+     transform이 걸리면 그 조상이 fixed의 새 기준점이 되어버려 전체화면
+     위치/크기가 깨진다(직접 클릭 테스트로 확인됨). */
+  width: min(1600px, 98vw);
+  height: min(900px, 96vh);
+  display: flex;
+  flex-direction: column;
+  padding: var(--console-pad-shell) var(--console-pad-shell) 18px;
+  border: var(--console-pad-border) solid #ffffff;
+  border-radius: 32px;
+  background: linear-gradient(120deg, var(--console-s1), var(--console-s2), var(--console-s3), var(--console-s1));
+  background-size: 340% 340%;
+  animation: console-shell-drift 7s ease-in-out infinite alternate;
+  box-shadow:
+    0 26px 50px -20px rgba(60, 40, 100, 0.32),
+    0 0 0 2px rgba(255, 255, 255, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.6);
+  transition: background 0.5s ease, border-color 0.5s ease;
+}
+@keyframes console-shell-drift{
+  0%{ background-position: 0% 20%; }
+  50%{ background-position: 100% 50%; }
+  100%{ background-position: 20% 100%; }
+}
+@media (prefers-reduced-motion: reduce){
+  .console-shell{ animation: none; background-position: 30% 50%; }
+}
+
+.console-marquee{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 18px;
+  margin-bottom: 12px;
+  background: #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 3px 8px rgba(40, 20, 70, 0.12);
+  flex: none;
+  /* 사이드바 접기 버튼(#console-shell .sidebar-toggle-btn)을 이 바 왼쪽에
+     절대위치로 붙이기 위한 기준점. */
+  position: relative;
+}
+.console-marquee .dot{
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--console-ring);
+  animation: console-blink 2.4s ease-in-out infinite;
+}
+.console-marquee .dot:nth-child(3){ animation-delay: 1.2s; }
+@keyframes console-blink{ 0%, 100%{ opacity: 0.35; } 50%{ opacity: 1; } }
+@media (prefers-reduced-motion: reduce){ .console-marquee .dot{ animation: none; opacity: 0.8; } }
+.console-marquee span{
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--console-deck-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.console-hud{ flex: none; display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
+.console-hud .chip{
+  display: flex; align-items: center; gap: 6px;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  color: var(--console-deck-ink);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(40, 20, 70, 0.10);
+}
+.console-hud .chip b{ font-family: var(--font-pixel); font-size: 11px; font-weight: 400; color: var(--console-ring); }
+.console-hud .chip svg{ width: 14px; height: 14px; flex: none; }
+
+.console-screen-bezel{
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  padding: var(--console-pad-bezel);
+  border-radius: 22px;
+  background: var(--console-bezel);
+  transition: background 0.5s ease;
+}
+.console-screen{
+  position: relative;
+  height: 100%;
+  border-radius: 14px;
+  background: var(--bg);
+  transition: background 0.4s ease;
+  /* 진짜 오락기 화면처럼 "틀은 고정, 안의 내용만 스크롤" — 실제 사이트
+     (.app)를 이 안에 그대로 넣고 세로 스크롤만 허용. .sidebar-toggle-btn은
+     이 안이 아니라 부모 .console-screen-bezel에 붙여둬서(아래 참고) 스크롤
+     해도 화면 모서리에 항상 고정되어 있음. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  /* ⚠️ isolation:isolate는 일부러 안 씀(위 파일 도입부 경고 참고). */
+}
+/* .app은 원래 min-height:100vh(진짜 브라우저 뷰포트 기준)였는데, 이제
+   뷰포트가 아니라 이 화면(.console-screen) 안에서만 살고 있으므로 그
+   기준을 "이 화면의 높이"로 바꿔준다 — 안 바꾸면 화면이 800px인데 내용은
+   항상 최소 화면 전체 높이(예: 1000px)를 요구해서 필요 이상으로 스크롤이
+   생김. */
+.console-screen .app{ min-height: 100%; }
+/* 화면 안쪽에 아주 옅은 스캔라인 — .app 콘텐츠 클릭/스크롤을 방해하지 않도록
+   pointer-events:none. */
+.console-screen::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 14px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.025) 0px, rgba(0,0,0,0.025) 1px,
+    transparent 1px, transparent 3px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.2;
+}
+
+/* 사이드바 접기 버튼 — .app 안(원래 자리)이 아니라 마퀴(제목 표시줄, 화면
+   맨 위의 흰 알약 모양 바)의 왼쪽 끝으로 옮겨 붙인다(assets/js/console-
+   frame.js). 화면(.console-screen) 안에 그대로 두면 스크롤할 때 같이 밀려
+   올라가 버리는데, 마퀴는 화면과 별개의 고정 요소(스크롤 안 됨)라 여기 두면
+   항상 보이면서도 화면과 절대 겹치지 않는다.
+   위치 조정 이력:
+   1) v3~v5: 화면 오른쪽 위 모서리(붕 떠 보인다는 피드백).
+   2) v6: 원본 사이트처럼 사이드바 오른쪽 위 안쪽(sidebar-w - 60px 공식)으로
+      되돌렸는데도 여전히 "붕 떠 있다"는 피드백 — 베젤(화면 바깥 여백)에
+      떠 있다 보니 사이드바 안 어떤 내용과도 안 붙어 보이는 게 근본 원인.
+   3) v7: 화면 왼쪽 위 모서리로 통일했는데, 베젤 여백(13px)이 버튼 높이
+      (20px)보다 얇아서 화면의 둥근 모서리 위에 걸쳐 보이는 문제가 있었음
+      ("여전히 이상해 ㅜㅜ, 콘솔 창이랑 안 겹치게" 피드백 — 실제로 스크린샷을
+      확대해서 확인해보니 아이콘이 화면 모서리 곡선에 반쯤 걸려 있었음).
+   4) v8(최종): 화면과는 아예 다른 요소인 마퀴 바 왼쪽 끝으로 이동 — "제목
+      표시줄 + 메뉴 버튼"이라는 흔한 조합이라 화면과 물리적으로 겹칠 수가
+      없고(마퀴는 화면보다 위에 완전히 분리된 알약 바), 흰 배경 위에 있어서
+      더 이상 붕 떠 보이지도 않는다. 열림/접힘 두 상태 모두 같은 자리. */
+#console-shell .sidebar-toggle-btn{
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  right: auto;
+  bottom: auto;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 24px;
+  height: 18px;
+  gap: 4px;
+}
+#console-shell .sidebar-toggle-btn span{
+  width: 15px;
+  height: 3px;
+}
+#console-shell .sidebar-toggle-btn:active{ transform: translateY(-50%) translateY(1px); }
+
+/* 데크(십자키/그릴/스킨버튼) 배치(2026-08-28 조정) — 사용자 요청: "콘솔 창의
+   조작 버튼들을 조금 더 중앙으로 이동시켜 줘". 원래 justify-content:
+   space-between이라 콘솔 폭이 커질수록(v5~v6에서 콘솔 자체를 키움) 십자키/
+   스킨버튼이 화면 양 끝까지 벌어져서 서로 멀어져 보였음 — center로 바꾸고
+   그 사이 간격(gap)을 화면 폭에 비례하게 줘서 폭이 커져도 지금처럼 벌어지지
+   않고 뭉쳐 보이게 함(clamp라 좁은 화면에서는 자동으로 줄어듦, flex-wrap은
+   그래도 안전장치로 유지). */
+.console-deck{
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(36px, 6vw, 110px);
+  padding: 18px 8px 4px;
+  flex-wrap: wrap;
+}
+
+/* 십자 방향키 — 시안과 동일한 유리질 그라데이션 + 여러 겹 안쪽 그림자 */
+.console-dpad{ position: relative; width: 72px; height: 72px; flex: none; filter: drop-shadow(0 6px 10px rgba(40, 20, 70, 0.22)); }
+.console-dpad .cross{
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,255,255,0.42) 45%, rgba(210,216,236,0.55));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 8px;
+  clip-path: polygon(34% 0, 66% 0, 66% 34%, 100% 34%, 100% 66%, 66% 66%, 66% 100%, 34% 100%, 34% 66%, 0 66%, 0 34%, 34% 34%);
+  box-shadow:
+    inset 0 3px 4px rgba(255,255,255,0.95),
+    inset 0 -4px 7px rgba(70,50,110,0.28),
+    inset 3px 0 4px rgba(255,255,255,0.35),
+    inset -3px 0 4px rgba(70,50,110,0.14);
+}
+.console-dpad .cross::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  -webkit-clip-path: inherit;
+  background: linear-gradient(115deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.05) 35%, transparent 55%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.console-dpad .hub{
+  position: absolute; left: 50%; top: 50%;
+  width: 19px; height: 19px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, rgba(255,255,255,0.98), rgba(216,221,236,0.85) 55%, rgba(176,182,205,0.7) 100%);
+  box-shadow: inset 0 -3px 4px rgba(70,50,110,0.3), inset 0 2px 2px rgba(255,255,255,0.95), 0 2px 4px rgba(40,20,70,0.22);
+  border: 1px solid rgba(255,255,255,0.55);
+}
+
+/* 중앙 그릴(|||) 크기(2026-08-28 조정) — 사용자 요청: "중앙의 ||| 아이콘도
+   크기를 조작 버튼과 맞춰서 키워 줘" — 원래 24px(장식용 얇은 선)이던 걸
+   양옆 조작 버튼(십자키 72px)과 눈에 띄게 비슷한 높이로 키움. */
+.console-grille{ display: flex; align-items: center; gap: 7px; opacity: 0.6; }
+.console-grille i{ width: 7px; height: 64px; border-radius: 3px; background: #fff; box-shadow: 0 2px 5px rgba(40,20,70,0.12); }
+
+/* 스킨(테마) 4개 즉시 전환 버튼 — 새 상태를 따로 안 만들고, 사이드바 안에 이미
+   있는 진짜 테마 스위처 버튼(.theme-switcher [data-theme-btn])을 그대로
+   찾아서 클릭해줄 뿐(assets/js/console-frame.js). 그래서 저장/동기화 로직이
+   완전히 하나로 유지된다. 시안과 같은 십자(다이아몬드) 배치, 4개(기본/블루/
+   핑크/다크)만 — 나머지(민트)는 사이드바 위 진짜 테마 스위처(점 5개)에서
+   고르면 됨. */
+.console-quickskins{ position: relative; width: 92px; height: 92px; flex: none; }
+.console-quick-btn{
+  position: absolute;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--btn-ring, #9aa0b0);
+  background: linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,255,255,0.4) 45%, rgba(214,219,236,0.55));
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  cursor: pointer;
+  padding: 0;
+  box-shadow: inset 0 2px 3px rgba(255,255,255,0.95), inset 0 -3px 4px rgba(70,50,110,0.22), 0 3px 8px rgba(40,20,70,0.18);
+  transition: transform 0.12s ease;
+}
+.console-quick-btn::before{
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: linear-gradient(125deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.05) 42%, transparent 62%);
+  mix-blend-mode: screen; pointer-events: none;
+}
+.console-quick-btn[data-pos="t"]{ top: 0; left: 50%; margin-left: -14px; }
+.console-quick-btn[data-pos="r"]{ right: 0; top: 50%; margin-top: -14px; }
+.console-quick-btn[data-pos="b"]{ bottom: 0; left: 50%; margin-left: -14px; }
+.console-quick-btn[data-pos="l"]{ left: 0; top: 50%; margin-top: -14px; }
+.console-quick-btn::after{
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--btn-ring, #9aa0b0);
+  transform: translate(-50%, -50%) scale(0.001);
+  transition: transform 0.15s ease;
+}
+.console-quick-btn.is-active::after{ transform: translate(-50%, -50%) scale(1); }
+.console-quick-btn:active{ transform: translateY(2px); }
+.console-quick-btn:focus-visible{ outline: 3px solid var(--console-deck-ink); outline-offset: 2px; }
+
+.console-deck-foot{
+  flex: none;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 14px; padding: 0 4px;
+  font-size: 9.5px;
+  color: var(--console-deck-ink);
+  opacity: 0.6;
+  font-family: var(--font-pixel);
+}
+
+/* 사용자 요청(2026-08-28): "원래의 웹 사이트에서 없애도 되는 건 시간에 따라
+   밤낮이 바뀌는 바다 사진 뿐" — 게임기 콘솔 프레임 도입에 맞춰 사이드바 맨
+   아래의 바다 일러스트(시계/날짜 포함)를 제거함. 저작권 문구는 위
+   .console-deck-foot으로 옮겨감. JS(assets/js/sidebar.js)의 시간대 계산 로직
+   자체는 그대로 두되(되돌리기 쉽도록), 여기서 화면에는 그리지 않음. */
+.sidebar-sea{ display: none; }
+
+@media (max-width: 900px){
+  /* 모바일에서는 화면이 작아서 콘솔을 가운데 작게 띄우면 오히려 갑갑하니,
+     여백을 최소로 줄이고 거의 꽉 채운다(그래도 화면 안 스크롤 구조는 동일).
+     모바일 사이드바(상단 아이콘 바)는 "폴더 아이콘 5개 + 프로필 이름이 한
+     줄에 다 들어와야 한다"는 조건으로 이미 폭이 빠듯하게 맞춰져 있어서(위
+     900px 이하 .nav-group/.profile-name 규칙 참고), 테두리/패딩도 함께
+     줄인다(Playwright 모바일 스크린샷으로 실제 겹침 확인 후 조정한 값). */
+  .console-viewport{ padding: 8px; }
+  .console-shell{
+    width: 100%;
+    height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
+    border-width: 3px;
+    padding: 10px 10px 8px;
+    border-radius: 20px;
+  }
+  .console-screen-bezel{ padding: 6px; border-radius: 18px; }
+  .console-marquee span{ font-size: 11px; }
+  .console-hud .chip{ font-size: 10.5px; }
+  .console-deck{ gap: 14px; }
+  .console-dpad{ width: 56px; height: 56px; }
+  .console-dpad .hub{ width: 15px; height: 15px; }
+  .console-quickskins{ width: 76px; height: 76px; }
+  .console-quick-btn{ width: 24px; height: 24px; }
+  .console-grille i{ height: 48px; }
+}
+
+/* 콘솔 화면 안 사이드바(메뉴)/본문 축소(2026-08-28) — 사용자 요청: "내부
+   스크린의 비율이나, 메뉴창과 같은 부분의 크기를 줄여서 딱 맞게 할 수
+   없을까? ... 내부 스크린 자체가 너무 커서 스크롤하기 힘들 것 같아".
+   /private/ 등 콘솔이 없는 페이지에는 이 규칙이 전혀 안 붙도록(선택자가
+   항상 ".console-screen ..."로 시작) 스코프를 확실히 좁혔고, 원래 사이트
+   .sidebar의 아바타/메뉴 글자 크기는(위 .sidebar 주석의 "다시 줄이지
+   말라고 했던 부분") 그대로 두었다 — 여기서 줄이는 건 콘솔 화면 안에서만
+   보이는 별도의 더 작은 버전이지, 원래 사이트(/private/, 콘솔 도입 전)의
+   그 값 자체를 고치는 게 아니다. 모바일(≤900px)은 사이드바가 이미 별도의
+   가로 아이콘 바 레이아웃이라 대상이 아니므로 min-width:901px 안에서만
+   적용(아래 규칙이 모바일 레이아웃을 덮어쓰지 않도록). */
+@media (min-width: 901px){
+  .console-screen .sidebar{
+    width: var(--console-sidebar-w);
+    padding: 28px 22px;
+    gap: 18px;
+  }
+  .console-screen .avatar{ max-width: 108px; border-radius: 20px; }
+  .console-screen .avatar span{ font-size: 38px; }
+  .console-screen .profile-text{ gap: 3px; }
+  .console-screen .profile-name{ font-size: 19px; }
+  .console-screen .profile-role{ font-size: 13px; }
+  .console-screen .nav-group{ gap: 4px; }
+  .console-screen .nav-item{ padding: 11px 13px; font-size: 13px; gap: 4px; }
+  .console-screen .nav-item .nav-icon{ width: 17px; height: 17px; }
+  .console-screen .main{ padding: 34px 30px; }
+}
+
+/* "home/ 채리미의 기록 공간입니다" 같은 폴더 이름/설명 헤더(.main-heading)를
+   콘솔 화면에서는 완전히 없앰(2026-08-28) — 사용자 요청: "이 부분을 모든
+   폴더에서 없애줘 ... 이를 통해, 아예 글 쓰는 창을 넓히자". main-heading이
+   차지하던 세로 공간이 그대로 "글 쓰는 창"(.window) 몫으로 돌아간다 — 아래
+   "글 쓰는 창 크기 조정" 섹션의 fitWindowCards()가 카드의 실제 화면상
+   위치를 다시 재서 자동으로 반영하므로 JS는 따로 손댈 필요가 없음. */
+.console-screen .main-heading{ display: none; }
+
+/* 사이드바 위 진짜 테마 스위처(점 5개) 숨기기(2026-08-28) — 사용자 요청:
+   "테마 변경하는 창은 아래 콘솔 버튼으로 조절하면 되니, 프로필 위의 선택
+   창에서는 지워 줘". 콘솔 데크의 스킨 버튼 4개(.console-quickskins)가
+   이미 이 버튼들을 그대로 클릭해주는 방식(assets/js/console-frame.js)이라
+   숨겨도 동작 자체는 안 깨짐(.click()은 display:none이어도 정상 동작).
+   ⚠️ 다만 콘솔 데크에는 4개(기본/블루/핑크/다크)만 있고 민트는 없음 —
+   콘솔 화면에서는 민트 테마를 고를 방법이 없어짐(민트가 이미 선택되어
+   저장되어 있으면 계속 보이긴 함). data-role 속성 기준으로 숨겨서
+   sidebar.js의 모바일 위치 이동 로직(맨 아래로 옮기는 것)과도 무관하게
+   항상 안 보이게 함. */
+.console-screen [data-role="theme-switcher"]{ display: none; }
+
+/* "글 쓰는 창"(.window — 예: 홈 화면의 "home / index.md" 카드) 크기 조정
+   (2026-08-28) — 사용자 요청: "글 쓰는 창은 가로 길이만 늘리고, 세로
+   길이는 콘솔 창 안에 들어가도록 해 줘".
+   1) 가로: 원래 사이트의 max-width:940px 제한(좁은 원래 사이트 폭에 맞춘
+      값)을 콘솔 화면 안에서는 풀어서 .main이 넓어진 만큼 카드도 같이
+      넓어지게 한다(제목(.main-heading)도 카드 폭과 맞도록 같이 풀어줌).
+   2) 세로: 카드 전체 높이가 화면(.console-screen)의 남은 세로 공간을
+      넘지 않도록 상한선을 건다 — 정확한 값(그 카드의 화면 안 실제 남은
+      높이)은 화면 크기·사이드바 상태에 따라 달라지므로 CSS만으로는 못
+      구하고, JS(assets/js/console-frame.js의 fitWindowCards)가 매번
+      측정해서 인라인 style.maxHeight로 정확히 채워준다 — 아래 max-height:
+      70vh는 JS가 아직 못 돌았을 때(또는 JS 실패 시)를 위한 대략적인
+      대체값일 뿐. 카드를 flex 세로 컨테이너로 만들어서 위 칩(.window-
+      chrome)은 원래 크기 그대로 두고, 본문(.window-body)만 남는 공간을
+      차지하며 그 안에서 자체 스크롤(overflow-y:auto, 원래도 있던 동작)
+      하게 한다 — 그래서 카드 자체가 화면 밖으로 튀어나가 화면 전체를
+      또 스크롤해야 하는 "이중 스크롤"이 없어진다. */
+.console-screen .window:not(.is-fullscreen){
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+.console-screen .window:not(.is-fullscreen) .window-body{
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
 .retro-error::before{ content: "> "; color: var(--ink-faint); }
