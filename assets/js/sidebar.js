@@ -126,12 +126,45 @@
       }
     }
 
+    // 사진을 넘긴 뒤 다른 폴더로 이동해도 그 사진이 계속 유지되도록(사용자 요청:
+    // "프로필 사진을 변경 후, 다른 폴더에 들어가게 되면 자꾸 바뀜 — 다시 바꾸지
+    // 않는 이상 고정하는 형식으로") localStorage에 마지막으로 본 사진 인덱스를
+    // 저장해둔다 — 테마 저장(THEME_KEY)과 같은 방식. 사이드바는 페이지마다 이
+    // 스크립트가 새로 그리므로, 아래에서 그 저장된 인덱스로 초기 스크롤 위치를
+    // 맞춰서 "새로고침/이동할 때마다 첫 사진으로 돌아가는" 문제를 없앤다.
+    var AVATAR_KEY = 'mt-avatar-idx';
+    function setActiveIdx(idx) {
+      setActiveDot(idx);
+      try { localStorage.setItem(AVATAR_KEY, String(idx)); } catch (e) { /* 개인정보 보호 모드 등 — 무시 */ }
+    }
+
+    var storedIdx = 0;
+    try {
+      var raw = localStorage.getItem(AVATAR_KEY);
+      var parsed = raw !== null ? parseInt(raw, 10) : 0;
+      if (parsed >= 0 && parsed < dots.length) storedIdx = parsed;
+    } catch (e) { /* 무시 */ }
+    if (storedIdx > 0) {
+      // 스무스 스크롤 없이 즉시 이동 — 다른 사진이 잠깐 보였다가 바뀌는 깜빡임을
+      // 없애기 위해(이 스크립트는 <main>보다 먼저 동기 실행되므로 첫 페인트 전에
+      // 이미 자리를 잡음).
+      track.scrollLeft = storedIdx * (track.clientWidth || 0);
+    }
+    setActiveDot(storedIdx);
+
     var scrollTimer = null;
     track.addEventListener('scroll', function () {
       if (scrollTimer) clearTimeout(scrollTimer);
       scrollTimer = setTimeout(function () {
+        // 사이드바 자동 숨김(auto-hide) 기능이 방금 이 트랙을 display:none으로
+        // 감춘 경우, 트랙의 scrollLeft/clientWidth가 0으로 리셋되면서(브라우저가
+        // 숨겨진 스크롤 컨테이너의 스크롤 위치를 버림) 이 debounce 타이머가 그
+        // "0"을 진짜 스크롤 위치로 착각해서 저장해둔 사진 선택을 엉뚱하게 1번
+        // 사진으로 덮어써버리는 문제가 있었음. 트랙이 지금 안 보이는 상태(폭 0)면
+        // 실제 사용자 스크롤이 아니므로 무시.
+        if (!track.clientWidth) return;
         var w = track.clientWidth || 1;
-        setActiveDot(Math.round(track.scrollLeft / w));
+        setActiveIdx(Math.round(track.scrollLeft / w));
       }, 80);
     });
 
@@ -140,6 +173,7 @@
         e.preventDefault();
         var idx = Number(this.getAttribute('data-dot')) || 0;
         track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+        setActiveIdx(idx);
       });
     }
 
@@ -182,7 +216,7 @@
       var w = track.clientWidth || 1;
       var idx = Math.max(0, Math.min(dots.length - 1, Math.round(track.scrollLeft / w)));
       track.scrollTo({ left: idx * w, behavior: 'smooth' });
-      setActiveDot(idx);
+      setActiveIdx(idx);
     }
     track.addEventListener('pointerup', endDrag);
     track.addEventListener('pointercancel', endDrag);
@@ -338,5 +372,130 @@
     // 구형 사파리 등 addEventListener를 지원하지 않는 MediaQueryList 대비
     if (mq.addEventListener) mq.addEventListener('change', reposition);
     else if (mq.addListener) mq.addListener(reposition);
+  })();
+
+  // ── 콘텐츠보다 사이드바가 더 길 때 사이드바를 자동으로 숨김(데스크탑 전용) ──
+  // 사용자 요청: "글 창의 세로가 일정 수준 이상으로 줄어들었을 때에는 자동으로
+  // 메뉴창을 가리도록... 글 창보다 메뉴창이 더 크기 때문에 메뉴창을 가릴 것"
+  // — 사이드바 자신의 콘텐츠 높이(아바타 200px + 메뉴 5개 + 바다 + 테마
+  // 스위처, 보통 800px 안팎)가 오른쪽 .main 콘텐츠보다 크면(=오른쪽이 짧은
+  // 페이지라 사이드바 쪽만 남는 여백이나 스크롤이 생기면) 사이드바를 통째로
+  // 숨겨서 그 불필요한 여백/스크롤을 없앤다. 모바일(900px 이하)은 이미 별도의
+  // 축소된 상단 아이콘 바 레이아웃이라 이 기능의 대상이 아님(min-width:901px
+  // 안에서만 동작, style.css의 같은 미디어쿼리와 반드시 맞춰서 관리할 것).
+  // "메뉴창을 숨기면 그 페이지에서는 내비게이션/테마 스위처도 함께 사라진다"는
+  // 트레이드오프가 있음 — 홈으로 돌아가거나 화면을 세로로 늘리면 다시 나타남.
+  (function initSidebarAutoHide() {
+    // 이 스크립트(sidebar.js)는 <aside id="sidebar-mount"> 바로 다음에 동기적으로
+    // 실행됨(FOUC 방지, 파일 맨 위 주석 참고) — 즉 HTML에서 이 스크립트보다 뒤에
+    // 나오는 <main class="main">은 이 시점에 아직 DOM에 만들어지기 전이라
+    // document.querySelector('.main')이 항상 null을 반환함. 그래서 .main을 여기서
+    // 한 번만 찾아서 캐시해두면 안 되고(찾자마자 null이라 기능 전체가 조용히
+    // 꺼져버렸던 실제 버그), evaluate()가 실행될 때마다(=DOMContentLoaded 이후)
+    // 매번 새로 조회해야 함. .app은 이 시점에도 이미 열린 태그로 존재하므로 문제
+    // 없음(.app이 .sidebar-mount의 조상이라 부모 태그는 이미 파싱되어 있음).
+    var appEl = document.querySelector('.app');
+    if (!appEl || !mount) return;
+    var mq = window.matchMedia('(min-width: 901px)');
+    var mainObserved = false;
+
+    // .app이 display:flex(기본 align-items:stretch)라서 .sidebar와 .main은 항상
+    // "둘 중 더 큰 쪽" 높이로 서로 늘어나 있음(긴 페이지에서도 사이드바가 sticky로
+    // 계속 따라오게 하려고 일부러 그렇게 만든 구조, style.css의 .sidebar 주석
+    // 참고) — 그래서 mount.scrollHeight/mainEl.scrollHeight를 그냥 읽으면 이미
+    // 서로한테 맞춰 늘어난 값이라 항상 똑같이 나와서 비교가 무의미해짐(사이드바
+    // 안의 .sidebar-sea도 flex:1이라 이 늘어남을 그대로 흡수함). 그래서 각자를
+    // 화면 밖(0×0, overflow:hidden 래퍼)에 복제해서 늘어남의 영향이 없는 "원래
+    // 콘텐츠만의 높이"를 따로 재서 비교한다.
+    // .sidebar의 실제 폭(--sidebar-w, 데스크탑에서는 항상 고정값)을 CSS 변수에서
+    // 직접 읽어옴 — sourceEl.getBoundingClientRect().width를 쓰면, 사이드바가
+    // 이미 sidebar-auto-hidden으로 숨겨진 상태(display:none)일 때 폭이 0으로
+    // 잡혀서 복제본이 0폭으로 다시 측정되고, 그 결과 높이가 달라져서 판정이
+    // 다시 뒤집히고... 하는 무한 진동(숨김↔표시 반복) 버그가 있었음. main은
+    // 절대 숨겨지지 않으므로 그대로 실측 폭을 써도 안전함.
+    var sidebarFixedWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w')) || mount.getBoundingClientRect().width || 0;
+
+    function measureNaturalHeight(sourceEl) {
+      var wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:fixed; top:0; left:0; width:0; height:0; overflow:hidden; visibility:hidden; pointer-events:none;';
+      var clone = sourceEl.cloneNode(true);
+      clone.removeAttribute('id');
+      clone.style.position = 'static';
+      var liveWidth = sourceEl.getBoundingClientRect().width;
+      clone.style.width = (sourceEl === mount ? (sidebarFixedWidth || liveWidth) : liveWidth) + 'px';
+      clone.style.height = 'auto';
+      clone.style.maxHeight = 'none';
+      // .window-body{max-height:60vh; overflow-y:auto;}처럼 내부에 자체 스크롤이
+      // 있는 요소가 있으면, 글이 아무리 많아도 항상 뷰포트 기준 60vh 안팎으로만
+      // 측정되어서(스크롤 안의 내용은 안 늘어난 것처럼 보임) 사이드바보다 항상
+      // 짧게 나와버림 — 글이 실제로 많은 페이지(study 등)까지 "짧다"고 오판하게
+      // 되는 원인이었음. 그래서 복제본 안의 모든 자손 요소에서도 max-height 제한을
+      // 풀어서, 스크롤 없이 실제 전체 내용 길이가 그대로 드러나게 함.
+      var descendants = clone.querySelectorAll('*');
+      for (var i = 0; i < descendants.length; i++) {
+        descendants[i].style.maxHeight = 'none';
+      }
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      var h = clone.scrollHeight;
+      document.body.removeChild(wrapper);
+      return h;
+    }
+
+    function evaluate() {
+      var mainEl = document.querySelector('.main'); // 매번 새로 조회(위 주석 참고)
+      if (!mainEl) return;
+      if (window.ResizeObserver && !mainObserved) {
+        mainObserved = true;
+        ro.observe(mainEl);
+      }
+      if (!mq.matches) {
+        appEl.classList.remove('sidebar-auto-hidden');
+        return;
+      }
+      var sidebarH = measureNaturalHeight(mount);
+      var mainH = measureNaturalHeight(mainEl);
+      appEl.classList.toggle('sidebar-auto-hidden', mainH > 0 && sidebarH > 0 && mainH < sidebarH);
+    }
+
+    var scheduled = false;
+    function scheduleEvaluate() {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(function () {
+        scheduled = false;
+        evaluate();
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', scheduleEvaluate);
+    } else {
+      scheduleEvaluate();
+    }
+    window.addEventListener('resize', scheduleEvaluate);
+    if (mq.addEventListener) mq.addEventListener('change', scheduleEvaluate);
+    else if (mq.addListener) mq.addListener(scheduleEvaluate);
+    // 커스텀 픽셀 폰트(Galmuri, --font-pixel)가 늦게 로드되면 글자 폭/줄바꿈이
+    // 바뀌면서 측정한 높이도 달라짐 — 페이지를 열자마자(폰트 로딩 전) 잰 값과
+    // 폰트가 다 실린 뒤 잰 값이 서로 달라 판정이 흔들리는(같은 페이지인데 매번
+    // 다르게 나오는) 원인이었음. 폰트 로딩이 끝나는 시점에 한 번 더 재평가해서
+    // 최종 판정을 안정시킴.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(scheduleEvaluate).catch(function () { /* noop */ });
+    }
+
+    // .main 쪽 내용이 나중에 바뀌는 경우(글쓰기 도구의 모드 전환, 메모 목록
+    // 추가/삭제, 전체화면 진입/해제 등)까지 감지하려면 resize 이벤트만으로는
+    // 부족해서(콘텐츠 높이는 바뀌어도 창 크기는 안 바뀌므로) ResizeObserver로
+    // 사이드바·본문 두 요소 모두를 직접 관찰함(둘 다 지원 안 하는 아주 오래된
+    // 브라우저에서는 이 자동 숨김 기능만 조용히 없이 동작 — 페이지 자체는
+    // 문제 없음).
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(scheduleEvaluate);
+      ro.observe(mount);
+      // .main은 이 시점엔 아직 없을 수 있어서(위 주석 참고) evaluate() 안에서
+      // 처음 찾는 순간 ro.observe(mainEl)을 호출함(mainObserved 플래그로 한 번만).
+    }
   })();
 })();

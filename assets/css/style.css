@@ -222,6 +222,16 @@ a{ color: inherit; text-decoration: none; }
   top: 0;
 }
 
+/* 콘텐츠(.main)가 사이드바보다 짧을 때 사이드바를 통째로 숨김(데스크탑 전용,
+   assets/js/sidebar.js의 initSidebarAutoHide()가 판단해서 .app에 이 클래스를
+   붙임 — 사용자 요청: "글 창의 세로가... 메뉴창보다 작아지면 메뉴창을 가리도록").
+   모바일(900px 이하)은 이미 별도의 축소된 상단 아이콘 바 레이아웃이라 대상이
+   아니므로 반드시 min-width:901px 안에서만 적용 — JS 쪽 매체 쿼리(901px)와
+   맞춰서 관리할 것. */
+@media (min-width: 901px){
+  .app.sidebar-auto-hidden .sidebar{ display: none; }
+}
+
 /* ---------- 테마 스위처 (사이드바 맨 위, 프로필 사진 위) ----------
    작은 색상 점 5개 — 클릭하면 그 테마로 즉시 바뀌고(assets/js/sidebar.js가
    처리) localStorage에 저장되어 다음 방문에도 유지됨. 각 점의 배경은
