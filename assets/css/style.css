@@ -222,14 +222,63 @@ a{ color: inherit; text-decoration: none; }
   top: 0;
 }
 
-/* 콘텐츠(.main)가 사이드바보다 짧을 때 사이드바를 통째로 숨김(데스크탑 전용,
-   assets/js/sidebar.js의 initSidebarAutoHide()가 판단해서 .app에 이 클래스를
-   붙임 — 사용자 요청: "글 창의 세로가... 메뉴창보다 작아지면 메뉴창을 가리도록").
-   모바일(900px 이하)은 이미 별도의 축소된 상단 아이콘 바 레이아웃이라 대상이
-   아니므로 반드시 min-width:901px 안에서만 적용 — JS 쪽 매체 쿼리(901px)와
-   맞춰서 관리할 것. */
+/* 메뉴(사이드바) 언제든 직접 숨기기/보이기 — 자동 판단으로 콘텐츠 길이를 재서
+   숨기던 이전 버전은 폴더별로 내비게이션 전체가 사라지는 문제가 있어 되돌리고
+   (assets/js/sidebar.js 관련 주석 참고), 대신 사용자가 버튼으로 직접 켜고 끄는
+   방식으로 다시 구현(2026-08-28). 데스크탑 전용 — 모바일은 이미 별도의 축소된
+   상단 아이콘 바 레이아웃이라 대상이 아님(min-width:901px 안에서만 적용,
+   아래 .sidebar-toggle-btn의 max-width:900px 규칙과 반드시 맞춰서 관리할 것). */
 @media (min-width: 901px){
-  .app.sidebar-auto-hidden .sidebar{ display: none; }
+  .app.sidebar-collapsed .sidebar{ display: none; }
+}
+
+/* 사이드바 밖(문서 최상위)에 항상 떠 있는 토글 버튼 — 사이드바를 숨겨도
+   버튼 자체는 사이드바 안에 있지 않으니 계속 남아있어서 다시 켤 수 있음.
+   assets/js/sidebar.js의 initSidebarToggle()가 페이지 로드 시 만들어서
+   document.body에 바로 붙임. 아이콘(막대 3개짜리 햄버거)은 항상 같고, 위치만
+   상태에 따라 바뀜 — 사이드바가 보일 땐 그 사이드바의 오른쪽 위 안쪽(눌러서
+   "닫기"), 숨겨지면 화면 맨 왼쪽 위(눌러서 "열기")로 옮겨감(사용자가 준 참고
+   이미지 그대로). --sidebar-w가 바뀌면 이 위치도 자동으로 같이 따라감. */
+.sidebar-toggle-btn{
+  position: fixed;
+  top: 24px;
+  left: calc(var(--sidebar-w) - 60px);
+  z-index: 60;
+  width: 40px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: left 0.18s ease, background 0.15s ease, transform 0.1s ease;
+}
+.sidebar-toggle-btn span{
+  display: block;
+  width: 24px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent-solid);
+}
+.sidebar-toggle-btn:hover{ background: var(--accent-soft); }
+.sidebar-toggle-btn:active{ transform: translateY(1px); }
+
+/* 사이드바가 숨겨진 상태에서는 버튼이 화면 맨 왼쪽 위로 이동(다시 켜는 용도) —
+   위 .app.sidebar-collapsed .sidebar 규칙과 같은 min-width:901px 범위에서만. */
+@media (min-width: 901px){
+  .app.sidebar-collapsed .sidebar-toggle-btn{ left: 20px; }
+}
+
+/* 모바일은 이미 별도 레이아웃(상단 아이콘 바)이라 이 버튼 자체가 필요 없음 —
+   .sidebar가 데스크탑 전용 sticky 칼럼에서 압축 상단 바로 바뀌는 지점과 같은
+   값(900px)이어야 함. */
+@media (max-width: 900px){
+  .sidebar-toggle-btn{ display: none; }
 }
 
 /* ---------- 테마 스위처 (사이드바 맨 위, 프로필 사진 위) ----------
