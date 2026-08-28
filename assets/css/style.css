@@ -125,13 +125,24 @@
   --ok: #34d399;
   --ok-soft: #163429;
 
-  /* 콘솔 "다크" 스킨 — 시안의 dark 스킨 값 그대로 */
-  --console-s1: #eedcff;
-  --console-s2: #dec3fb;
-  --console-s3: #d0aff7;
-  --console-bezel: #bda5ea;
-  --console-ring: #7a56c9;
-  --console-deck-ink: #4a2f80;
+  /* 콘솔 "다크" 스킨 — 원래는 시안의 dark 스킨 값(연보라 파스텔) 그대로였는데,
+     사용자 요청(2026-08-28): "블랙 테마 버전의 콘솔은 조금 어두운 파란색
+     느낌으로 해줄 수 있어? 옛날 레트로 OS처럼." — 다른 테마들은 전부 밝은
+     파스텔 셸(그 위에 흰 마퀴/HUD 칩이 뜨는 구조)인데, 다크 테마만 셸 자체를
+     짙은 네이비/인디고 톤으로 바꿔서 옛날 CRT 모니터·터미널 같은 느낌을 냄.
+     ⚠️ 마퀴(.console-marquee)/HUD 칩(.console-hud .chip)은 테마와 무관하게
+     항상 흰 배경(#fff, 하드코딩)이라 --console-deck-ink는 그대로 두어도
+     흰 배경 위 대비는 안 깨짐 — 다만 셸 배경 위에 직접 얹히는
+     .console-deck-foot 텍스트만 짙은 남색 위에서 안 보이게 되는 문제가
+     있어서, 그 자리만 별도 변수(--console-shell-ink, 아래 .console-deck-foot
+     규칙 참고)로 분리해 밝은 하늘색으로 따로 지정함. */
+  --console-s1: #1c2b4a;
+  --console-s2: #142136;
+  --console-s3: #24405f;
+  --console-bezel: #1b2842;
+  --console-ring: #5ec8ff;
+  --console-deck-ink: #16233d;
+  --console-shell-ink: #9fc8ff;
 }
 
 /* ── 테마 3) 블루 — 오로라(aurora) 톤 블루+퍼플 그라데이션
@@ -1066,8 +1077,13 @@ a{ color: inherit; text-decoration: none; }
 }
 .admin-edit-link{ background: var(--accent-soft); color: var(--accent-solid); }
 .admin-edit-link:hover{ background: var(--accent-grad); color: #fff; }
-.admin-delete-link{ background: var(--danger-soft); color: var(--danger); }
-.admin-delete-link:hover{ background: var(--danger); color: #fff; }
+/* 2026-08-28: "글 수정/삭제 아이콘의 색을 포인트 색으로 바꿔 줘 (빨간색은
+   너무 튀어)" — 원래 --danger(빨강) 계열이던 삭제 링크를 수정 링크와 같은
+   포인트(accent) 색으로 통일. 실제 삭제 자체는 이 링크를 눌러도 바로
+   실행되지 않고(private/write/의 2단계 확인 패널로 이동) 여기서 색만
+   튀지 않게 낮추는 것이라 안전성에는 영향 없음. */
+.admin-delete-link{ background: var(--accent-soft); color: var(--accent-solid); }
+.admin-delete-link:hover{ background: var(--accent-grad); color: #fff; }
 
 /* ---------- window card (파일 탐색기 느낌의 카드) ---------- */
 
@@ -1143,18 +1159,25 @@ a{ color: inherit; text-decoration: none; }
   width: fit-content;
 }
 
-/* 본문(글) 안의 제목은 레트로 픽셀 폰트를 쓰지 않음 — 사용자가 "본문의 제목은 원래
-   글씨체로(레트로 X)"라고 명확히 요청. 픽셀 느낌은 사이드바 이름/메뉴, 콘솔 마퀴
-   제목(.console-marquee span)처럼 UI/내비게이션 쪽에만 남기고, 실제로 쓴 글의
-   제목·소제목(h1~h4)은 본문과 같은 기본 폰트(Pretendard)로 되돌림.
-   2026-08-28: 한 차례 "레트로 폰트도 제목이나 메뉴와 같은 부분에 다 적용해 줘"
-   요청으로 아래에 h1~h4까지 --font-pixel을 적용했었는데, 다시 "글의 제목은
-   pretendard로 바꿔 줘. 제목만 레트로 글씨체로."라는 요청으로 원상복구함 — 여기서
-   "제목만 레트로"는 (바로 앞 요청에서 같이 언급된) 콘솔 마퀴 타이틀처럼 UI 쪽
-   "제목"은 계속 레트로로 남기고, "글의 제목"(이 h1~h4, 실제 글 안의 제목/소제목)은
-   레트로를 빼고 pretendard로 되돌리라는 뜻으로 해석함 — 바로 이 섹션 도입부의
-   원래 설계 의도(위 문단)와도 정확히 일치. */
-.window-body h2{ font-size: 23px; font-weight: 700; margin: 0 0 18px; }
+/* 글/폴더 제목(.window-body h2) 폰트 — 여러 차례 정정을 거쳐 최종적으로
+   확정된 규칙(2026-08-28):
+   1차: "본문의 제목은 원래 글씨체로(레트로 X)" — 기본 폰트(Pretendard).
+   2차: "레트로 폰트도 제목이나 메뉴와 같은 부분에 다 적용해 줘" — h1~h4 전부
+        --font-pixel로 바꿈.
+   3차: "글의 제목은 pretendard로 바꿔 줘. 제목만 레트로 글씨체로." — 2차를
+        되돌려 다시 Pretendard로.
+   4차(최종, 이번): "실제 글의 제목은 레트로 폰트로 해 주고, 리스트에 뜨는
+        글의 제목은 pretendard로 해 줘." — 이번에 정확히 구분됨:
+        · "실제 글의 제목" = 지금 보고 있는 그 창(window) 자체의 큰 제목
+          (.window-body h2 — 글이든 폴더 목록이든, 그 페이지의 "진짜" 제목
+          하나) → 레트로(--font-pixel).
+        · "리스트에 뜨는 글의 제목" = 폴더 목록 안에서 여러 개가 나열되는
+          작은 링크 제목들(.entry-list-item .t, 예: db/ 폴더 목록에 뜨는
+          "쿼리 튜닝 삽질기", "정규화란 무엇인가" 등) → Pretendard(아래
+          .entry-list-item .t 규칙 참고, --font-pixel 제거).
+        h1(콘솔에서는 안 보임, breadcrumb 전용)/h3/h4(본문 안 소제목)는
+        이번 요청이 언급하지 않아 그대로 Pretendard 유지. */
+.window-body h2{ font-family: var(--font-pixel); font-size: 23px; font-weight: 700; margin: 0 0 18px; }
 
 .window-body p{ color: var(--ink-soft); line-height: 1.8; font-size: 17.5px; margin: 0 0 16px; }
 .window-body p:last-child{ margin-bottom: 0; }
@@ -1208,7 +1231,10 @@ a{ color: inherit; text-decoration: none; }
 .entry-list-item.clickable{ cursor: pointer; }
 .entry-list-item.clickable:hover{ background: rgba(var(--accent-rgb), 0.06); }
 .entry-list-item:last-child{ border-bottom: none; }
-.entry-list-item .t{ font-family: var(--font-pixel); color: var(--ink); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+/* 리스트(폴더 목록)에 여러 개 나열되는 항목 제목 — 2026-08-28: "리스트에
+   뜨는 글의 제목은 pretendard로 해 줘" 요청으로 레트로 픽셀 폰트를 뺌(위
+   ".window-body h2" 규칙 주석 참고 — "실제 글의 제목"과는 다른 자리). */
+.entry-list-item .t{ color: var(--ink); font-weight: 500; display: flex; align-items: center; gap: 8px; }
 .entry-list-item .d{ color: var(--ink-faint); font-size: 14px; white-space: nowrap; }
 
 /* 폴더 항목: 이름 끝에 슬래시가 붙고 살짝 강조됩니다 */
@@ -1669,7 +1695,9 @@ input, textarea, select{ cursor: text !important; }
 .console-marquee span{
   font-family: var(--font-pixel);
   font-weight: 700;
-  font-size: 12px;
+  /* 2026-08-28: "마퀴 타이틀을 조금 더 크게" 요청 — 12px → 15px(모바일도
+     11px → 13px, 아래 @media 참고). */
+  font-size: 15px;
   letter-spacing: 0.03em;
   color: var(--console-deck-ink);
   white-space: nowrap;
@@ -1899,7 +1927,12 @@ input, textarea, select{ cursor: text !important; }
   display: flex; justify-content: space-between; align-items: center;
   margin-top: 14px; padding: 0 4px;
   font-size: 9.5px;
-  color: var(--console-deck-ink);
+  /* 이 텍스트는 (마퀴/HUD 칩과 달리) 흰 배경이 아니라 셸 그라데이션
+     (--console-s1~s3) 배경 위에 직접 얹힘 — 다크 테마의 셸이 짙은 남색으로
+     바뀌면서(2026-08-28) 같은 어두운 잉크색을 그대로 쓰면 안 보이게 되므로,
+     이 자리만 --console-shell-ink로 분리(정의 안 된 테마는 기존
+     --console-deck-ink로 자동 대체 — fallback). */
+  color: var(--console-shell-ink, var(--console-deck-ink));
   opacity: 0.6;
   font-family: var(--font-pixel);
 }
@@ -1928,7 +1961,7 @@ input, textarea, select{ cursor: text !important; }
     border-radius: 20px;
   }
   .console-screen-bezel{ padding: 6px; border-radius: 18px; }
-  .console-marquee span{ font-size: 11px; }
+  .console-marquee span{ font-size: 13px; }
   .console-hud .chip{ font-size: 10.5px; }
   .console-deck{ gap: 14px; }
   .console-dpad{ width: 56px; height: 56px; }
@@ -1966,8 +1999,12 @@ input, textarea, select{ cursor: text !important; }
     height: 100%;
     overflow-y: auto;
   }
-  .console-screen .avatar{ max-width: 108px; border-radius: 20px; }
-  .console-screen .avatar span{ font-size: 38px; }
+  /* 2026-08-28: "프로필 사진을 조금 더 크게" 요청 — 108px → 130px(비율
+     유지를 위해 안의 이니셜 글자도 38px → 44px). 사이드바가 화면보다
+     길어지는 만큼은 위 .console-screen .sidebar의 overflow-y:auto가
+     흡수하므로 화면 전체 스크롤바로는 안 이어짐. */
+  .console-screen .avatar{ max-width: 130px; border-radius: 22px; }
+  .console-screen .avatar span{ font-size: 44px; }
   .console-screen .profile-text{ gap: 3px; }
   /* 2026-08-28: 메뉴창 글씨 크기 전체적으로 살짝 키움(사용자 요청:
      "메뉴창들의 글씨 크기를 조금 키워 줘") — 19/13/13px → 21/14/14px,
@@ -2044,5 +2081,49 @@ input, textarea, select{ cursor: text !important; }
   flex: 1;
   min-height: 0;
   max-height: none;
+}
+/* 2026-08-28: "private 토큰 입장하면, 글 쓰기 창이 다시 작아져" — 원인은
+   위 ".console-screen .window:not(.is-fullscreen){ flex:1; ... }"가
+   ".window"에는 잘 적용되는데, 그 flex:1이 "실제로 부모가 flex
+   컨테이너일 때만" 효과가 있다는 점. 대부분 페이지는 .window가 .main의
+   바로 아래 자식이라 문제 없지만, 아래 세 페이지는 .window가 평범한
+   div로 한 번 더 감싸여 있어서(.main → 이 div → .window) flex:1이 그
+   중간 div에서 끊겨 카드가 다시 원래(작은) 크기로 보였음:
+   - private/write/index.html의 #tool-area(글쓰기 창 editor-window를 감싸는
+     div, 모드 전환 버튼·메타 입력 폼과 함께 있음)
+   - private/index.html의 #private-area(인증 후에만 보이는 영역 — 인증
+     전에는 원래 hidden 속성으로 안 보여야 하므로 :not([hidden])으로
+     한정해서, 이 규칙이 hidden 속성이 걸어둔 display:none을 실수로
+     덮어쓰지 않게 함)
+   - private/notes/index.html의 .notes-card(노트 창 notes-window를 감싸는
+     div)
+   이 중간 div들 자체를 flex 세로 컨테이너로 만들고 .main처럼 flex:1로
+   화면 높이를 이어받게 하면, 그 안의 .window는 위 규칙(이미 flex:1 걸려
+   있음)이 그제서야 실제로 작동해서 다른 페이지들과 똑같이 화면에 꽉 차게
+   맞춰진다. */
+.console-screen #tool-area,
+.console-screen #private-area:not([hidden]),
+.console-screen .notes-card{
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  /* #tool-area는 위 .window(글쓰기 창) 말고도 모드 전환 버튼(.mode-switch)과
+     폴더/슬러그/날짜/제목 등 입력 필드가 많은 메타 정보 카드(#meta-bar)가
+     같이 들어있어서, 그 둘만으로도 화면 높이의 대부분(실측 약 480px)을
+     차지하는 경우가 있다 — 이 상태에서 .window에 flex:1만 주면 남는
+     공간이 거의 없어 카드가 다시 작게 눌려버림(사용자 보고: "글 쓰기
+     창이 다시 작아져"). 화면 전체 높이 안에 억지로 다 욱여넣는 대신,
+     아래 .window에 최소 높이(min-height)를 보장해주고, 그러고도 남은
+     콘텐츠(모드버튼+메타카드+글쓰기창)가 화면보다 길면 이 wrapper 안에서만
+     스크롤되게 한다(사이드바가 넘칠 때와 같은 방식) — 화면 전체
+     (.console-screen) 스크롤바가 다시 생기는 게 아니라 이 영역 안에서만
+     스크롤됨. */
+  overflow-y: auto;
+}
+.console-screen #tool-area .window:not(.is-fullscreen),
+.console-screen #private-area .window:not(.is-fullscreen),
+.console-screen .notes-card .window:not(.is-fullscreen){
+  min-height: 420px;
 }
 .retro-error::before{ content: "> "; color: var(--ink-faint); }
