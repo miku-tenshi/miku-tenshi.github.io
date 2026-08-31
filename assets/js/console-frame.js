@@ -35,8 +35,20 @@
     '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-8-4.7-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.3-8 11-8 11z"/></svg> POSTS <b id="console-posts">×0</b>');
   var chipDate = el('div', 'chip',
     '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg> DATE <b id="console-date">--.--</b>');
-  var chipSkin = el('div', 'chip',
-    '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/></svg> SKIN <b id="console-skin">WHITE</b>');
+  // 2026-08-31 6차: "하단의 게임기적 요소(컨트롤러)를 다 삭제하고, 본문과
+  // 메뉴창을 조금 더 넓히는 건 어때?" 요청으로 십자키/그릴/스킨버튼 4개로
+  // 이뤄진 콘솔 데크(.console-deck)와 그 아래 저작권/SCORE 줄(.console-
+  // deck-foot)을 통째로 없앤다. 데크가 차지하던 세로 공간은 아래
+  // .console-screen-bezel이 flex:1이라 자동으로 화면(.console-screen) 몫으로
+  // 흡수된다(따로 손볼 필요 없음). 대신 콘솔 데크에 있던 스킨 전환 버튼
+  // 4개(민트 제외)가 없어진 만큼, 테마 전환은 아래 SKIN 칩을 눌러 여는
+  // 드롭다운(5개 전체, 민트 포함)으로 옮김 — 사용자가 "상단의 SKIN
+  // 부분에서 고를 수 있도록 하자"고 직접 지정한 방식.
+  var chipSkin = el('div', 'chip console-skin-chip');
+  chipSkin.innerHTML =
+    '<button type="button" class="console-skin-trigger" aria-haspopup="listbox" aria-expanded="false">' +
+    '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/></svg> SKIN <b id="console-skin">WHITE</b>' +
+    '</button>';
   hud.appendChild(chipPosts);
   hud.appendChild(chipDate);
   hud.appendChild(chipSkin);
@@ -45,56 +57,83 @@
   var screen = el('div', 'console-screen');
   bezel.appendChild(screen);
 
-  var deck = el('div', 'console-deck');
-  var dpad = el('div', 'console-dpad', '<div class="cross"></div><div class="hub"></div>');
-  var grille = el('div', 'console-grille', '<i></i><i></i><i></i>');
-  var quickskins = el('div', 'console-quickskins');
-
-  // 시안과 같은 4개(십자/다이아몬드 배치) — 기본(화이트)/블루/핑크/다크.
-  // 민트는 사이드바 위 진짜 테마 스위처(점 5개)에서 고르면 됨.
-  // 2026-08-31 1차: 5개 테마 콘솔 색을 전부 드림웨이브 톤으로 다시 칠하면서
-  // (style.css의 --console-ring 값들 참고), 여기 미리보기 링 색도 각 테마의
-  // 새 --console-ring과 맞춰 갱신함 — 안 그러면 버튼 링 색이 실제로 눌렀을 때
-  // 바뀌는 콘솔 색과 달라 보이는 문제가 있었음.
-  // 2026-08-31 2차: "사이버펑크 4테마" 시안 이식으로 기본/블루의 --console-
-  // ring이 각각 #6fe3ff/#6fc4ff로 다시 바뀌어서 여기도 같이 맞춤(핑크/다크는
-  // 그대로).
-  var QUICK_SKINS = [
-    { pos: 't', theme: 'default', ring: '#6fe3ff', title: '기본' },
-    { pos: 'r', theme: 'blue', ring: '#6fc4ff', title: '블루' },
-    { pos: 'b', theme: 'pink', ring: '#ff6fd8', title: '핑크' },
-    { pos: 'l', theme: 'dark', ring: '#5ec8ff', title: '다크' }
-  ];
-  var quickButtons = [];
-  QUICK_SKINS.forEach(function (s) {
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'console-quick-btn';
-    btn.dataset.pos = s.pos;
-    btn.dataset.consoleTheme = s.theme;
-    btn.style.setProperty('--btn-ring', s.ring);
-    btn.title = s.title;
-    btn.setAttribute('aria-label', s.title + ' 스킨');
-    btn.addEventListener('click', function () {
-      var realBtn = document.querySelector('[data-theme-btn="' + s.theme + '"]');
-      if (realBtn) realBtn.click();
-    });
-    quickskins.appendChild(btn);
-    quickButtons.push(btn);
-  });
-
-  deck.appendChild(dpad);
-  deck.appendChild(grille);
-  deck.appendChild(quickskins);
-
-  var deckFoot = el('div', 'console-deck-foot',
-    '<span>' + escapeHtml(cfg.copyright || '© miku-tenshi.github.io') + '</span><span>SCORE 000420</span>');
-
   shell.appendChild(marquee);
   shell.appendChild(hud);
   shell.appendChild(bezel);
-  shell.appendChild(deck);
-  shell.appendChild(deckFoot);
+
+  // ── SKIN 칩 드롭다운 — 실제 테마 스위처(.theme-switcher [data-theme-btn])
+  // 버튼을 그대로 찾아 클릭해줄 뿐이라 저장/동기화 로직은 하나로 유지된다.
+  // 순서는 sidebar.js가 그리는 진짜 스위처와 동일(기본/다크/블루/민트/핑크).
+  var SKIN_MENU_ITEMS = [
+    { theme: 'default', label: '기본' },
+    { theme: 'dark', label: '다크' },
+    { theme: 'blue', label: '블루' },
+    { theme: 'mint', label: '민트' },
+    { theme: 'pink', label: '핑크' }
+  ];
+  var skinTrigger = chipSkin.querySelector('.console-skin-trigger');
+  var skinMenu = el('div', 'console-skin-menu');
+  skinMenu.setAttribute('role', 'listbox');
+  var skinOptionButtons = [];
+  SKIN_MENU_ITEMS.forEach(function (item) {
+    var opt = document.createElement('button');
+    opt.type = 'button';
+    opt.className = 'console-skin-option';
+    opt.dataset.consoleTheme = item.theme;
+    opt.setAttribute('role', 'option');
+    opt.textContent = item.label;
+    opt.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var realBtn = document.querySelector('[data-theme-btn="' + item.theme + '"]');
+      if (realBtn) realBtn.click();
+      closeSkinMenu();
+    });
+    skinMenu.appendChild(opt);
+    skinOptionButtons.push(opt);
+  });
+  // ⚠️ chipSkin이 아니라 document.body에 직접 붙인다 — chipSkin은
+  // .console-hud .chip의 backdrop-filter를 물려받는데, filter/backdrop-
+  // filter가 걸린 조상은 fixed 자손의 컨테이닝 블록이 되어버려서(위
+  // style.css의 .console-skin-menu 주석 참고) chipSkin 밑에 두면
+  // position:fixed 좌표 계산이 완전히 엉뚱해진다.
+  document.body.appendChild(skinMenu);
+
+  // position:fixed라 뷰포트 좌표로 직접 위치를 잡아줘야 한다(위 style.css
+  // .console-skin-menu 주석 참고) — 트리거 버튼 바로 아래, 오른쪽 끝을
+  // 맞추되 화면 밖으로 새지 않게 클램프.
+  function positionSkinMenu() {
+    var r = skinTrigger.getBoundingClientRect();
+    var menuWidth = skinMenu.offsetWidth || 108;
+    var left = r.right - menuWidth;
+    if (left < 8) left = 8;
+    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - 8 - menuWidth;
+    skinMenu.style.top = (r.bottom + 6) + 'px';
+    skinMenu.style.left = left + 'px';
+  }
+  function openSkinMenu() {
+    positionSkinMenu();
+    chipSkin.classList.add('is-open');
+    skinMenu.classList.add('is-open');
+    skinTrigger.setAttribute('aria-expanded', 'true');
+  }
+  function closeSkinMenu() {
+    chipSkin.classList.remove('is-open');
+    skinMenu.classList.remove('is-open');
+    skinTrigger.setAttribute('aria-expanded', 'false');
+  }
+  skinTrigger.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (skinMenu.classList.contains('is-open')) closeSkinMenu(); else openSkinMenu();
+  });
+  document.addEventListener('click', function (e) {
+    if (!chipSkin.contains(e.target) && !skinMenu.contains(e.target)) closeSkinMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSkinMenu();
+  });
+  // 창 크기가 바뀌면(모바일 회전 등) 트리거 위치도 바뀌므로 열려 있던
+  // 메뉴는 그냥 닫는다(다시 열면 새 위치로 다시 계산됨).
+  window.addEventListener('resize', closeSkinMenu);
 
   // 콘솔을 화면 한가운데 띄우는 바깥 레이어(assets/css/style.css의
   // .console-viewport 참고) — body 자체는 안 건드리고 이 래퍼 하나만 새로
@@ -161,7 +200,7 @@
   function syncWithTheme() {
     var theme = document.documentElement.getAttribute('data-theme') || 'default';
     if (skinLabelEl) skinLabelEl.textContent = SKIN_LABELS[theme] || theme.toUpperCase();
-    quickButtons.forEach(function (b) {
+    skinOptionButtons.forEach(function (b) {
       b.classList.toggle('is-active', b.dataset.consoleTheme === theme);
     });
     syncCosmicBg(theme);
@@ -224,7 +263,18 @@
   }
 
   function buildCosmicBg() {
-    if (cosmicState) return; // 이미 만들어져 있음
+    // 2026-08-31 6차 디버깅: "이미 만들어져 있음"을 cosmicState(클로저 변수)
+    // 만으로 판단하면 안 됨을 새로 발견 — 위 4차 메모의 그 "이유를 알 수 없는
+    // 클로저 변수 리셋" 버그가 requestAnimationFrame/setTimeout뿐 아니라
+    // MutationObserver 콜백(테마 전환 시 syncWithTheme을 다시 부르는 그
+    // 콜백)에서도 재현됨을 이번에 확인함 — 실제로는 canvas/nebula가 DOM에
+    // 멀쩡히 남아 있는데도 cosmicState가 그 콜백 안에서는 초기값(null)으로
+    // 보여서, removeCosmicBg()가 "이미 없다"고 착각하고 아무것도 지우지
+    // 않아 다크 테마에서도 별이 안 사라지는 버그로 이어졌었음(아래
+    // removeCosmicBg도 같은 이유로 DOM을 직접 조회하도록 고침). 그래서 여기
+    // "이미 만들어져 있는지" 판단도 cosmicState 대신 실제 DOM(진짜 상태)을
+    // 기준으로 삼는다.
+    if (document.querySelector('canvas.cosmic-stars')) return;
 
     var canvas = document.createElement('canvas');
     canvas.className = 'cosmic-stars';
@@ -253,6 +303,9 @@
     cosmicState = state;
 
     function resize() {
+      // draw()와 같은 이유(위 주석 참고) — 캔버스가 이미 DOM에서 빠졌으면
+      // 아무것도 안 함(리사이즈 리스너 자체를 못 지운 경우의 안전장치).
+      if (!document.body.contains(state.canvas)) return;
       state.canvas.width = window.innerWidth * state.dpr;
       state.canvas.height = window.innerHeight * state.dpr;
       state.canvas.style.width = window.innerWidth + 'px';
@@ -262,6 +315,14 @@
     }
 
     function draw(t) {
+      // 2026-08-31 6차: removeCosmicBg()가 클로저 변수(cosmicState)를 못
+      // 믿고 DOM을 직접 지우도록 고쳤지만(위 buildCosmicBg 주석 참고), 그
+      // 경우에도 이 draw()/resize() 루프 자체(그 함수들이 캡처한 지역
+      // `state`)는 여전히 살아서 requestAnimationFrame으로 계속 예약된다 —
+      // 캔버스가 DOM에서 사라진 뒤에도 매 프레임 헛돌며 리소스만 쓰는 걸
+      // 막기 위해, 자기 캔버스가 더 이상 문서에 붙어있지 않으면 그 자리에서
+      // 루프를 스스로 멈춘다(다음 requestAnimationFrame을 예약하지 않음).
+      if (!document.body.contains(state.canvas)) return;
       // 위 2026-08-31 4차 디버깅 메모 참고 — 무슨 이유로든 별 목록이 비어
       // 있으면(원래는 resize()가 채워둠) 그 자리에서 즉시 다시 채운다.
       if (!state.stars.length) state.stars = makeStars(window.innerWidth, window.innerHeight);
@@ -288,11 +349,29 @@
   }
 
   function removeCosmicBg() {
-    if (!cosmicState) return;
-    if (cosmicState.raf) window.cancelAnimationFrame(cosmicState.raf);
-    if (cosmicState.onResize) window.removeEventListener('resize', cosmicState.onResize);
-    if (cosmicState.canvas && cosmicState.canvas.parentNode) cosmicState.canvas.parentNode.removeChild(cosmicState.canvas);
-    if (cosmicState.nebulaEl && cosmicState.nebulaEl.parentNode) cosmicState.nebulaEl.parentNode.removeChild(cosmicState.nebulaEl);
+    // 2026-08-31 6차: "다크 테마로 바꿔도 별이 안 사라짐" 버그의 진짜 원인 —
+    // 이 함수가 실제로 호출되고는 있었지만(MutationObserver→syncWithTheme→
+    // syncCosmicBg 경로 자체는 정상), 그 콜백 안에서 cosmicState(클로저
+    // 변수)를 읽으면 실제로는 이미 buildCosmicBg()가 채워둔 객체가 있는데도
+    // null로 보이는 현상이 재현됨(Playwright로 "canvas는 DOM에 존재하는데
+    // cosmicState는 false"인 상태를 직접 확인) — 위 별 배열 리셋 버그와
+    // 같은 계열의, 원인을 특정하지 못한 클로저/비동기 콜백 버그가
+    // MutationObserver 콜백에서도 재현된 것. `if (!cosmicState) return;`
+    // 하나 때문에 아무것도 안 지워지고 조용히 리턴돼버렸던 게 실제 증상.
+    // 고친 방법(자가치유): cosmicState를 신뢰하지 않고, 지울 대상을 항상
+    // DOM에서 직접 다시 찾는다 — cosmicState가 우연히 정상이면 그 raf/
+    // resize 리스너도 같이 정리하고(있으면 하는 보너스), cosmicState가
+    // 어떤 이유로든 stale이어도 canvas/nebula 자체는 DOM 조회로 확실히
+    // 찾아서 지운다(남아있는 draw/resize 루프는 위 draw()/resize()의
+    // "내 캔버스가 DOM에 없으면 스스로 멈춤" 가드가 정리함).
+    if (cosmicState) {
+      if (cosmicState.raf) window.cancelAnimationFrame(cosmicState.raf);
+      if (cosmicState.onResize) window.removeEventListener('resize', cosmicState.onResize);
+    }
+    var existingCanvas = document.querySelector('canvas.cosmic-stars');
+    var existingNebula = document.querySelector('.cosmic-nebula');
+    if (existingCanvas && existingCanvas.parentNode) existingCanvas.parentNode.removeChild(existingCanvas);
+    if (existingNebula && existingNebula.parentNode) existingNebula.parentNode.removeChild(existingNebula);
     cosmicState = null;
   }
 
@@ -324,11 +403,5 @@
     var mm = String(today.getMonth() + 1).padStart(2, '0');
     var dd = String(today.getDate()).padStart(2, '0');
     dateEl.textContent = mm + '.' + dd;
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
   }
 })();

@@ -41,8 +41,10 @@
   /* 콘솔 화면 안에서만 쓰는 축소된 사이드바(메뉴) 폭 — "콘솔 화면 안
      사이드바/본문 축소" 섹션과 #console-shell .sidebar-toggle-btn 위치
      계산(사이드바 오른쪽 위 안쪽) 둘 다 이 값 하나를 같이 참조해서,
-     사이드바 폭을 나중에 또 조정하더라도 버튼 위치가 저절로 같이 맞음. */
-  --console-sidebar-w: 280px;
+     사이드바 폭을 나중에 또 조정하더라도 버튼 위치가 저절로 같이 맞음.
+     2026-08-31 6차: 콘솔 데크 삭제로 넓어진 콘솔 폭(위 .console-shell 6차
+     코멘트 참고)에 맞춰 280px → 300px로 살짝 확대. */
+  --console-sidebar-w: 300px;
 
   /* 콘솔 본체(껍데기) 색 — 테마를 바꾸면 아래 각 :root[data-theme="..."]
      블록의 같은 변수들로 통째로 바뀜(순수 CSS 캐스케이드, JS는 색을 계산하지
@@ -1846,8 +1848,18 @@ input, textarea, select{ cursor: text !important; }
      멈췄었지만, 이번엔 사용자가 "메뉴 크기도 줄여도 괜찮다"고 먼저
      허락했으므로(아래 사이드바 관련 규칙들도 이때 같이 축소) 그 제약이
      풀림 — 시안 스크린샷 비율(뷰포트 대비 폭 약 66%, 높이 약 80%)에
-     맞춰 70vw/78vh로 한 번 더 줄임. */
-  width: min(1080px, 70vw);
+     맞춰 70vw/78vh로 한 번 더 줄임.
+
+     2026-08-31 6차: "차라리 하단의 게임기적 요소(컨트롤러)를 다 삭제하고,
+     본문과 메뉴창을 조금 더 넓히는 건 어때?" 요청으로 콘솔 데크(십자키/
+     그릴/스킨버튼)를 통째로 없앤 뒤, 그 김에 폭도 살짝 넓힘 — 데크가 있을
+     땐 정사각형에 가까운 비율(십자/다이아몬드 배치가 예뻐 보이는 폭)을
+     맞출 이유가 있었지만 이제는 그럴 필요가 없다. 다만 앞선 라운드에서
+     "우주 배경이 사방에 넉넉히 보여야 한다"는 제약이 확정돼 있으므로 과하게
+     키우진 않고 70vw→75vw(1080px→1180px)로만 소폭 확대 — 세로는 데크가
+     빠지면서 화면(.console-screen)이 자동으로 더 커지므로 높이 값 자체는
+     그대로 둠. */
+  width: min(1180px, 75vw);
   height: min(740px, 78vh);
   display: flex;
   flex-direction: column;
@@ -2175,119 +2187,101 @@ input, textarea, select{ cursor: text !important; }
 }
 #console-shell .sidebar-toggle-btn:active{ transform: translateY(-50%) translateY(1px); }
 
-/* 데크(십자키/그릴/스킨버튼) 배치(2026-08-28 조정) — 사용자 요청: "콘솔 창의
-   조작 버튼들을 조금 더 중앙으로 이동시켜 줘". 원래 justify-content:
-   space-between이라 콘솔 폭이 커질수록(v5~v6에서 콘솔 자체를 키움) 십자키/
-   스킨버튼이 화면 양 끝까지 벌어져서 서로 멀어져 보였음 — center로 바꾸고
-   그 사이 간격(gap)을 화면 폭에 비례하게 줘서 폭이 커져도 지금처럼 벌어지지
-   않고 뭉쳐 보이게 함(clamp라 좁은 화면에서는 자동으로 줄어듦, flex-wrap은
-   그래도 안전장치로 유지). */
-.console-deck{
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(36px, 6vw, 110px);
-  padding: 18px 8px 4px;
-  flex-wrap: wrap;
-}
+/* ══════════ SKIN 드롭다운(2026-08-31 6차) ══════════
+   사용자 요청: "차라리 하단의 게임기적 요소(컨트롤러)를 다 삭제하고, 본문과
+   메뉴창을 조금 더 넓히는 건 어때?" → "상단의 SKIN 부분에서 고를 수 있도록
+   하자." 십자키(.console-dpad)/그릴(.console-grille)/스킨버튼 4개
+   (.console-quickskins)로 이뤄진 콘솔 데크(.console-deck)와 그 아래
+   저작권+SCORE 줄(.console-deck-foot)을 전부 삭제하고, 대신 위 HUD의 SKIN
+   칩을 누르면 열리는 드롭다운(5개 테마 전부)으로 교체했다. 데크가 있던 자리는
+   .console-screen-bezel(flex:1)이 그대로 흡수해 화면이 더 커진다(아래
+   .console-shell 폭 확대와 함께 "본문과 메뉴창을 넓혀 달라"는 요청에 대응).
 
-/* 십자 방향키 — 시안과 동일한 유리질 그라데이션 + 여러 겹 안쪽 그림자 */
-.console-dpad{ position: relative; width: 72px; height: 72px; flex: none; filter: drop-shadow(0 6px 10px rgba(40, 20, 70, 0.22)); }
-.console-dpad .cross{
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,255,255,0.42) 45%, rgba(210,216,236,0.55));
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border-radius: 8px;
-  clip-path: polygon(34% 0, 66% 0, 66% 34%, 100% 34%, 100% 66%, 66% 66%, 66% 100%, 34% 100%, 34% 66%, 0 66%, 0 34%, 34% 34%);
-  box-shadow:
-    inset 0 3px 4px rgba(255,255,255,0.95),
-    inset 0 -4px 7px rgba(70,50,110,0.28),
-    inset 3px 0 4px rgba(255,255,255,0.35),
-    inset -3px 0 4px rgba(70,50,110,0.14);
-}
-.console-dpad .cross::after{
-  content: "";
-  position: absolute;
-  inset: 0;
-  clip-path: inherit;
-  -webkit-clip-path: inherit;
-  background: linear-gradient(115deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.05) 35%, transparent 55%);
-  mix-blend-mode: screen;
-  pointer-events: none;
-}
-.console-dpad .hub{
-  position: absolute; left: 50%; top: 50%;
-  width: 19px; height: 19px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, rgba(255,255,255,0.98), rgba(216,221,236,0.85) 55%, rgba(176,182,205,0.7) 100%);
-  box-shadow: inset 0 -3px 4px rgba(70,50,110,0.3), inset 0 2px 2px rgba(255,255,255,0.95), 0 2px 4px rgba(40,20,70,0.22);
-  border: 1px solid rgba(255,255,255,0.55);
-}
-
-/* 중앙 그릴(|||) 크기(2026-08-28 조정) — 사용자 요청: "중앙의 ||| 아이콘도
-   크기를 조작 버튼과 맞춰서 키워 줘" — 원래 24px(장식용 얇은 선)이던 걸
-   양옆 조작 버튼(십자키 72px)과 눈에 띄게 비슷한 높이로 키움. */
-.console-grille{ display: flex; align-items: center; gap: 7px; opacity: 0.6; }
-.console-grille i{ width: 7px; height: 64px; border-radius: 3px; background: #fff; box-shadow: 0 2px 5px rgba(40,20,70,0.12); }
-
-/* 스킨(테마) 4개 즉시 전환 버튼 — 새 상태를 따로 안 만들고, 사이드바 안에 이미
-   있는 진짜 테마 스위처 버튼(.theme-switcher [data-theme-btn])을 그대로
-   찾아서 클릭해줄 뿐(assets/js/console-frame.js). 그래서 저장/동기화 로직이
-   완전히 하나로 유지된다. 시안과 같은 십자(다이아몬드) 배치, 4개(기본/블루/
-   핑크/다크)만 — 나머지(민트)는 사이드바 위 진짜 테마 스위처(점 5개)에서
-   고르면 됨. */
-.console-quickskins{ position: relative; width: 92px; height: 92px; flex: none; }
-.console-quick-btn{
-  position: absolute;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  border: 3px solid var(--btn-ring, #9aa0b0);
-  background: linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,255,255,0.4) 45%, rgba(214,219,236,0.55));
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+   .console-hud .chip은 이미 .app을 감싸는 조상이 아니라서(위 마퀴/HUD
+   backdrop-filter 주석 참고) 여기 backdrop-filter/드롭다운을 넣어도 전체화면
+   버그와 무관, 안전하다. */
+.console-skin-chip{ position: relative; padding: 0; overflow: visible; }
+.console-skin-trigger{
+  all: unset;
+  box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
   cursor: pointer;
-  padding: 0;
-  box-shadow: inset 0 2px 3px rgba(255,255,255,0.95), inset 0 -3px 4px rgba(70,50,110,0.22), 0 3px 8px rgba(40,20,70,0.18);
-  transition: transform 0.12s ease;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  border-radius: 10px;
 }
-.console-quick-btn::before{
-  content: ""; position: absolute; inset: 0; border-radius: 50%;
-  background: linear-gradient(125deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.05) 42%, transparent 62%);
-  mix-blend-mode: screen; pointer-events: none;
+.console-skin-trigger:focus-visible{ outline: 2px solid var(--console-ring); outline-offset: 2px; }
+.console-skin-trigger svg{ width: 14px; height: 14px; flex: none; }
+.console-skin-trigger b{ font-family: var(--font-pixel); font-size: 11px; font-weight: 400; color: var(--console-ring); }
+.console-skin-menu{
+  /* 2026-08-31 6차: 처음엔 position:absolute(트리거 기준, .console-skin-chip
+     자식)로 만들었는데 두 가지 문제가 겹쳐서 실패했다.
+     1) .console-hud와 그 아래 .console-screen-bezel이 둘 다 .console-shell
+        (display:flex)의 flex 자식이라, flex 자식은 z-index:auto여도 DOM
+        순서대로 서로 위/아래가 정해지는 페인팅 규칙 때문에(뒤에 오는
+        .console-screen-bezel이 항상 앞의 .console-hud보다 위에 그려짐)
+        드롭다운에 z-index를 아무리 줘도 화면(.console-screen, 실제 글
+        내용)에 가려져 클릭이 그 화면 쪽으로 새는 문제(Playwright로 실제
+        클릭 실패까지 확인).
+     2) position:fixed로 바꿔서 1)을 피해도, 부모 .console-skin-chip이
+        (class="chip console-skin-chip"로) .console-hud .chip의
+        backdrop-filter:blur(8px)를 그대로 물려받고 있어서 — filter/
+        backdrop-filter가 걸린 조상은 그 자체로 fixed 자손의 컨테이닝
+        블록이 되어버린다(transform과 동일한 효과, 문서 위 constraint 경고와
+        같은 종류의 함정) — "뷰포트 기준"으로 계산해 넣은 top/left가 실제로는
+        그 조상 박스 기준으로 다시 해석되어 완전히 엉뚱한 자리에 떠 버림
+        (Playwright로 좌표가 수백~수천px씩 어긋나는 것으로 확인). 최종
+        해결책: 이 메뉴를 아예 document.body의 직계 자식으로 옮겨서(JS)
+        어떤 조상의 filter/backdrop-filter/transform과도 무관하게 만들고,
+        열림 상태 스타일도 부모(.console-skin-chip)가 아니라 메뉴 자기
+        자신의 .is-open 클래스로 직접 토글한다(아래 참고). */
+  position: fixed;
+  min-width: 108px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: rgba(10, 8, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  z-index: 500;
 }
-.console-quick-btn[data-pos="t"]{ top: 0; left: 50%; margin-left: -14px; }
-.console-quick-btn[data-pos="r"]{ right: 0; top: 50%; margin-top: -14px; }
-.console-quick-btn[data-pos="b"]{ bottom: 0; left: 50%; margin-left: -14px; }
-.console-quick-btn[data-pos="l"]{ left: 0; top: 50%; margin-top: -14px; }
-.console-quick-btn::after{
-  content: ""; position: absolute; left: 50%; top: 50%;
-  width: 11px; height: 11px; border-radius: 50%;
-  background: var(--btn-ring, #9aa0b0);
-  transform: translate(-50%, -50%) scale(0.001);
-  transition: transform 0.15s ease;
+.console-skin-menu.is-open{
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
-.console-quick-btn.is-active::after{ transform: translate(-50%, -50%) scale(1); }
-.console-quick-btn:active{ transform: translateY(2px); }
-.console-quick-btn:focus-visible{ outline: 3px solid var(--console-deck-ink); outline-offset: 2px; }
-
-.console-deck-foot{
+.console-skin-option{
+  all: unset;
+  box-sizing: border-box;
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--console-shell-ink, #fff);
+  cursor: pointer;
+}
+.console-skin-option::before{
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: transparent;
   flex: none;
-  display: flex; justify-content: space-between; align-items: center;
-  margin-top: 14px; padding: 0 4px;
-  font-size: 9.5px;
-  /* 이 텍스트는 (마퀴/HUD 칩과 달리) 흰 배경이 아니라 셸 그라데이션
-     (--console-s1~s3) 배경 위에 직접 얹힘 — 다크 테마의 셸이 짙은 남색으로
-     바뀌면서(2026-08-28) 같은 어두운 잉크색을 그대로 쓰면 안 보이게 되므로,
-     이 자리만 --console-shell-ink로 분리(정의 안 된 테마는 기존
-     --console-deck-ink로 자동 대체 — fallback). */
-  color: var(--console-shell-ink, var(--console-deck-ink));
-  opacity: 0.6;
-  font-family: var(--font-pixel);
 }
+.console-skin-option.is-active::before{ background: var(--console-ring); border-color: var(--console-ring); }
+.console-skin-option:hover, .console-skin-option:focus-visible{ background: rgba(255, 255, 255, 0.1); }
 
 /* 사용자 요청(2026-08-28): "원래의 웹 사이트에서 없애도 되는 건 시간에 따라
    밤낮이 바뀌는 바다 사진 뿐" — 게임기 콘솔 프레임 도입에 맞춰 사이드바 맨
@@ -2315,12 +2309,7 @@ input, textarea, select{ cursor: text !important; }
   .console-screen-bezel{ padding: 6px; border-radius: 18px; }
   .console-marquee span{ font-size: 13px; }
   .console-hud .chip{ font-size: 10.5px; }
-  .console-deck{ gap: 14px; }
-  .console-dpad{ width: 56px; height: 56px; }
-  .console-dpad .hub{ width: 15px; height: 15px; }
-  .console-quickskins{ width: 76px; height: 76px; }
-  .console-quick-btn{ width: 24px; height: 24px; }
-  .console-grille i{ height: 48px; }
+  .console-skin-menu{ min-width: 96px; }
 }
 
 /* 콘솔 화면 안 사이드바(메뉴)/본문 축소(2026-08-28) — 사용자 요청: "내부
@@ -2384,7 +2373,10 @@ input, textarea, select{ cursor: text !important; }
   .console-screen .nav-group{ gap: 3px; }
   .console-screen .nav-item{ padding: 7px 11px; font-size: 12.5px; gap: 4px; }
   .console-screen .nav-item .nav-icon{ width: 15px; height: 15px; }
-  .console-screen .main{ padding: 34px 30px; }
+  /* 2026-08-31 6차: 콘솔 데크 삭제 + 콘솔 폭 확대(위 .console-shell/
+     --console-sidebar-w 6차 코멘트 참고)로 본문이 쓸 수 있는 폭이 늘어난
+     만큼 여백도 살짝 키움(34px 30px → 38px 36px). */
+  .console-screen .main{ padding: 38px 36px; }
 }
 
 /* "home/ 채리미의 기록 공간입니다" 같은 폴더 이름/설명 헤더(.main-heading)를
@@ -2397,14 +2389,13 @@ input, textarea, select{ cursor: text !important; }
 
 /* 사이드바 위 진짜 테마 스위처(점 5개) 숨기기(2026-08-28) — 사용자 요청:
    "테마 변경하는 창은 아래 콘솔 버튼으로 조절하면 되니, 프로필 위의 선택
-   창에서는 지워 줘". 콘솔 데크의 스킨 버튼 4개(.console-quickskins)가
-   이미 이 버튼들을 그대로 클릭해주는 방식(assets/js/console-frame.js)이라
-   숨겨도 동작 자체는 안 깨짐(.click()은 display:none이어도 정상 동작).
-   ⚠️ 다만 콘솔 데크에는 4개(기본/블루/핑크/다크)만 있고 민트는 없음 —
-   콘솔 화면에서는 민트 테마를 고를 방법이 없어짐(민트가 이미 선택되어
-   저장되어 있으면 계속 보이긴 함). data-role 속성 기준으로 숨겨서
-   sidebar.js의 모바일 위치 이동 로직(맨 아래로 옮기는 것)과도 무관하게
-   항상 안 보이게 함. */
+   창에서는 지워 줘". 2026-08-31 6차: 콘솔 데크(스킨 버튼 4개)가 통째로
+   없어지면서 지금은 위 HUD의 SKIN 칩 드롭다운(.console-skin-menu, 5개
+   전부 — 민트 포함)이 이 역할을 대신함(assets/js/console-frame.js) —
+   여전히 이 버튼들을 그대로 클릭해주는 방식이라 숨겨도 동작 자체는 안 깨짐
+   (.click()은 display:none이어도 정상 동작). data-role 속성 기준으로
+   숨겨서 sidebar.js의 모바일 위치 이동 로직(맨 아래로 옮기는 것)과도
+   무관하게 항상 안 보이게 함. */
 .console-screen [data-role="theme-switcher"]{ display: none; }
 
 /* "글 쓰는 창"(.window — 예: 홈 화면의 "home / index.md" 카드) 크기 조정
