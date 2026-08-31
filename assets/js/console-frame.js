@@ -52,11 +52,18 @@
 
   // 시안과 같은 4개(십자/다이아몬드 배치) — 기본(화이트)/블루/핑크/다크.
   // 민트는 사이드바 위 진짜 테마 스위처(점 5개)에서 고르면 됨.
+  // 2026-08-31 1차: 5개 테마 콘솔 색을 전부 드림웨이브 톤으로 다시 칠하면서
+  // (style.css의 --console-ring 값들 참고), 여기 미리보기 링 색도 각 테마의
+  // 새 --console-ring과 맞춰 갱신함 — 안 그러면 버튼 링 색이 실제로 눌렀을 때
+  // 바뀌는 콘솔 색과 달라 보이는 문제가 있었음.
+  // 2026-08-31 2차: "사이버펑크 4테마" 시안 이식으로 기본/블루의 --console-
+  // ring이 각각 #6fe3ff/#6fc4ff로 다시 바뀌어서 여기도 같이 맞춤(핑크/다크는
+  // 그대로).
   var QUICK_SKINS = [
-    { pos: 't', theme: 'default', ring: '#8382e6', title: '기본(화이트)' },
-    { pos: 'r', theme: 'blue', ring: '#4f9ce3', title: '블루' },
-    { pos: 'b', theme: 'pink', ring: '#d94f8f', title: '핑크' },
-    { pos: 'l', theme: 'dark', ring: '#7a56c9', title: '다크' }
+    { pos: 't', theme: 'default', ring: '#6fe3ff', title: '기본' },
+    { pos: 'r', theme: 'blue', ring: '#6fc4ff', title: '블루' },
+    { pos: 'b', theme: 'pink', ring: '#ff6fd8', title: '핑크' },
+    { pos: 'l', theme: 'dark', ring: '#5ec8ff', title: '다크' }
   ];
   var quickButtons = [];
   QUICK_SKINS.forEach(function (s) {
@@ -113,6 +120,20 @@
   var toggleBtn = app.querySelector('.sidebar-toggle-btn');
   if (toggleBtn) marquee.insertBefore(toggleBtn, marquee.firstChild);
 
+  // ── 메뉴 밑 "행성" 장식(.console-sidebar-orbit) ── 2026-08-31 4차: "메뉴
+  // 밑의 행성 사진" 요청 — 시안의 궤도 도는 행성 장식을 실제 사이드바 메뉴
+  // 목록(.nav-group) 바로 뒤에 새로 만들어 끼워 넣는다. sidebar.js가 이미
+  // 그려둔 .sidebar-sea(바다, display:none) 자리를 시각적으로 대신하는
+  // 역할이라 sidebar.js 쪽 코드는 건드리지 않고 여기서만 추가함 — 스타일은
+  // style.css의 ".console-sidebar-orbit" 섹션 참고.
+  var navGroup = app.querySelector('.sidebar .nav-group');
+  if (navGroup && navGroup.parentNode) {
+    var orbit = el('div', 'console-sidebar-orbit',
+      '<div class="ring r1"></div><div class="ring r2"></div><div class="core"></div>');
+    orbit.setAttribute('aria-hidden', 'true');
+    navGroup.parentNode.insertBefore(orbit, navGroup.nextSibling);
+  }
+
   // ── "글 쓰는 창"(.window) 높이를 화면 안에 딱 맞춤 ──
   // 사용자 요청: "글 쓰는 창은 가로 길이만 늘리고, 세로 길이는 콘솔 창
   // 안에 들어가도록 해 줘" — 처음엔(2026-08-28 1차) 여기서 JS로 카드의
@@ -143,12 +164,145 @@
     quickButtons.forEach(function (b) {
       b.classList.toggle('is-active', b.dataset.consoleTheme === theme);
     });
+    syncCosmicBg(theme);
   }
   syncWithTheme();
   new MutationObserver(syncWithTheme).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme']
   });
+
+  // ── 우주 배경(별+성운) — 2026-08-31, "다시 사이버펑크식 4가지 테마(블랙
+  // 제외) 만들어 줘 ... 배경이 잘 보이도록(우주 같은 느낌) ... 3D 액션은
+  // 빼자" 요청으로 만든 시안(dreamwave-console.html)을 그대로 이식.
+  // 시안은 마우스를 따라 콘솔이 3D로 기울고 별도 같이 패럴랙스되는 연출이
+  // 있었는데, 이번 라운드에서 사용자가 "3D 액션은 빼자"고 명시적으로
+  // 요청해서 그 부분만 빼고 옮김 — 아래엔 마우스 반응 코드가 전혀 없고,
+  // 별은 제자리에서 반짝이기만, 성운은 CSS 애니메이션(cosmic-drift-1~3,
+  // assets/css/style.css)으로 천천히 떠다니기만 한다.
+  // 다크 테마는 이번 요청에서 "블랙 제외"로 명시적으로 빠졌으므로, 다크
+  // 테마에서는 이 레이어 자체를 만들지 않는다(다크는 기존 모습 그대로).
+  //
+  // 2026-08-31 4차 디버깅 메모: rAF/setTimeout으로 예약된 draw() 콜백이
+  // 실행되는 시점에 resize()가 채워둔 cosmicStars(그리고 같은 스코프의
+  // 다른 var들)가 초기값으로 되돌아가 있는(빈 배열) 현상이 재현됨 —
+  // 동기 실행 구간에서는 값이 정상인데, 예약된(비동기) 콜백에서만 초기값을
+  // 보임(원인 불명, Playwright/CDP로 여러 각도에서 확인했지만 명확한
+  // 재현 경로를 찾지 못함). 원인과 무관하게 항상 그림이 그려지도록,
+  // "필요할 때 알아서 다시 채우는" 방어적 구조로 바꿈: 전역(모듈 스코프)
+  // var 대신 하나의 상태 객체(cosmicState)에 담고, draw()가 매 프레임
+  // cosmicState.stars가 비어있으면 즉시 다시 채운 뒤 그린다 — resize()도
+  // 같은 객체를 채우므로 이중 작업은 아니고, 그냥 "무슨 이유로든 비어
+  // 있으면 그 자리에서 즉시 복구"하는 안전장치.
+  var cosmicState = null; // { canvas, nebulaEl, raf, stars, ctx, dpr }
+  var reducedMotionMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  var cosmicReduced = !!(reducedMotionMq && reducedMotionMq.matches);
+
+  function makeStars(w, h) {
+    var count = Math.min(180, Math.round((w * h) / 9000));
+    var stars = [];
+    for (var i = 0; i < count; i++) {
+      var layer = Math.random() < 0.5 ? 0 : 1;
+      stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: layer === 0 ? Math.random() * 0.9 + 0.3 : Math.random() * 1.6 + 0.6,
+        p: Math.random() * Math.PI * 2,
+        s: Math.random() * 0.02 + 0.008,
+        // 2026-08-31 4차: "뒤에 돌아다니는 반짝이 효과" — 원래는 반짝임(투명도
+        // sin파)만 있고 위치는 고정이라 "돌아다닌다"는 느낌이 약했음. 마우스
+        // 반응(3D 액션, 이번 세션 초반에 뺀 것)과는 무관하게, 각 별마다 자기
+        // 자리에서 아주 천천히 작은 원을 그리며 떠다니는 위치 오프셋을
+        // 추가함(드리프트 반경/속도/위상을 별마다 랜덤하게 줘서 다 같이
+        // 움직이지 않고 제각각 떠다니는 것처럼 보이게).
+        driftR: layer === 0 ? Math.random() * 10 + 4 : Math.random() * 18 + 8,
+        driftS: Math.random() * 0.00035 + 0.00012,
+        driftP: Math.random() * Math.PI * 2
+      });
+    }
+    return stars;
+  }
+
+  function buildCosmicBg() {
+    if (cosmicState) return; // 이미 만들어져 있음
+
+    var canvas = document.createElement('canvas');
+    canvas.className = 'cosmic-stars';
+    canvas.setAttribute('aria-hidden', 'true');
+
+    var nebulaEl = el('div', 'cosmic-nebula', '<i class="n1"></i><i class="n2"></i><i class="n3"></i>');
+    nebulaEl.setAttribute('aria-hidden', 'true');
+
+    // body 맨 앞(.console-viewport보다도 앞)에 끼워 넣는다 — 위치는 CSS가
+    // position:fixed + z-index:-1로 고정하므로 DOM 순서 자체는 안 중요하지만,
+    // 그래도 "배경 레이어"라는 의도가 드러나도록 맨 앞에 둠.
+    document.body.insertBefore(nebulaEl, document.body.firstChild);
+    document.body.insertBefore(canvas, document.body.firstChild);
+
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    var state = {
+      canvas: canvas,
+      nebulaEl: nebulaEl,
+      ctx: ctx,
+      dpr: dpr,
+      stars: [],
+      raf: null
+    };
+    cosmicState = state;
+
+    function resize() {
+      state.canvas.width = window.innerWidth * state.dpr;
+      state.canvas.height = window.innerHeight * state.dpr;
+      state.canvas.style.width = window.innerWidth + 'px';
+      state.canvas.style.height = window.innerHeight + 'px';
+      state.ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      state.stars = makeStars(window.innerWidth, window.innerHeight);
+    }
+
+    function draw(t) {
+      // 위 2026-08-31 4차 디버깅 메모 참고 — 무슨 이유로든 별 목록이 비어
+      // 있으면(원래는 resize()가 채워둠) 그 자리에서 즉시 다시 채운다.
+      if (!state.stars.length) state.stars = makeStars(window.innerWidth, window.innerHeight);
+      state.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      for (var i = 0; i < state.stars.length; i++) {
+        var st = state.stars[i];
+        var tw = cosmicReduced ? 0.7 : (0.5 + 0.5 * Math.sin(t * st.s + st.p));
+        var dx = cosmicReduced ? 0 : Math.cos(t * st.driftS + st.driftP) * st.driftR;
+        var dy = cosmicReduced ? 0 : Math.sin(t * st.driftS * 0.8 + st.driftP) * st.driftR;
+        state.ctx.globalAlpha = 0.2 + tw * 0.55;
+        state.ctx.fillStyle = (i % 6 === 0) ? '#ff8bee' : (i % 5 === 0) ? '#8bd8ff' : '#ffffff';
+        state.ctx.beginPath();
+        state.ctx.arc(st.x + dx, st.y + dy, st.r, 0, Math.PI * 2);
+        state.ctx.fill();
+      }
+      state.ctx.globalAlpha = 1;
+      if (!cosmicReduced) state.raf = window.requestAnimationFrame(draw);
+    }
+
+    state.onResize = resize;
+    window.addEventListener('resize', state.onResize);
+    resize();
+    state.raf = window.requestAnimationFrame(draw);
+  }
+
+  function removeCosmicBg() {
+    if (!cosmicState) return;
+    if (cosmicState.raf) window.cancelAnimationFrame(cosmicState.raf);
+    if (cosmicState.onResize) window.removeEventListener('resize', cosmicState.onResize);
+    if (cosmicState.canvas && cosmicState.canvas.parentNode) cosmicState.canvas.parentNode.removeChild(cosmicState.canvas);
+    if (cosmicState.nebulaEl && cosmicState.nebulaEl.parentNode) cosmicState.nebulaEl.parentNode.removeChild(cosmicState.nebulaEl);
+    cosmicState = null;
+  }
+
+  function syncCosmicBg(theme) {
+    if (theme === 'dark') {
+      removeCosmicBg();
+    } else {
+      buildCosmicBg();
+    }
+  }
 
   // ── POSTS 칩: 실제 글 개수 ──
   var postsEl = document.getElementById('console-posts');

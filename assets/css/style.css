@@ -44,38 +44,78 @@
      사이드바 폭을 나중에 또 조정하더라도 버튼 위치가 저절로 같이 맞음. */
   --console-sidebar-w: 280px;
 
-  /* 콘솔 본체(껍데기) 색 — 컨셉 시안(https://claude.ai/code/artifact/e9df0cae-0c50-40e9-8ace-e6f8a7d9ec0b)의
-     "화이트" 스킨 값 그대로. 테마를 바꾸면 아래 각 :root[data-theme="..."]
+  /* 콘솔 본체(껍데기) 색 — 테마를 바꾸면 아래 각 :root[data-theme="..."]
      블록의 같은 변수들로 통째로 바뀜(순수 CSS 캐스케이드, JS는 색을 계산하지
-     않음). */
-  --console-s1: #a8e8ff;
-  --console-s2: #c9b8fb;
-  --console-s3: #ffc2e8;
-  --console-bezel: #beb2ed;
-  --console-ring: #8382e6;
-  --console-deck-ink: #3d2f7a;
+     않음).
 
-  /* ── 테마 1) 기본 — 화이트 · 블랙 · 포인트 블루 ── */
+     2026-08-31: "모든 테마 색상을 드림웨이브(몽환적 사이버펑크) 느낌으로
+     바꾸고 싶다" 요청 — 2026-08-28에 다크 테마 콘솔만 파스텔에서 짙은
+     네이비로 바꿨던("옛날 레트로 OS처럼") 방향을 5개 테마 전부로 확장함.
+     사이트 배경(--bg)·글자색(--ink)·포인트색(--accent-*)은 각 테마의
+     기존 정체성(라이트/다크, 색상군)을 그대로 두고, "콘솔 껍데기" 그라데이션
+     (--console-s1~s3/bezel/ring/deck-ink)만 파스텔 → 짙은 보석톤(jewel tone)
+     네온 그라데이션으로 다시 칠함 — 마퀴/HUD 칩은 여전히 항상 흰 배경이라
+     (.console-marquee, .console-hud .chip 규칙 참고) 흰 알약 위에 짙은 셸이
+     떠 있는 구도는 유지됨. --console-deck-ink는 계속 "흰 배경 위" 텍스트용
+     (어둡게 유지), --console-shell-ink는 "짙은 셸 배경 위"(.console-deck-foot)
+     텍스트용으로 모든 테마에 새로 추가함 — 이제 5개 전부 셸이 어두워졌으므로
+     다크 테마 때처럼 밝은 색이 필요해졌기 때문.
+
+     2026-08-31 2차: "다시 사이버펑크식 4가지 테마(블랙 제외) 만들어 줘 —
+     그라데이션 적극 활용, 3D 액션 추가(→ 이후 라운드에서 3D는 다시 뺌),
+     배경이 잘 보이도록(우주 같은 느낌), 레퍼런스 활용" 요청으로 만든 Artifact
+     (dreamwave-console.html, 4테마: 기본/블루(오로라)/민트/핑크 — 다크 제외)를
+     "이 상태 그대로 코드를 작성해 줘" 승인 받고 그대로 이식.
+     시안의 --accent-a/--accent-b(콘솔 링·마퀴 타이틀 그라데이션·아바타·
+     nav-item.active·엔트리 날짜·페이지네이션 active에 전부 재사용됨 — 콘솔
+     장식용이 아니라 사이트 본문 포인트색과 동일한 변수였음, 코드 확인 후
+     반영)를 각 테마의 --accent-start/--accent-end로, 시안의
+     --shell-1/2/3·--ring을 --console-s1~s3·--console-ring으로 그대로
+     옮기고, 시안에서 우주 배경(별+성운)에만 쓰던 --neb-a/b/c 3색도 새로
+     추가함(아래 "우주 배경(별+성운)" 섹션에서 사용). 다크 테마는 이 요청에서
+     명시적으로 제외되었으므로 위 1차 작업 그대로 두고 이번엔 건드리지 않음.
+     ⚠️ 시안은 --void(#05030f) 하나의 배경색을 모든 테마가 공유했지만(테마
+     차이는 성운 색으로만 표현), 실사이트는 테마마다 --bg/--sidebar-bg가
+     이미 별도로 존재하고 있어서(라이트/다크 시절부터의 관례) 그건 유지 —
+     페이지 배경은 테마별로 계속 살짝 다른 톤을 유지하고, 그 위에 우주
+     배경(별+성운, 테마 공통 레이어)이 겹쳐진다. */
+  --console-s1: #131233;
+  --console-s2: #1c1650;
+  --console-s3: #241a5c;
+  --console-bezel: #191340;
+  --console-ring: #6fe3ff;
+  --console-deck-ink: #1a1440;
+  --console-shell-ink: #bfe8ff;
+  --neb-a: #22d3ff;
+  --neb-b: #7b5cff;
+  --neb-c: #ff4fd8;
+
+  /* ── 테마 1) 기본 — 드림웨이브(일렉트릭 블루 네온) ──
+     2026-08-31 재작업: "콘솔 껍데기만" 어둡게 칠했던 1차 시도가 사이트
+     본문(흰 배경)과 어울리지 않아 "아까 보여준 디자인(Artifact 시안)과
+     다르다"는 피드백을 받음 — 시안의 실제 톤(딥 보이드 배경 #08051a,
+     시안+마젠타 듀얼 네온, 밝은 라일락빛 잉크)을 사이트 배경/글자색/
+     포인트색까지 전부 그대로 옮김. */
 
   /* 오른쪽 메인 배경 */
-  --bg: #ffffff;
+  --bg: #08051a;
 
   /* 왼쪽 사이드바 배경 */
-  --sidebar-bg: #f5f6f8;
+  --sidebar-bg: #0e0824;
 
   /* 제목과 본문 */
-  --ink: #14161a;
+  --ink: #f3eefc;
 
   /* 설명 및 보조 글자 */
-  --ink-soft: #54585f;
+  --ink-soft: #b6aed6;
 
   /* 날짜와 비활성 글자 */
-  --ink-faint: #999ea6;
+  --ink-faint: #746b96;
 
-  /* 포인트 컬러(블루) */
-  --accent-start: #2f6fe0;
-  --accent-end: #4f8ef7;
-  --accent-rgb: 47, 111, 224;
+  /* 포인트 컬러 — 2026-08-31 2차: 시안 --accent-a(시안)→--accent-b(보라) */
+  --accent-start: #22d3ff;
+  --accent-end: #b06bff;
+  --accent-rgb: 34, 211, 255;
 
   --accent-grad: linear-gradient(
     135deg,
@@ -84,32 +124,37 @@
   );
 
   /* 제목, 링크, 아이콘 */
-  --accent-solid: #2f6fe0;
+  --accent-solid: #22d3ff;
 
   /* 선택 메뉴 배경 */
-  --accent-soft: #e3ecfd;
+  --accent-soft: #17233f;
 
   /* 창 내부 배경 */
-  --chrome-bg: #ffffff;
+  --chrome-bg: #120b28;
 
   /* 창 테두리 */
-  --chrome-border: #e2e4e8;
+  --chrome-border: #2a2050;
 
   --radius: 16px;
   --sidebar-w: 560px;
 
-  /* 상태 색상(테마 공통 — 위험/성공은 어느 테마에서나 같은 의미) */
-  --danger: #d95763;
-  --danger-soft: #fdebed;
+  /* 상태 색상(테마 공통 — 위험/성공은 어느 테마에서나 같은 의미. 어두운
+     배경 위에서도 잘 보이도록 soft 배경을 짙은 톤으로 맞춤). */
+  --danger: #f87171;
+  --danger-soft: #3a1e22;
 
-  --ok: #218c68;
-  --ok-soft: #def4e9;
+  --ok: #34d399;
+  --ok-soft: #163429;
 }
 
-/* ── 테마 2) 기본 다크 ── */
+/* ── 테마 2) 기본 다크 ──
+   2026-08-31: 다른 4개 테마를 드림웨이브 톤으로 맞추면서, 다크 테마도
+   기존 회색빛 다크(#12141a)보다 더 짙은 "보이드" 톤으로 살짝 더 깊게
+   조정 — 콘솔 셸(아래, 이미 짙은 남색)과 사이트 배경이 자연스럽게
+   이어지도록 함. 포인트색은 기존 하늘색 계열 유지. */
 :root[data-theme="dark"]{
-  --bg: #12141a;
-  --sidebar-bg: #191c24;
+  --bg: #0a0c14;
+  --sidebar-bg: #0e111c;
   --ink: #eef0f4;
   --ink-soft: #aab0bd;
   --ink-faint: #6b7280;
@@ -117,9 +162,9 @@
   --accent-end: #7cb0ff;
   --accent-rgb: 79, 142, 247;
   --accent-solid: #7cb0ff;
-  --accent-soft: #1e2a44;
-  --chrome-bg: #1a1d26;
-  --chrome-border: #2b2f3a;
+  --accent-soft: #1a2440;
+  --chrome-bg: #12141e;
+  --chrome-border: #262a38;
   --danger: #f87171;
   --danger-soft: #3a1e22;
   --ok: #34d399;
@@ -155,87 +200,110 @@
    순서로 바꿔서 "하늘색이 주, 보라는 보조"가 되도록 함 — 오로라 특유의
    하늘색↔보라 사이 그러데이션 느낌) ── */
 :root[data-theme="blue"]{
-  --bg: #eef6ff;
-  --sidebar-bg: #e1f0fb;
-  --ink: #17284d;
-  --ink-soft: #4d6a92;
-  --ink-faint: #93a8c4;
-  --accent-start: #4fb3e8;
-  --accent-end: #a888f0;
-  --accent-rgb: 79, 156, 227;
-  --accent-solid: #4f9ce3;
-  --accent-soft: #dcecfb;
-  --chrome-bg: #ffffff;
-  --chrome-border: #cfe0f2;
-  --danger: #d95763;
-  --danger-soft: #fdebed;
-  --ok: #218c68;
-  --ok-soft: #def4e9;
+  /* 2026-08-31: 드림웨이브 전체 적용 — 하늘색 파스텔 배경을 짙은 남색
+     보이드로, 오로라 그라데이션(하늘색→보라)은 유지한 채 네온 채도만
+     끌어올림.
+     2026-08-31 2차: 시안의 4테마 중 "블루(오로라)" 스킨(아티팩트 스위처의
+     data-t="aurora")이 바로 이 테마 자리 — 시안 accent-a/accent-b·
+     shell-1~3·ring·neb-a~c를 그대로 옮김. */
+  --bg: #0a1220;
+  --sidebar-bg: #0e1830;
+  --ink: #e3f0ff;
+  --ink-soft: #8fb0dc;
+  --ink-faint: #52658c;
+  --accent-start: #4fb3ff;
+  --accent-end: #9b7bff;
+  --accent-rgb: 79, 179, 255;
+  --accent-solid: #4fb3ff;
+  --accent-soft: #16233f;
+  --chrome-bg: #0e1526;
+  --chrome-border: #223055;
+  --danger: #f87171;
+  --danger-soft: #3a1e22;
+  --ok: #34d399;
+  --ok-soft: #163429;
 
-  /* 콘솔 "블루" 스킨 — 시안의 blue 스킨 값 그대로 */
-  --console-s1: #dcf7fd;
-  --console-s2: #bdedfb;
-  --console-s3: #a3e0f7;
-  --console-bezel: #8dcfea;
-  --console-ring: #4f9ce3;
-  --console-deck-ink: #1c5c78;
+  /* 콘솔 "블루(오로라)" 스킨 — 2026-08-31 2차: 시안 aurora 스킨 그대로. */
+  --console-s1: #0e1440;
+  --console-s2: #1a1a5c;
+  --console-s3: #123a54;
+  --console-bezel: #152050;
+  --console-ring: #6fc4ff;
+  --console-deck-ink: #122250;
+  --console-shell-ink: #bfe0ff;
+  --neb-a: #2e6bff;
+  --neb-b: #7b5cff;
+  --neb-c: #16e0c9;
 }
 
 /* ── 테마 4) 민트 — 파스텔 민트 그라데이션(이전까지의 기본 색상) ── */
 :root[data-theme="mint"]{
-  --bg: #f3faf9;
-  --sidebar-bg: #e8f5f4;
-  --ink: #183536;
-  --ink-soft: #577476;
-  --ink-faint: #91aaaa;
-  --accent-start: #39c5bb;
-  --accent-end: #55a9e8;
-  --accent-rgb: 57, 197, 187;
-  --accent-solid: #269fa0;
-  --accent-soft: #d2f0ed;
-  --chrome-bg: #fffefd;
-  --chrome-border: #cfe4e2;
-  --danger: #d95763;
-  --danger-soft: #fdebed;
-  --ok: #218c68;
-  --ok-soft: #def4e9;
+  /* 2026-08-31: 드림웨이브 전체 적용 — 파스텔 민트 배경을 짙은 틸 보이드로,
+     포인트색은 같은 민트 계열에서 채도를 끌어올린 네온 틸/시안으로.
+     2026-08-31 2차: 시안 4테마 중 "민트" 스킨 값 그대로 이식. */
+  --bg: #06151a;
+  --sidebar-bg: #0a1c22;
+  --ink: #dffaf5;
+  --ink-soft: #7fc4bb;
+  --ink-faint: #47756e;
+  --accent-start: #2ee6c8;
+  --accent-end: #3ecbff;
+  --accent-rgb: 46, 230, 200;
+  --accent-solid: #2ee6c8;
+  --accent-soft: #0f2b2a;
+  --chrome-bg: #0a1c22;
+  --chrome-border: #16332f;
+  --danger: #f87171;
+  --danger-soft: #3a1e22;
+  --ok: #34d399;
+  --ok-soft: #163429;
 
-  /* 콘솔 "민트" 스킨 — 시안(4개 스킨)에는 없는 조합이라, 민트 테마의 실제
-     accent(#39c5bb/#55a9e8)에 맞춰 같은 파스텔-글라스 톤으로 새로 만듦. */
-  --console-s1: #d6f9f0;
-  --console-s2: #c3f0e8;
-  --console-s3: #bfe6fb;
-  --console-bezel: #8fd9cf;
-  --console-ring: #269fa0;
-  --console-deck-ink: #0f4a4b;
+  /* 콘솔 "민트" 스킨 — 2026-08-31 2차: 시안 mint 스킨 그대로. */
+  --console-s1: #0a2e2a;
+  --console-s2: #0d3d3a;
+  --console-s3: #0a2e44;
+  --console-bezel: #0c332f;
+  --console-ring: #2ee6c8;
+  --console-deck-ink: #0c2e2a;
+  --console-shell-ink: #aef5ea;
+  --neb-a: #00ffc2;
+  --neb-b: #00b8ff;
+  --neb-c: #2effa1;
 }
 
 /* ── 테마 5) 핑크 — 파스텔 핑크 그라데이션 ── */
 :root[data-theme="pink"]{
-  --bg: #fdf3f7;
-  --sidebar-bg: #fbe9f1;
-  --ink: #4a1f34;
-  --ink-soft: #8a5570;
-  --ink-faint: #c191a8;
-  --accent-start: #ec6fac;
-  --accent-end: #f9a8c9;
-  --accent-rgb: 236, 111, 172;
-  --accent-solid: #d94f8f;
-  --accent-soft: #fbdcea;
-  --chrome-bg: #fffbfd;
-  --chrome-border: #f6d7e4;
-  --danger: #d95763;
-  --danger-soft: #fdebed;
-  --ok: #218c68;
-  --ok-soft: #def4e9;
+  /* 2026-08-31: 드림웨이브 전체 적용 — 파스텔 핑크 배경을 짙은 마젠타-플럼
+     보이드로, 포인트색은 같은 핑크 계열에서 채도를 끌어올린 네온 마젠타로.
+     2026-08-31 2차: 시안 4테마 중 "핑크" 스킨 값 그대로 이식. */
+  --bg: #170a1c;
+  --sidebar-bg: #1e0e26;
+  --ink: #ffe9f5;
+  --ink-soft: #d68ab8;
+  --ink-faint: #7d4d68;
+  --accent-start: #ff5fe0;
+  --accent-end: #b06bff;
+  --accent-rgb: 255, 95, 224;
+  --accent-solid: #ff5fe0;
+  --accent-soft: #2a1230;
+  --chrome-bg: #1e0e26;
+  --chrome-border: #3a1a40;
+  --danger: #f87171;
+  --danger-soft: #3a1e22;
+  --ok: #34d399;
+  --ok-soft: #163429;
 
-  /* 콘솔 "핑크" 스킨 — 시안의 pink 스킨 값 그대로 */
-  --console-s1: #ffdcf4;
-  --console-s2: #ffc5ec;
-  --console-s3: #ffb0e1;
-  --console-bezel: #f5a8d4;
-  --console-ring: #d94f8f;
-  --console-deck-ink: #99175f;
+  /* 콘솔 "핑크" 스킨 — 2026-08-31 2차: 시안 pink 스킨 그대로. */
+  --console-s1: #2e0a38;
+  --console-s2: #401450;
+  --console-s3: #2a0a44;
+  --console-bezel: #33103d;
+  --console-ring: #ff6fd8;
+  --console-deck-ink: #3a1042;
+  --console-shell-ink: #ffd6f2;
+  --neb-a: #ff2ee6;
+  --neb-b: #ff6fd8;
+  --neb-c: #b04bff;
 }
 
 *{ box-sizing: border-box; }
@@ -243,11 +311,28 @@
 html, body{
   margin: 0;
   padding: 0;
-  background: var(--bg);
   color: var(--ink);
   font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   height: 100%;
 }
+/* 2026-08-31 5차 버그 수정: 배경(--bg)은 body가 아니라 html에만 건다 —
+   body/html 둘 다에 background를 걸면(예전 코드) html의 배경이 뷰포트
+   캔버스로 전파(propagate)되어 맨 아래에 깔리는 것과 별개로, body 자신도
+   "보통 흐름(in-flow)의, position 없는" 박스로서 자기 배경을 스택 순서상
+   z-index:-1보다 위 단계에서 칠한다 — 그 결과 .console-stars 캔버스/
+   .cosmic-nebula(둘 다 position:fixed + z-index:-1로 body 바로 아래에
+   끼워 넣음, assets/js/console-frame.js 참고)가 body의 불투명한 배경에
+   완전히 가려져서, 실제로는 별이 정상적으로 그려지고 있었는데도(캔버스
+   getImageData로 확인하면 픽셀이 있음) 화면에는 전혀 안 보이는 문제가
+   있었다 — "우주 배경이 안 보인다"는 이번 라운드 요청의 진짜 원인이
+   여기 있었음. html에만 background를 두면 그 배경이 뷰포트 캔버스로
+   전파되어(사양상 body가 자기 배경을 안 가지면 body의 배경이 대신
+   전파되지만, 여기선 html이 이미 지정했으므로 html 것이 쓰임) 여전히
+   맨 아래에 깔리면서도, body 자신은 투명해져서 그 위(z-index:-1)의
+   별/성운 캔버스가 정상적으로 보인다. /private/ 등 캔버스가 없는
+   페이지나 다크 테마에서도 html의 배경이 그대로 뷰포트를 채우므로
+   시각적 차이 없음. */
+html{ background: var(--bg); }
 
 a{ color: inherit; text-decoration: none; }
 
@@ -1431,6 +1516,10 @@ a{ color: inherit; text-decoration: none; }
   /* 상단 아이콘 바 안의 작은 아바타에서는 점 표시가 들어갈 자리가 없어서 숨김
      (스와이프로 사진을 넘기는 기능 자체는 모바일에서도 그대로 동작함). */
   .avatar-dots{ display: none; }
+  /* 모바일에서는 사이드바 자체가 상단 가로 아이콘 바로 바뀌어서 "메뉴 밑"이라는
+     자리가 없어짐 — 시안도 같은 이유로 860px 이하에서 `.sidebar-orbit{
+     display:none; }` 처리했던 것과 동일하게 숨김. */
+  .console-sidebar-orbit{ display: none; }
   .profile{ flex-direction: row; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
   /* align-items: flex-start(가로축 기준 "내용만큼만" 크기)가 아니라 stretch를 써야
      자식 .profile-name이 실제로 이 컨테이너 폭까지 눌려서 그 안에서 줄임표가
@@ -1602,7 +1691,72 @@ input, textarea, select{ cursor: text !important; }
       하나의 생김새는 시안 수치 그대로 맞췄다.
 
    ⚠️ 주의: 아래 .console-shell/.console-screen-bezel/.console-screen에는
-   transform · filter · backdrop-filter를 절대 걸지 않는다(위 1번 이유와 동일). */
+   transform · filter · backdrop-filter를 절대 걸지 않는다(위 1번 이유와 동일).
+
+   2026-08-31 추가 — 우주 배경(별+성운) 도입 시에도 이 규칙은 그대로 지킴:
+   시안(dreamwave-console.html)의 글래스모피즘(.console-screen에 backdrop-
+   filter:blur)과 마우스 3D 틸트는 실제 사이트에 그대로 옮기지 않았다.
+   이유: 3D 틸트는 사용자가 이번 라운드에서 직접 빼 달라고 요청했고,
+   backdrop-filter는 애초에 위 경고(어떤 조상 요소든 transform/filter/
+   backdrop-filter가 걸리면 그 조상이 position:fixed 자손— 창 전체화면
+   기능—의 새 좌표 기준점이 되어버림) 때문에 .app을 감싸는 .console-screen/
+   -bezel/-shell 어디에도 걸 수 없다. 대신 "배경이 잘 보이도록(우주 같은
+   느낌)"은 다른 방식으로 구현: 별+성운을 body 바로 아래 고정 배경 레이어
+   (#cosmic-stars 캔버스 + .cosmic-nebula, 아래 참고)로 깔고, 콘솔 뷰포트의
+   배경(.console-viewport)을 불투명(var(--bg))에서 투명으로 바꿔서 콘솔
+   틀 바깥 여백(특히 넓은 데스크톱 화면의 좌우/상하 거터)에서 별/성운이
+   그대로 비쳐 보이게 했다 — 콘솔이 화면을 거의 꽉 채우는 지금 구조(2026-
+   08-28에 사용자가 명시적으로 요청해 확정한 크기)에서 실현 가능한 절충안.
+   콘솔 셸 자체의 우주 느낌은 셸 바깥 글로우(box-shadow, 테마 포인트색)로
+   보강함. 다크 테마는 이번 요청에서 명시적으로 제외("4가지 테마(블랙
+   제외)")되었으므로 별/성운 레이어는 다크 테마에서 JS가 아예 생성하지
+   않는다(assets/js/console-frame.js 참고) — 다크 테마는 기존 모습 그대로. */
+
+/* ══════════ 우주 배경(별+성운) — 2026-08-31, 다크 테마 제외 4테마 공통 ══════════
+   assets/js/console-frame.js가 다크 테마가 아닐 때만 body 맨 앞에
+   <canvas id="cosmic-stars">와 <div class="cosmic-nebula">를 끼워 넣는다.
+   둘 다 position:fixed + z-index:-1이라 문서 어디에도 없는 완전히 새로운
+   배경 레이어 — .app/.console-shell 트리와는 부모-자식 관계가 전혀 없으므로
+   위 transform/filter 경고와 무관하게 안전하다(마우스 반응도 없음 — 3D
+   액션은 요청대로 뺌, 그냥 제자리에서 반짝이고 성운만 천천히 떠다님). */
+.cosmic-stars, .cosmic-nebula{
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.cosmic-stars{ width: 100%; height: 100%; }
+.cosmic-nebula i{
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  mix-blend-mode: screen;
+  opacity: .5;
+}
+.cosmic-nebula .n1{
+  width: 52vw; height: 52vw; max-width: 760px; max-height: 760px;
+  left: -16vw; top: -18vw;
+  background: radial-gradient(circle, var(--neb-a), transparent 70%);
+  animation: cosmic-drift-1 28s ease-in-out infinite;
+}
+.cosmic-nebula .n2{
+  width: 46vw; height: 46vw; max-width: 660px; max-height: 660px;
+  right: -14vw; top: 8vh;
+  background: radial-gradient(circle, var(--neb-b), transparent 70%);
+  animation: cosmic-drift-2 34s ease-in-out infinite;
+}
+.cosmic-nebula .n3{
+  width: 42vw; height: 42vw; max-width: 600px; max-height: 600px;
+  left: 16vw; bottom: -20vw;
+  background: radial-gradient(circle, var(--neb-c), transparent 70%);
+  animation: cosmic-drift-3 24s ease-in-out infinite;
+}
+@keyframes cosmic-drift-1{ 0%,100%{ transform: translate(0,0) scale(1); } 50%{ transform: translate(5vw,4vh) scale(1.08); } }
+@keyframes cosmic-drift-2{ 0%,100%{ transform: translate(0,0) scale(1); } 50%{ transform: translate(-4vw,5vh) scale(1.05); } }
+@keyframes cosmic-drift-3{ 0%,100%{ transform: translate(0,0) scale(1); } 50%{ transform: translate(4vw,-4vh) scale(1.1); } }
+@media (prefers-reduced-motion: reduce){
+  .cosmic-nebula i{ animation: none; }
+}
 
 /* 콘솔을 화면 한가운데에 띄우는 바깥 레이어 — body 자체의 display는 안
    건드리고(다른 body 직계 요소인 .backdrop/.custom-cursor는 전부
@@ -1618,15 +1772,38 @@ input, textarea, select{ cursor: text !important; }
      여백(패딩)을 최소로 줄여서 콘솔 틀이 브라우저 창을 거의 가득 채우게
      한다(24px에서 축소, 완전히 0으로는 안 함 — 흰 테두리 바깥 그림자가
      화면 밖으로 잘려서 콘솔이 잘린 것처럼 보이는 걸 막기 위한 최소한의
-     여백). */
-  padding: 10px;
+     여백).
+     2026-08-31 3차: 위 .console-shell 크기를 92vw/88vh로 줄이면서(우주
+     배경이 보이도록) 이 패딩도 시안 스크린샷과 비슷하게 24px로 살짝
+     늘림 — 어차피 shell 자체가 더 작아졌으니 패딩을 굳이 10px로 좁게
+     유지할 이유가 없고, 우주 배경이 보이는 여백이 늘어나는 쪽이 목표에
+     맞음. */
+  padding: 24px;
   box-sizing: border-box;
-  background: var(--bg);
+  /* 2026-08-31: 예전엔 var(--bg) 불투명이었는데, 우주 배경(별+성운, 위
+     "우주 배경" 섹션 참고)이 이 뷰포트 뒤(body 레벨, z-index:-1)에 깔리므로
+     여기를 투명하게 바꿔서 콘솔 틀 바깥 거터(특히 넓은 화면의 좌우/상하
+     여백)에 별/성운이 그대로 비쳐 보이게 함. 다크 테마나 우주 배경 레이어가
+     없는 경우(reduced-motion 등)에도 html/body 자체 배경(var(--bg))이
+     이미 그 뒤에 깔려 있어 빈 화면이 되지는 않음(아래 폴백). */
+  background: transparent;
   transition: background 0.4s ease;
 }
 
 .console-shell{
   --btn-ring: var(--console-ring);
+  /* 2026-08-31 3차: 시안의 회전하는 conic-gradient 글로우(::before, 아래
+     참고)를 위해 새로 추가 — position:relative(절대위치 자손의 기준점) +
+     z-index:0(이 shell 하나만의 독립된 stacking context를 만들어서, 아래
+     ::before의 z-index:-1이 "이 shell 안에서만" 배경 바로 위/자손들 바로
+     아래에 오도록 국소적으로 고정됨 — 문서 전체 쌓임 순서에는 영향 없음).
+     overflow:hidden은 그 글로우가 shell의 둥근 테두리 밖으로 안 새어나가고
+     안에 갇혀서 은은하게만 보이게 함. ⚠️ position:relative/z-index/
+     overflow는 위에서 금지한 transform·filter·backdrop-filter가 아니라서
+     안전 — 이 셋은 여전히 이 요소엔 걸지 않음. */
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
   /* 2026-08-28 조정 이력:
      1) 1차: 사용자 피드백("내부 스크린 자체가 너무 커서 스크롤하기
         힘들 것 같아")을 받고 콘솔 틀을 1240×800 → 1080×700으로 줄이고,
@@ -1643,22 +1820,81 @@ input, textarea, select{ cursor: text !important; }
      쓰지 않는다 — /project 등 페이지의 "창(.window) 전체화면" 기능이
      position:fixed + JS가 계산한 실제 뷰포트 픽셀값에 의존하는데, 조상에
      transform이 걸리면 그 조상이 fixed의 새 기준점이 되어버려 전체화면
-     위치/크기가 깨진다(직접 클릭 테스트로 확인됨). */
-  width: min(1600px, 98vw);
-  height: min(900px, 96vh);
+     위치/크기가 깨진다(직접 클릭 테스트로 확인됨).
+
+     2026-08-31 3차: "이거랑 똑같이 해달라고" — 사용자가 시안(Artifact)
+     스크린샷을 직접 캡처해서 보여주며 정확히 이 비율을 요구함. 시안의
+     `.console-shell{ width: min(1060px, 100%); }`은 콘솔이 뷰포트를 거의
+     안 채우고 사방에 우주 배경(별/성운)이 넉넉히 보이는 구도인데, 실제
+     사이트는 v4→v5(2026-08-28)에서 "화면 꽉 차게" 요청으로 98vw/96vh까지
+     키워둔 상태라 콘솔이 뷰포트를 거의 다 덮어버려서 우주 배경이 거터(10px
+     안팎)에만 살짝 보이는 문제가 있었음 — 이번 우주 배경 요청과 그 옛날
+     "화면 꽉 차게" 요청이 서로 상충해서, 우선순위가 더 높은(방금 스크린샷까지
+     보여주며 재요청한) 이번 요청에 맞춰 콘솔 크기를 줄임. 시안의 1060px보다는
+     크게(사이트 실제 폭 560px 사이드바+본문이 다 들어가야 해서 더 좁으면
+     내부가 답답해짐) 잡되, 뷰포트 대비 비율(약 90%)은 시안 스크린샷과
+     비슷하게 맞춤 — 사방에 우주가 뚜렷이 보이면서도 콘솔 내부는 여전히
+     넉넉하게. 다크 테마는 우주 배경이 없지만 콘솔 크기 자체는 테마마다
+     다르게 두면 테마 전환 시 콘솔이 덜컹거리며 리사이즈되므로 5개 테마
+     전부 같은 크기를 씀(다크는 그냥 바깥 여백이 늘어난 것 뿐, 기능/가독성
+     영향 없음).
+
+     2026-08-31 5차: 3차에서 92vw/88vh로 줄였는데도 사용자가 시안 스크린샷
+     두 장을 다시 보여주며 "웹사이트 자체의 크기를 줄여도 되니까, 배경이
+     사진처럼 잘 보였으면 좋겠어"라고 명시적으로 더 줄여도 된다고 재요청 —
+     3차 때는 "사이드바+본문이 답답해지면 안 된다"는 이유로 90% 선에서
+     멈췄었지만, 이번엔 사용자가 "메뉴 크기도 줄여도 괜찮다"고 먼저
+     허락했으므로(아래 사이드바 관련 규칙들도 이때 같이 축소) 그 제약이
+     풀림 — 시안 스크린샷 비율(뷰포트 대비 폭 약 66%, 높이 약 80%)에
+     맞춰 70vw/78vh로 한 번 더 줄임. */
+  width: min(1080px, 70vw);
+  height: min(740px, 78vh);
   display: flex;
   flex-direction: column;
   padding: var(--console-pad-shell) var(--console-pad-shell) 18px;
   border: var(--console-pad-border) solid #ffffff;
   border-radius: 32px;
-  background: linear-gradient(120deg, var(--console-s1), var(--console-s2), var(--console-s3), var(--console-s1));
-  background-size: 340% 340%;
+  /* 2026-08-31: "그라데이션을 적극적으로 활용" 요청 — 기존 3색 선형
+     그라데이션(애니메이션으로 계속 흐름) 위에, 좌상단에서 은은하게 번지는
+     흰색 하이라이트 레이어를 하나 더 얹어서(멀티 background) 유리질/보석톤
+     깊이감을 더함. filter가 아니라 background 레이어라 위 경고(transform·
+     filter·backdrop-filter 금지)와 무관하게 안전함. */
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,.14), transparent 45%),
+    linear-gradient(120deg, var(--console-s1), var(--console-s2), var(--console-s3), var(--console-s1));
+  background-size: 100% 100%, 340% 340%;
   animation: console-shell-drift 7s ease-in-out infinite alternate;
+  /* 2026-08-31: 콘솔 바깥 그림자를 중성 보라(rgba(60,40,100,...))에서 각
+     테마 포인트색(--console-ring) 글로우로 바꿔서, 콘솔 자체가 우주 배경
+     속에서 은은하게 빛나는 것처럼 보이게 함("배경이 잘 보이도록, 우주 같은
+     느낌" 요청의 일부 — 화면을 거의 꽉 채우는 콘솔 구조상 콘솔 "가장자리"가
+     성운이 만나는 지점이 되도록). */
   box-shadow:
-    0 26px 50px -20px rgba(60, 40, 100, 0.32),
+    0 26px 60px -20px rgba(4, 2, 14, 0.6),
+    0 0 90px -18px var(--console-ring),
     0 0 0 2px rgba(255, 255, 255, 0.5),
     inset 0 2px 0 rgba(255, 255, 255, 0.6);
-  transition: background 0.5s ease, border-color 0.5s ease;
+  transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+}
+/* 2026-08-31 3차: 시안의 `.console-inner::before`(천천히 회전하는
+   conic-gradient 글로우)를 그대로 옮김 — `.console-shell` 자신에게는
+   여전히 transform/filter를 걸지 않고, 이 ::before "가짜 자손"에만
+   걸림(위 .console-shell의 position/z-index 주석 참고 — .app과는 무관한
+   별개의 렌더링 레이어라 안전). */
+.console-shell::before{
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(from 0deg, var(--accent-start), transparent 20%, var(--accent-end), transparent 55%, var(--accent-start));
+  opacity: 0.18;
+  filter: blur(40px);
+  animation: console-glow-spin 18s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes console-glow-spin{ to{ transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce){
+  .console-shell::before{ animation: none; }
 }
 @keyframes console-shell-drift{
   0%{ background-position: 0% 20%; }
@@ -1676,9 +1912,18 @@ input, textarea, select{ cursor: text !important; }
   gap: 10px;
   padding: 8px 18px;
   margin-bottom: 12px;
-  background: #ffffff;
+  /* 2026-08-31 3차: "이거랑 똑같이 해달라고" — 화이트 플라스틱 알약(테마
+     무관 고정 흰색)이었던 걸 시안 그대로 짙은 유리 알약(반투명 + blur)으로
+     교체. `.console-marquee`는 `.console-shell`의 flex 자식일 뿐 `.app`을
+     감싸는 조상이 아니라서(그 역할은 `.console-screen`/`-bezel`/`-shell`
+     셋뿐 — 위 큰 경고 참고) backdrop-filter를 걸어도 전체화면 버그와 전혀
+     무관, 안전하다. */
+  background: rgba(10, 8, 24, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  box-shadow: 0 3px 8px rgba(40, 20, 70, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
   flex: none;
   /* 사이드바 접기 버튼(#console-shell .sidebar-toggle-btn)을 이 바 왼쪽에
      절대위치로 붙이기 위한 기준점. */
@@ -1699,25 +1944,132 @@ input, textarea, select{ cursor: text !important; }
      11px → 13px, 아래 @media 참고). */
   font-size: 15px;
   letter-spacing: 0.03em;
-  color: var(--console-deck-ink);
+  /* 2026-08-31 3차: 마퀴가 흰 알약 → 짙은 유리 알약으로 바뀌면서, 배경 위
+     기본 텍스트 색도 어두운 --console-deck-ink(흰 배경용)에서 밝은
+     --console-shell-ink(짙은 배경용, .console-deck-foot과 같은 변수)로
+     교체 — 점(.dot)들은 이 규칙의 영향을 안 받음(자기 background로 그림). */
+  color: var(--console-shell-ink, #fff);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 2026-08-31: 시안의 마퀴 타이틀(그라데이션 텍스트, .console-marquee .title)을
+   그대로 옮김 — 글자가 테마 포인트색 듀얼톤 그라데이션이 됨.
+   background-clip:text는 filter가 아니라 이 span 자신에게만 적용되는
+   렌더링 속성이라 위 "콘솔 셸에 filter 금지" 경고와 무관함(자손도 없음). */
+#console-title{
+  background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--console-shell-ink, #fff); /* background-clip:text 미지원 브라우저 폴백(짙은 마퀴 배경 위) */
+}
+@supports (background-clip: text) or (-webkit-background-clip: text){
+  #console-title{ color: transparent; }
+}
 
-.console-hud{ flex: none; display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
+.console-hud{ flex: none; display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+/* 2026-08-31 3차: "이거랑 똑같이 해달라고" — HUD 칩도 흰 알약 3개에서
+   시안 그대로 짙은 유리 칩(반투명 + blur)으로 교체. `.console-hud`도
+   `.console-marquee`와 마찬가지로 `.app`을 감싸는 조상이 아니므로
+   backdrop-filter가 안전함. */
 .console-hud .chip{
-  display: flex; align-items: center; gap: 6px;
-  background: #ffffff;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  /* 2026-08-31 4차: "타이틀 바 밑의 옵션들의 길이" — 시안은 `.console-hud .chip{
+     flex:1; text-align:center; }`로 칩 3개가 마퀴(타이틀 바)와 같은 폭까지
+     늘어나 있는데, 여기는 내용 크기만큼만 좁게 뭉쳐 있었음(justify-content:
+     center로 가운데 정렬만 하고 있었음) — flex:1을 추가해 칩 3개가 콘솔 폭
+     전체로 균등하게 늘어나도록 시안과 맞춤. flex-wrap이 있으니 아주 좁은
+     화면에서는 자동으로 줄바꿈됨(모바일 폭 축소는 아래 @media 규칙이 이어서
+     처리). */
+  flex: 1;
+  min-width: 0;
+  background: rgba(10, 8, 24, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 10px;
   padding: 6px 10px;
   font-size: 11.5px;
-  color: var(--console-deck-ink);
+  color: var(--console-shell-ink, #fff);
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(40, 20, 70, 0.10);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 .console-hud .chip b{ font-family: var(--font-pixel); font-size: 11px; font-weight: 400; color: var(--console-ring); }
 .console-hud .chip svg{ width: 14px; height: 14px; flex: none; }
+
+/* ══════════ 메뉴 밑 "행성" 장식(.console-sidebar-orbit) — 2026-08-31 4차 ══════════
+   "메뉴 밑의 행성 사진" 요청 — 시안의 `.sidebar-orbit`(궤도를 도는 작은 행성
+   장식, 원래 사이드바 맨 아래 `.sidebar-sea`(바다, 이미 v2에서 숨김 처리됨)
+   자리를 대신함)를 그대로 옮김. 실제 사이트에서는 `assets/js/console-frame.js`가
+   `.sidebar .nav-group` 바로 뒤에 이 엘리먼트를 새로 만들어 끼워 넣는다(사이드바
+   콘텐츠 자체는 assets/js/sidebar.js가 그리므로, 그건 건드리지 않고 콘솔 프레임
+   쪽에서만 추가 — 콘솔 프레임이 없는 페이지에는 안 생김). `.sidebar`가
+   `display:flex;flex-direction:column`이므로 `margin-top:auto`만으로 사이드바
+   맨 아래로 저절로 밀려남(사이드바 안에 이 요소보다 아래에 오는 다른 형제가
+   없어야 함 — 실제로 nav-group이 사이드바의 마지막 "보이는" 자식이라 문제
+   없음, `.sidebar-sea`는 `display:none`이라 flex 레이아웃에서 아예 빠짐).
+
+   2026-08-31 4차 추가 수정: 프로필(아바타 130px로 확대됨)+메뉴 글자 크기가
+   전에 커진 상태라, 콘솔 화면 높이(.console-screen .sidebar의
+   clientHeight)보다 사이드바 총 콘텐츠가 이미 86px 정도 더 김
+   (scrollHeight > clientHeight) — margin-top:auto는 스펙상 콘텐츠가
+   흘러넘칠 때 0으로 계산돼 버려서 이 박스가 아래로 거의 다 밀려나
+   화면 밖(스크롤해야 보이는 위치)에 걸치는 문제가 있었음(Playwright로
+   확인: 76px 중 18px만 보임).
+
+   position:sticky로도, position:absolute로도 시도해봤지만 둘 다 이
+   박스를 문서 흐름에서 빼내는 방식이라, 그 위에 여전히 존재하는 nav-group
+   콘텐츠(Contact/Private)와 화면상에서 시각적으로 겹치는 문제가
+   스크린샷에서 발견됨(문서 흐름 안 자기 자리는 그대로 차지하지 않으면서
+   화면엔 강제로 보이게 만드니, 진짜로 그 자리에 있는 다른 요소와 부딪힘).
+   최종적으로는 이 박스를 다시 원래대로 문서 흐름 안에 두고(flex:none,
+   margin-top:auto 불필요 — 아래 nav-group이 flex:1로 알아서 밀어줌), 대신
+   `.console-screen .sidebar .nav-group`(바로 아래 규칙)에 flex:1 1 auto +
+   min-height:0 + overflow-y:auto를 줘서 "모자란 86px만큼은 메뉴 목록 자기
+   내부에서만" 스크롤되게 함 — 프로필과 이 행성 박스는 항상 자기 자리를
+   확실히 차지하니 절대 겹치거나 화면 밖으로 밀려날 수 없고, 아바타/메뉴
+   글자 크기도 다시 줄이지 않고 그대로 유지됨. */
+.console-sidebar-orbit{
+  flex: none;
+  flex-shrink: 0;
+  /* 2026-08-31 4차: 76px → 40px로 축소(메뉴 5개가 스크롤 없이 전부 보이도록
+     하기 위한 트레이드오프). 5차: 사용자가 "메뉴 크기도 줄여도 괜찮으니,
+     행성이 사진만큼 보였으면 좋겠어"라고 요청 — 위 아바타/메뉴 글자 크기를
+     한 번 더 줄여 확보한 공간으로 이 박스를 40px→72px로 다시 키움(시안
+     스크린샷만큼 뚜렷하게 보이도록). 아래 core/ring 크기도 같은 비율로
+     같이 키움. */
+  height: 72px;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.5);
+}
+.console-sidebar-orbit .core{
+  position: absolute; left: 50%; top: 50%;
+  width: 21px; height: 21px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 30%, #fff, var(--accent-start) 55%, transparent 75%);
+  box-shadow: 0 0 20px 4px var(--accent-start);
+}
+.console-sidebar-orbit .ring{
+  position: absolute; left: 50%; top: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent-end) 55%, transparent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.console-sidebar-orbit .r1{ width: 44px; height: 17px; animation: console-orbit-spin 6s linear infinite; }
+.console-sidebar-orbit .r2{ width: 67px; height: 25px; animation: console-orbit-spin 10s linear infinite reverse; }
+@keyframes console-orbit-spin{
+  from{ transform: translate(-50%, -50%) rotate(0deg); }
+  to{ transform: translate(-50%, -50%) rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce){
+  .console-sidebar-orbit .ring{ animation: none; }
+}
 
 .console-screen-bezel{
   flex: 1;
@@ -1985,8 +2337,15 @@ input, textarea, select{ cursor: text !important; }
 @media (min-width: 901px){
   .console-screen .sidebar{
     width: var(--console-sidebar-w);
-    padding: 28px 22px;
-    gap: 18px;
+    /* 2026-08-31 4차: 위/아래 padding 28→14px, gap 18→6px로 살짝 더 줄임
+       (좌우 22px, 아바타/메뉴 글자 크기는 손대지 않음) — .console-sidebar-orbit
+       (행성 장식) 한 칸(아래에서 높이도 76→40px로 축소)이 새로 늘어난 만큼,
+       메뉴 5개(Home/Study/Project/Contact/Private)가 전부 스크롤 없이 그대로
+       다 보이도록 그 공간을 여백 쪽에서 마련함 — 처음엔 메뉴 목록만 자체
+       스크롤되게 했었지만(nav-group에 flex:1+overflow-y:auto), 그러면
+       Contact/Private 메뉴가 안 보여서 사용성이 떨어져 되돌림. */
+    padding: 14px 22px;
+    gap: 6px;
     /* 2026-08-28 추가: .app이 이제 height:100%로 화면에 정확히 고정되면서
        (위 ".console-screen .app" 규칙 참고) .sidebar도 flex 기본
        align-items:stretch에 의해 그 높이에 딱 맞게 늘어난다(더 늘어나서
@@ -1999,23 +2358,32 @@ input, textarea, select{ cursor: text !important; }
     height: 100%;
     overflow-y: auto;
   }
-  /* 2026-08-28: "프로필 사진을 조금 더 크게" 요청 — 108px → 130px(비율
-     유지를 위해 안의 이니셜 글자도 38px → 44px). 사이드바가 화면보다
-     길어지는 만큼은 위 .console-screen .sidebar의 overflow-y:auto가
-     흡수하므로 화면 전체 스크롤바로는 안 이어짐. */
-  .console-screen .avatar{ max-width: 130px; border-radius: 22px; }
-  .console-screen .avatar span{ font-size: 44px; }
-  .console-screen .profile-text{ gap: 3px; }
-  /* 2026-08-28: 메뉴창 글씨 크기 전체적으로 살짝 키움(사용자 요청:
-     "메뉴창들의 글씨 크기를 조금 키워 줘") — 19/13/13px → 21/14/14px,
-     아이콘도 17px → 18px로 비례해서 조금만. 늘어난 만큼 사이드바가
-     화면보다 길어질 수 있는 페이지는 바로 위 .console-screen .sidebar의
-     overflow-y:auto가 흡수한다. */
-  .console-screen .profile-name{ font-size: 21px; }
-  .console-screen .profile-role{ font-size: 14px; }
-  .console-screen .nav-group{ gap: 4px; }
-  .console-screen .nav-item{ padding: 11px 13px; font-size: 14px; gap: 4px; }
-  .console-screen .nav-item .nav-icon{ width: 18px; height: 18px; }
+  /* 2026-08-31 4차: "메뉴 밑의 행성 사진" 요청으로 .console-sidebar-orbit를
+     추가하면서, 한때는 메뉴 목록(.nav-group)에 flex:1+overflow-y:auto를 걸어
+     "모자란 공간만큼 메뉴 목록 내부에서 스크롤"되게 했었으나, 그러면 Contact/
+     Private 메뉴가 안 보이게 가려져 사용성이 떨어짐 — 대신 위
+     ".console-screen .sidebar"의 padding/gap을 더 줄이고 .console-sidebar-orbit
+     자체 높이도 76→40px로 줄여서, 아바타/메뉴 글자 크기는 그대로 둔 채
+     메뉴 5개+행성 장식이 스크롤 없이 전부 다 보이도록 맞췄었음.
+
+     2026-08-31 5차: 콘솔 틀 자체를 92vw/88vh → 70vw/78vh로 한 번 더
+     줄이면서(위 .console-shell 5차 코멘트 참고) 사이드바가 쓸 수 있는
+     세로 공간도 같이 줄었는데, 사용자가 이번엔 "메뉴 크기도 줄여도
+     괜찮으니, 행성이 사진만큼 보였으면 좋겠어"라고 명시적으로 요청 —
+     즉 지금까지 지켜온 "아바타·메뉴 글자 크기는 다시 줄이지 말 것" 제약을
+     사용자가 직접 풀어준 것. 그래서 아래 아바타/이름/메뉴 글자·여백을 전부
+     한 단계 더 줄이고, 그렇게 확보한 공간을 아래 .console-sidebar-orbit
+     (행성 장식)의 크기를 40px→72px로 다시 키우는 데 씀 — 시안 스크린샷의
+     "행성이 크고 뚜렷하게 보이는" 느낌에 맞춤. */
+  .console-screen .avatar{ max-width: 80px; border-radius: 16px; }
+  .console-screen .avatar span{ font-size: 28px; }
+  .console-screen .profile-text{ gap: 2px; }
+  .console-screen .profile-name{ font-size: 16px; }
+  .console-screen .profile-role{ font-size: 11.5px; }
+  .console-screen .sidebar{ gap: 5px; }
+  .console-screen .nav-group{ gap: 3px; }
+  .console-screen .nav-item{ padding: 7px 11px; font-size: 12.5px; gap: 4px; }
+  .console-screen .nav-item .nav-icon{ width: 15px; height: 15px; }
   .console-screen .main{ padding: 34px 30px; }
 }
 
