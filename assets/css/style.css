@@ -14,7 +14,7 @@
    변수들이 통째로 교체됨(사이드바 바다의 밤/새벽/낮/해질녘과 같은
    원리 — 실제 값 계산은 CSS가, "어떤 테마인지"는 JS(assets/js/
    sidebar.js)가 담당). :root(속성 없음/"default")가 기본값이고,
-   dark/blue/pink는 :root[data-theme="..."]로 덮어씀.
+   aurora/blue/pink는 :root[data-theme="..."]로 덮어씀.
 
    2026-08-31 7차: "아까 민트 없고, 다크 테마도 우주 배경 있어서
    예뻤거든? 그렇게 4가지 테마로 바꿔 줘" 요청으로 민트(:root
@@ -22,6 +22,17 @@
    전환. 콘솔 SKIN 드롭다운/HUD 칩 라벨도 SPACE·BLUE·PINK·DARK로
    영문 통일(assets/js/console-frame.js SKIN_MENU_ITEMS/SKIN_LABELS
    참고).
+
+   2026-08-31 8차: "DARK 테마를 없애 줘. 그리고 Aurora 테마를 만들
+   거야" 요청으로 다크(:root[data-theme="dark"]) 테마를 완전히
+   삭제하고, 그 자리에 새 아우로라(:root[data-theme="aurora"]) 테마를
+   추가 — 흰빛에 가까운 밝은 배경 + 보라/파란 톤 성운·반짝임이 특징인
+   "화이트 우주" 테마(아래 "테마 2) 아우로라" 블록 참고). 우주 배경
+   레이어(별+성운)는 다른 테마와 똑같은 메커니즘(assets/js/
+   console-frame.js)을 그대로 쓰되, 성운 블렌드 모드만 밝은 배경에
+   맞게 별도로 오버라이드함(아래 "우주 배경" 섹션의 aurora 전용 규칙
+   참고) — 별 색상도 이 테마에서만 보라/파란 계열로 바뀜(JS 쪽
+   STAR_PALETTES 참고). 이제 4개 테마는 SPACE/BLUE/PINK/AURORA.
 
    --accent-rgb: 호버 배경 · 아바타/커서 글로우처럼 "포인트색 + 낮은
    투명도"가 필요한 곳에서 rgba(var(--accent-rgb), 0.1) 형태로 재사용
@@ -156,59 +167,74 @@
   --ok-soft: #163429;
 }
 
-/* ── 테마 2) 기본 다크 ──
-   2026-08-31: 다른 3개 테마를 드림웨이브 톤으로 맞추면서, 다크 테마도
-   기존 회색빛 다크(#12141a)보다 더 짙은 "보이드" 톤으로 살짝 더 깊게
-   조정 — 콘솔 셸(아래, 이미 짙은 남색)과 사이트 배경이 자연스럽게
-   이어지도록 함. 포인트색은 기존 하늘색 계열 유지.
+/* ── 테마 2) 아우로라 — "화이트 우주"(2026-08-31 8차 신규) ──
+   요청 원문: "DARK 테마를 없애 줘. 그리고 Aurora 테마를 만들 거야. 지금과
+   똑같은 방식으로 배경이 작동하는 대신, 하얀색이고 반짝이들도 보라색,
+   파란색 느낌이야. 하얀 색 부분이 많도록." — 첨부된 참고 이미지(연보라
+   ↔파란 성운에 하얀 반짝임이 촘촘한 은하 사진)를 기준으로, 다른 3개
+   테마(짙은 보이드 배경)와 정반대로 거의 흰색에 가까운 밝은 배경 위에
+   보라/파란 톤 성운과 반짝임을 얹은 유일한 라이트 테마로 설계함.
 
-   2026-08-31 7차: 원래 이 테마는 "블랙 제외"로 우주 배경(별/성운) 레이어
-   자체를 안 만들었는데, 사용자가 "다크 테마도 우주 배경 있어서 예뻤거든?"
-   이라며 그 조합을 되살려 달라고 요청 — assets/js/console-frame.js의
-   syncCosmicBg()가 이제 테마 구분 없이 항상 배경을 만들도록 바뀌었으므로
-   여기선 따로 손댈 게 없음. 이 블록이 --neb-a/-b/-c(성운 색)를 별도로
-   정의하지 않으므로, 다크 테마의 성운은 위 :root 기본값(시안↔보라↔핑크
-   그라데이션)을 그대로 물려받아 표시됨 — 이전에 버그로 다크에서도 별이
-   안 사라졌을 때 사용자가 봤던 것과 동일한 배색. */
-:root[data-theme="dark"]{
-  --bg: #0a0c14;
-  --sidebar-bg: #0e111c;
-  --ink: #eef0f4;
-  --ink-soft: #aab0bd;
-  --ink-faint: #6b7280;
-  --accent-start: #4f8ef7;
-  --accent-end: #7cb0ff;
-  --accent-rgb: 79, 142, 247;
-  --accent-solid: #7cb0ff;
-  --accent-soft: #1a2440;
-  --chrome-bg: #12141e;
-  --chrome-border: #262a38;
-  --danger: #f87171;
-  --danger-soft: #3a1e22;
-  --ok: #34d399;
-  --ok-soft: #163429;
+   ⚠️ 우주 배경(별+성운) 레이어 자체는 다른 3개 테마와 완전히 같은 JS
+   메커니즘(assets/js/console-frame.js의 buildCosmicBg — 캔버스 별 +
+   .cosmic-nebula 성운 블롭, position:fixed로 body 바로 아래 깔림)을
+   그대로 재사용 — "지금과 똑같은 방식으로 작동" 요청 그대로. 다만 그
+   메커니즘이 원래 어두운 배경을 전제로 설계돼 있어서(성운은
+   mix-blend-mode:screen — 밝은 배경 위에서는 거의 하얗게 날아가 버림,
+   별은 흰색 위주 — 흰 배경 위에서는 안 보임) 이 테마에서만 두 군데를
+   별도로 오버라이드함:
+   1) 성운 블렌드 모드 — 아래 "우주 배경" 섹션의
+      `:root[data-theme="aurora"] .cosmic-nebula i` 규칙에서 screen 대신
+      multiply로 바꿈(흰 배경 위에서 밝은 곳은 옅게, 짙은 색은 또렷하게
+      "번져 보이는" 느낌을 내는 데는 multiply가 맞음 — screen은 흰 배경과
+      만나면 그대로 흰색이 되어 색이 안 보임).
+   2) 별 색상 — JS의 STAR_PALETTES.aurora가 흰색 대신 연보라/하늘색
+      계열로 대체하고, 흰 배경 위에서 또렷이 반짝이도록 옅은 발광
+      효과(shadowBlur)도 이 테마에서만 추가함(console-frame.js 참고).
 
-  /* 콘솔 "다크" 스킨 — 원래는 시안의 dark 스킨 값(연보라 파스텔) 그대로였는데,
-     사용자 요청(2026-08-28): "블랙 테마 버전의 콘솔은 조금 어두운 파란색
-     느낌으로 해줄 수 있어? 옛날 레트로 OS처럼." — 다른 테마들은 전부 밝은
-     파스텔 셸(그 위에 흰 마퀴/HUD 칩이 뜨는 구조)인데, 다크 테마만 셸 자체를
-     짙은 네이비/인디고 톤으로 바꿔서 옛날 CRT 모니터·터미널 같은 느낌을 냄.
-     ⚠️ 마퀴(.console-marquee)/HUD 칩(.console-hud .chip)은 테마와 무관하게
-     항상 흰 배경(#fff, 하드코딩)이라 --console-deck-ink는 그대로 두어도
-     흰 배경 위 대비는 안 깨짐 — 다만 셸 배경 위에 직접 얹히는
-     .console-deck-foot 텍스트만 짙은 남색 위에서 안 보이게 되는 문제가
-     있어서, 그 자리만 별도 변수(--console-shell-ink, 아래 .console-deck-foot
-     규칙 참고)로 분리해 밝은 하늘색으로 따로 지정함. */
-  --console-s1: #1c2b4a;
-  --console-s2: #142136;
-  --console-s3: #24405f;
-  --console-bezel: #1b2842;
-  --console-ring: #5ec8ff;
-  --console-deck-ink: #16233d;
-  --console-shell-ink: #9fc8ff;
+   콘솔 셸(--console-s1~s3/bezel)도 다른 테마처럼 짙은 잉크가 아니라
+   연보라~연하늘색 파스텔 그라데이션으로 — 셸 자체도 "흰 우주선" 느낌을
+   내도록 밝게 잡음. 마퀴/HUD 칩은 테마 무관하게 항상 짙은 유리
+   배경(rgba(10,8,24,.5), v13 3차부터 고정)이라 --console-shell-ink는
+   다른 테마처럼 계속 밝은 색으로 유지(짙은 유리 위 텍스트용, 배경이
+   흰색이어도 이 칩 자체는 안 바뀜). */
+:root[data-theme="aurora"]{
+  --bg: #faf8ff;
+  --sidebar-bg: #f2edfc;
+  --ink: #2b2545;
+  --ink-soft: #6b6390;
+  --ink-faint: #9992b8;
+  --accent-start: #8b7ef5;
+  --accent-end: #5ec8ff;
+  --accent-rgb: 111, 95, 224;
+  --accent-solid: #6f5fe0;
+  --accent-soft: #ece5ff;
+  --chrome-bg: #f5f1ff;
+  --chrome-border: #ddd2f7;
+  --danger: #d1435c;
+  --danger-soft: #ffe1e8;
+  --ok: #1f9d6f;
+  --ok-soft: #dcf6ea;
+
+  /* 콘솔 "아우로라" 스킨 — 다른 테마는 짙은 보석톤 셸인데, 이 테마만 밝은
+     파스텔 셸(연보라→연하늘)로 반전해 "흰 우주" 느낌을 셸 자체에도 냄. */
+  --console-s1: #f4efff;
+  --console-s2: #e9defc;
+  --console-s3: #f2e9fb;
+  --console-bezel: #eee6fb;
+  --console-ring: #7c6ef2;
+  --console-deck-ink: #2b2545;
+  --console-shell-ink: #e6dcff;
+  --neb-a: #a480fa;
+  --neb-b: #64c6fb;
+  --neb-c: #cdb6ff;
 }
 
-/* ── 테마 3) 블루 — 오로라(aurora) 톤 블루+퍼플 그라데이션
+/* ── 테마 3) 블루 — "오로라풍" 블루+퍼플 그라데이션(짙은 보이드 배경)
+   ⚠️ 2026-08-31 8차 참고: 아래 설명에 나오는 "오로라"는 이 테마의 예전
+   별명(색 그라데이션이 오로라 같다는 뜻)일 뿐, 위 "테마 2) 아우로라"로
+   새로 만든 실제 Aurora 테마(밝은 흰 배경 + 보라/파란 반짝임)와는 다른
+   테마다 — 헷갈리지 않도록 데이터 키는 계속 "blue" 그대로 유지함.
    (1차 수정: 배경에 라벤더를 섞어 흰 배경과 구분되게 함 → 사용자가 자신의
    todo에 "보라색 테마 너무 밤티임.. 보란색보다 하늘색이 조금 더 주가 된
    보라색 하늘색"이라고 남겨서, 보라를 줄이고 하늘색을 주색으로 앞세우는
@@ -456,7 +482,7 @@ a{ color: inherit; text-decoration: none; }
 }
 
 .theme-swatch[data-theme-btn="default"]{ background: linear-gradient(135deg, #2f6fe0, #4f8ef7); }
-.theme-swatch[data-theme-btn="dark"]{ background: linear-gradient(135deg, #12141a, #4f8ef7); }
+.theme-swatch[data-theme-btn="aurora"]{ background: linear-gradient(135deg, #b9a6ff, #7dd3fc); }
 .theme-swatch[data-theme-btn="blue"]{ background: linear-gradient(135deg, #4fb3e8, #a888f0); }
 .theme-swatch[data-theme-btn="pink"]{ background: linear-gradient(135deg, #ec6fac, #f9a8c9); }
 
@@ -1693,14 +1719,16 @@ input, textarea, select{ cursor: text !important; }
    그대로 비쳐 보이게 했다 — 콘솔이 화면을 거의 꽉 채우는 지금 구조(2026-
    08-28에 사용자가 명시적으로 요청해 확정한 크기)에서 실현 가능한 절충안.
    콘솔 셸 자체의 우주 느낌은 셸 바깥 글로우(box-shadow, 테마 포인트색)로
-   보강함. 다크 테마는 이번 요청에서 명시적으로 제외("4가지 테마(블랙
-   제외)")되었으므로 별/성운 레이어는 다크 테마에서 JS가 아예 생성하지
-   않는다(assets/js/console-frame.js 참고) — 다크 테마는 기존 모습 그대로. */
+   보강함. (⚠️ 이 문단은 v13 1차 당시 기록 — 그때는 다크 테마를 "4가지
+   테마(블랙 제외)"로 명시 제외해서 별/성운 레이어를 안 만들었으나, 2026-
+   08-31 7차에서 그 제외가 풀렸고 8차에서 다크 테마 자체가 삭제됨 — 지금은
+   4개 테마(SPACE/BLUE/PINK/AURORA) 전부 우주 배경을 공통으로 씀.) */
 
-/* ══════════ 우주 배경(별+성운) — 2026-08-31, 다크 테마 제외 4테마 공통 ══════════
-   assets/js/console-frame.js가 다크 테마가 아닐 때만 body 맨 앞에
-   <canvas id="cosmic-stars">와 <div class="cosmic-nebula">를 끼워 넣는다.
-   둘 다 position:fixed + z-index:-1이라 문서 어디에도 없는 완전히 새로운
+/* ══════════ 우주 배경(별+성운) — 2026-08-31, 4테마 공통(2026-08-31 8차부터
+   다크 제외 없이 전 테마 공통 — 아우로라 포함) ══════════
+   assets/js/console-frame.js가 body 맨 앞에 <canvas id="cosmic-stars">와
+   <div class="cosmic-nebula">를 끼워 넣는다(테마 구분 없이 항상). 둘 다
+   position:fixed + z-index:-1이라 문서 어디에도 없는 완전히 새로운
    배경 레이어 — .app/.console-shell 트리와는 부모-자식 관계가 전혀 없으므로
    위 transform/filter 경고와 무관하게 안전하다(마우스 반응도 없음 — 3D
    액션은 요청대로 뺌, 그냥 제자리에서 반짝이고 성운만 천천히 떠다님). */
@@ -1717,6 +1745,16 @@ input, textarea, select{ cursor: text !important; }
   filter: blur(70px);
   mix-blend-mode: screen;
   opacity: .5;
+}
+/* 2026-08-31 8차: mix-blend-mode:screen은 "어두운 배경 위에 색을 얹어
+   밝게 빛나 보이게" 하는 용도라, 아우로라처럼 배경이 이미 거의 흰색이면
+   screen(흰색, 어떤 색)은 그냥 흰색이 되어버려 성운이 통째로 안 보인다.
+   이 테마에서만 multiply로 바꿔서 반대로 "흰 배경 위에 옅게 색이 번지는"
+   느낌을 낸다 — multiply(흰 배경, 성운색)는 성운색 그대로 나오고, 반투명
+   가장자리로 갈수록 다시 흰색으로 자연스럽게 섞인다. */
+:root[data-theme="aurora"] .cosmic-nebula i{
+  mix-blend-mode: multiply;
+  opacity: .55;
 }
 .cosmic-nebula .n1{
   width: 52vw; height: 52vw; max-width: 760px; max-height: 760px;
@@ -1739,8 +1777,104 @@ input, textarea, select{ cursor: text !important; }
 @keyframes cosmic-drift-1{ 0%,100%{ transform: translate(0,0) scale(1); } 50%{ transform: translate(5vw,4vh) scale(1.08); } }
 @keyframes cosmic-drift-2{ 0%,100%{ transform: translate(0,0) scale(1); } 50%{ transform: translate(-4vw,5vh) scale(1.05); } }
 @keyframes cosmic-drift-3{ 0%,100%{ transform: translate(0,0) scale(1); } 50%{ transform: translate(4vw,-4vh) scale(1.1); } }
+
+/* ── 2026-08-31 9차: 아우로라 전용 — "커튼처럼 흐르는 오로라 빛" 재설계 ──
+   사용자 피드백: "성운 느낌이 안 나. 오로라 빛이 나는 하얀 테마를 만들어
+   줘." 8차의 원형 블롭(다른 3개 테마와 같은 radial-gradient 원)은 옅은
+   색 얼룩처럼만 보여서 "성운"도 "오로라"도 느껴지지 않았음 — 진짜
+   오로라(북극광)는 밤하늘에 대각선으로 걸린 얇고 긴 "커튼"이 흐르듯
+   움직이는 빛이지, 동그란 구름이 아니다. 그래서 아우로라 테마에서만
+   n1~n3의 모양·그라데이션 방향·움직임을 통째로 재정의(다른 3개 테마의
+   원형 블롭 시스템은 전혀 안 건드림 — 위 기본 규칙 그대로 재사용):
+   - 원(border-radius:50%) 대신 가늘고 긴 타원(50%/14%)을 대각선으로
+     기울여서 "커튼 띠" 모양을 냄.
+   - radial-gradient(중심에서 사방으로 퍼지는 얼룩) 대신 linear-gradient로
+     한쪽에서 다른 쪽으로 보라→파랑이 번지듯 흐르게 해서 오로라 특유의
+     색 전환(그러데이션 밴드) 느낌을 냄.
+   - 기존 cosmic-drift(제자리 살짝 이동+확대) 대신 회전각까지 같이
+     흔들리는 새 aurora-wave 애니메이션으로 커튼이 접혔다 펴지듯 하늘거리는
+     느낌을 냄.
+   - `.cosmic-nebula::before`/`::after`(가상 요소 2개, DOM 추가 없이 CSS
+     만으로 층을 더함)로 커튼을 2장 더 얹어 총 5장 — 성운/오로라 사진
+     특유의 "여러 겹이 겹쳐 보이는" 두께감을 냄. 흰 배경을 계속 넉넉히
+     남기기 위해 이 추가 2장은 n1~n3보다 폭을 좁히고 불투명도도 낮춤. */
+:root[data-theme="aurora"] .cosmic-nebula i{
+  border-radius: 50% / 14%;
+}
+:root[data-theme="aurora"] .cosmic-nebula .n1{
+  width: 92vw; height: 30vw; max-width: 1320px; max-height: 420px;
+  left: -22vw; top: -4vw;
+  background: linear-gradient(100deg, transparent 4%, var(--neb-a) 42%, var(--neb-b) 56%, transparent 88%);
+  filter: blur(36px);
+  transform: rotate(-17deg);
+  animation: aurora-wave-1 26s ease-in-out infinite;
+}
+:root[data-theme="aurora"] .cosmic-nebula .n2{
+  width: 82vw; height: 26vw; max-width: 1160px; max-height: 360px;
+  right: -20vw; top: 28vh;
+  background: linear-gradient(100deg, transparent 4%, var(--neb-b) 40%, var(--neb-a) 58%, transparent 88%);
+  filter: blur(32px);
+  transform: rotate(15deg);
+  animation: aurora-wave-2 30s ease-in-out infinite;
+}
+:root[data-theme="aurora"] .cosmic-nebula .n3{
+  width: 100vw; height: 34vw; max-width: 1420px; max-height: 460px;
+  left: -10vw; bottom: -12vw;
+  background: linear-gradient(96deg, transparent 6%, var(--neb-c) 40%, var(--neb-a) 64%, transparent 90%);
+  filter: blur(42px);
+  transform: rotate(-7deg);
+  animation: aurora-wave-3 22s ease-in-out infinite;
+}
+:root[data-theme="aurora"] .cosmic-nebula::before,
+:root[data-theme="aurora"] .cosmic-nebula::after{
+  content: "";
+  position: absolute;
+  border-radius: 50% / 14%;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+:root[data-theme="aurora"] .cosmic-nebula::before{
+  width: 68vw; height: 18vw; max-width: 900px; max-height: 240px;
+  left: 12vw; top: 14vh;
+  background: linear-gradient(104deg, transparent 6%, var(--neb-b) 40%, var(--neb-a) 66%, transparent 92%);
+  filter: blur(42px);
+  opacity: .26;
+  transform: rotate(11deg);
+  animation: aurora-wave-2 34s ease-in-out infinite reverse;
+}
+:root[data-theme="aurora"] .cosmic-nebula::after{
+  width: 58vw; height: 16vw; max-width: 800px; max-height: 210px;
+  right: 6vw; bottom: 12vh;
+  background: linear-gradient(96deg, transparent 6%, var(--neb-a) 36%, var(--neb-b) 66%, transparent 92%);
+  filter: blur(38px);
+  opacity: .24;
+  transform: rotate(-13deg);
+  animation: aurora-wave-1 28s ease-in-out infinite reverse;
+}
+@keyframes aurora-wave-1{
+  0%, 100%{ transform: translate(-3%, -2%) rotate(-17deg) scaleY(1); }
+  50%{ transform: translate(3%, 2%) rotate(-21deg) scaleY(1.18); }
+}
+@keyframes aurora-wave-2{
+  0%, 100%{ transform: translate(3%, -2%) rotate(15deg) scaleY(1); }
+  50%{ transform: translate(-3%, 3%) rotate(19deg) scaleY(1.14); }
+}
+@keyframes aurora-wave-3{
+  0%, 100%{ transform: translate(-2%, 3%) rotate(-7deg) scaleY(1); }
+  50%{ transform: translate(2%, -3%) rotate(-10deg) scaleY(1.12); }
+}
+
 @media (prefers-reduced-motion: reduce){
   .cosmic-nebula i{ animation: none; }
+  /* aurora 테마의 n1/n2/n3는 :root[data-theme="aurora"] .cosmic-nebula .n1 처럼
+     특이도가 더 높은 선택자로 animation을 걸어놨기 때문에, 위의 일반
+     `.cosmic-nebula i{ animation:none }` 규칙(특이도 0,1,1)이 덮어써지지
+     않는다. 같은(또는 더 높은) 특이도로 다시 꺼줘야 실제로 정지한다. */
+  :root[data-theme="aurora"] .cosmic-nebula .n1,
+  :root[data-theme="aurora"] .cosmic-nebula .n2,
+  :root[data-theme="aurora"] .cosmic-nebula .n3{ animation: none; }
+  :root[data-theme="aurora"] .cosmic-nebula::before,
+  :root[data-theme="aurora"] .cosmic-nebula::after{ animation: none; }
 }
 
 /* 콘솔을 화면 한가운데에 띄우는 바깥 레이어 — body 자체의 display는 안
@@ -1768,9 +1902,10 @@ input, textarea, select{ cursor: text !important; }
   /* 2026-08-31: 예전엔 var(--bg) 불투명이었는데, 우주 배경(별+성운, 위
      "우주 배경" 섹션 참고)이 이 뷰포트 뒤(body 레벨, z-index:-1)에 깔리므로
      여기를 투명하게 바꿔서 콘솔 틀 바깥 거터(특히 넓은 화면의 좌우/상하
-     여백)에 별/성운이 그대로 비쳐 보이게 함. 다크 테마나 우주 배경 레이어가
-     없는 경우(reduced-motion 등)에도 html/body 자체 배경(var(--bg))이
-     이미 그 뒤에 깔려 있어 빈 화면이 되지는 않음(아래 폴백). */
+     여백)에 별/성운이 그대로 비쳐 보이게 함. 우주 배경 레이어가 아직
+     안 만들어진 순간(초기 로드 직후 등)에도 html/body 자체 배경
+     (var(--bg))이 이미 그 뒤에 깔려 있어 빈 화면이 되지는 않음(아래
+     폴백). */
   background: transparent;
   transition: background 0.4s ease;
 }
@@ -1819,10 +1954,11 @@ input, textarea, select{ cursor: text !important; }
      크게(사이트 실제 폭 560px 사이드바+본문이 다 들어가야 해서 더 좁으면
      내부가 답답해짐) 잡되, 뷰포트 대비 비율(약 90%)은 시안 스크린샷과
      비슷하게 맞춤 — 사방에 우주가 뚜렷이 보이면서도 콘솔 내부는 여전히
-     넉넉하게. 다크 테마는 우주 배경이 없지만 콘솔 크기 자체는 테마마다
-     다르게 두면 테마 전환 시 콘솔이 덜컹거리며 리사이즈되므로 5개 테마
-     전부 같은 크기를 씀(다크는 그냥 바깥 여백이 늘어난 것 뿐, 기능/가독성
-     영향 없음).
+     넉넉하게. (⚠️ 당시엔 우주 배경이 없던 테마(다크)가 있어서 "테마마다
+     크기를 다르게 두면 전환 시 덜컹거린다"는 이유로 전 테마 동일 크기를
+     썼는데, 2026-08-31 8차로 다크가 삭제되고 지금은 4개 테마
+     — SPACE/BLUE/PINK/AURORA — 전부 우주 배경을 쓰므로 애초에 이 문제
+     자체가 사라짐. 그래도 동일 크기 원칙은 그대로 유지.)
 
      2026-08-31 5차: 3차에서 92vw/88vh로 줄였는데도 사용자가 시안 스크린샷
      두 장을 다시 보여주며 "웹사이트 자체의 크기를 줄여도 되니까, 배경이
@@ -1993,6 +2129,34 @@ input, textarea, select{ cursor: text !important; }
 .console-hud .chip b{ font-family: var(--font-pixel); font-size: 11px; font-weight: 400; color: var(--console-ring); }
 .console-hud .chip svg{ width: 14px; height: 14px; flex: none; }
 
+/* 2026-08-31 10차: 마퀴/HUD 칩의 "짙은 유리 알약"(rgba(10,8,24,...))은
+   v13 3차에 SPACE/BLUE/PINK처럼 어두운 우주 배경 위에서 잘 어울리도록
+   고정된 값인데, AURORA는 배경 자체가 거의 흰색이라 이 짙은 유리를 그대로
+   얹으면 반투명이 아니라 그냥 불투명한 회보라색 알약처럼 보인다(짙은 색
+   위에 낮은 알파를 얹어도 흰 배경과 대비가 강해 "유리" 느낌이 안 남) —
+   사용자 피드백: "이 부분도 투명한 느낌으로". AURORA에서만 유리 톤 자체를
+   반전(흰색 계열 반투명 + 옅은 보라 테두리)해서, 같은 backdrop-filter
+   메커니즘으로 이번엔 뒤의 흰 배경/오로라 커튼이 옅게 비치는 진짜 "유리"
+   느낌을 냄. 텍스트 색은 밝은 유리용 --console-shell-ink(원래 짙은 배경
+   대비용) 대신 이 테마의 짙은 잉크(--ink)로 바꿔 대비를 유지. */
+:root[data-theme="aurora"] .console-marquee{
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(139, 126, 245, 0.28);
+  box-shadow: 0 3px 10px rgba(139, 126, 245, 0.16);
+}
+:root[data-theme="aurora"] .console-marquee span{
+  color: var(--ink);
+}
+:root[data-theme="aurora"] #console-title{
+  color: var(--ink); /* background-clip:text 미지원 폴백 — 밝은 유리 위에서도 읽히게 */
+}
+:root[data-theme="aurora"] .console-hud .chip{
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(139, 126, 245, 0.24);
+  box-shadow: 0 2px 8px rgba(139, 126, 245, 0.14);
+  color: var(--ink);
+}
+
 /* ══════════ 메뉴 밑 "행성" 장식(.console-sidebar-orbit) — 2026-08-31 4차 ══════════
    "메뉴 밑의 행성 사진" 요청 — 시안의 `.sidebar-orbit`(궤도를 도는 작은 행성
    장식, 원래 사이드바 맨 아래 `.sidebar-sea`(바다, 이미 v2에서 숨김 처리됨)
@@ -2033,9 +2197,26 @@ input, textarea, select{ cursor: text !important; }
      행성이 사진만큼 보였으면 좋겠어"라고 요청 — 위 아바타/메뉴 글자 크기를
      한 번 더 줄여 확보한 공간으로 이 박스를 40px→72px로 다시 키움(시안
      스크린샷만큼 뚜렷하게 보이도록). 아래 core/ring 크기도 같은 비율로
-     같이 키움. */
-  height: 72px;
-  border-radius: 14px;
+     같이 키움.
+     2026-08-31 11차: "행성 사진을 메뉴 맨 밑으로, 스크롤 안 생기는 선에서"
+     요청 — 실측해보니 `.nav-group`엔 원래 의도(주석상 flex:1 1 auto)와
+     달리 실제로는 flex-grow가 안 걸려있어서(코드 드리프트로 추정) 사이드바
+     맨 아래에 약 150px의 빈 공간이 아무도 안 쓴 채 방치돼 있었고, 이 박스는
+     그 빈 공간 위쪽, 메뉴 바로 밑(5px gap)에 붙어 있었음 — 사용자가 지적한
+     "산만함"의 원인. `margin-top:auto`를 주면 flex column에서 이 박스
+     (와 그 뒤 형제, 지금은 없음)를 컨테이너 끝까지 밀어주되, 남는 공간이
+     없을 때는 스펙상 자동으로 0으로 계산돼(auto 마진은 양의 여유 공간만
+     흡수) 절대 넘치거나 스크롤을 만들지 않는다 — "스크롤 안 생기는 선에서
+     최대한 아래로"라는 요청과 정확히 맞아떨어지는 동작.
+     2026-08-31 12차: "메뉴 길이도 늘려서 빈 부분이 없도록" + (대화 중 추가)
+     "행성 크기랑 박스 자체도 조금 더 길게" — margin-top:auto가 남는 공간을
+     자동으로 흡수하는 구조라, 위 아바타/메뉴 글자·패딩을 키우면 그만큼
+     auto 마진이 저절로 줄어들어 오버플로우 걱정 없이 안전하게 키울 수
+     있었음(11차에서 확인한 스펙 그대로). 메뉴를 키우고 남은 여유 공간의
+     일부는 이 박스 자체의 세로 길이를 키우는 데도 씀(72→104px). */
+  margin-top: auto;
+  height: 104px;
+  border-radius: 16px;
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2044,11 +2225,11 @@ input, textarea, select{ cursor: text !important; }
 }
 .console-sidebar-orbit .core{
   position: absolute; left: 50%; top: 50%;
-  width: 21px; height: 21px;
+  width: 28px; height: 28px;
   border-radius: 50%;
   transform: translate(-50%, -50%);
   background: radial-gradient(circle at 35% 30%, #fff, var(--accent-start) 55%, transparent 75%);
-  box-shadow: 0 0 20px 4px var(--accent-start);
+  box-shadow: 0 0 24px 5px var(--accent-start);
 }
 .console-sidebar-orbit .ring{
   position: absolute; left: 50%; top: 50%;
@@ -2056,8 +2237,8 @@ input, textarea, select{ cursor: text !important; }
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
-.console-sidebar-orbit .r1{ width: 44px; height: 17px; animation: console-orbit-spin 6s linear infinite; }
-.console-sidebar-orbit .r2{ width: 67px; height: 25px; animation: console-orbit-spin 10s linear infinite reverse; }
+.console-sidebar-orbit .r1{ width: 58px; height: 22px; animation: console-orbit-spin 6s linear infinite; }
+.console-sidebar-orbit .r2{ width: 88px; height: 33px; animation: console-orbit-spin 10s linear infinite reverse; }
 @keyframes console-orbit-spin{
   from{ transform: translate(-50%, -50%) rotate(0deg); }
   to{ transform: translate(-50%, -50%) rotate(360deg); }
@@ -2347,15 +2528,15 @@ input, textarea, select{ cursor: text !important; }
      한 단계 더 줄이고, 그렇게 확보한 공간을 아래 .console-sidebar-orbit
      (행성 장식)의 크기를 40px→72px로 다시 키우는 데 씀 — 시안 스크린샷의
      "행성이 크고 뚜렷하게 보이는" 느낌에 맞춤. */
-  .console-screen .avatar{ max-width: 80px; border-radius: 16px; }
-  .console-screen .avatar span{ font-size: 28px; }
-  .console-screen .profile-text{ gap: 2px; }
-  .console-screen .profile-name{ font-size: 16px; }
-  .console-screen .profile-role{ font-size: 11.5px; }
-  .console-screen .sidebar{ gap: 5px; }
-  .console-screen .nav-group{ gap: 3px; }
-  .console-screen .nav-item{ padding: 7px 11px; font-size: 12.5px; gap: 4px; }
-  .console-screen .nav-item .nav-icon{ width: 15px; height: 15px; }
+  .console-screen .avatar{ max-width: 104px; border-radius: 18px; }
+  .console-screen .avatar span{ font-size: 36px; }
+  .console-screen .profile-text{ gap: 3px; }
+  .console-screen .profile-name{ font-size: 19px; }
+  .console-screen .profile-role{ font-size: 13px; }
+  .console-screen .sidebar{ gap: 8px; }
+  .console-screen .nav-group{ gap: 6px; }
+  .console-screen .nav-item{ padding: 10px 14px; font-size: 14px; gap: 8px; }
+  .console-screen .nav-item .nav-icon{ width: 17px; height: 17px; }
   /* 2026-08-31 6차: 콘솔 데크 삭제 + 콘솔 폭 확대(위 .console-shell/
      --console-sidebar-w 6차 코멘트 참고)로 본문이 쓸 수 있는 폭이 늘어난
      만큼 여백도 살짝 키움(34px 30px → 38px 36px). */
