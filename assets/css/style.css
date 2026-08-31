@@ -9,24 +9,31 @@
 @import url("https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css");
 
 /* ─────────────────────────────────────────────
-   색상 테마 (5종): 사이드바 위쪽 테마 스위처(.theme-switcher)에서
+   색상 테마 (4종): 사이드바 위쪽 테마 스위처(.theme-switcher)에서
    고르면 <html data-theme="..."> 속성이 바뀌고, 그 값에 따라 아래
    변수들이 통째로 교체됨(사이드바 바다의 밤/새벽/낮/해질녘과 같은
    원리 — 실제 값 계산은 CSS가, "어떤 테마인지"는 JS(assets/js/
    sidebar.js)가 담당). :root(속성 없음/"default")가 기본값이고,
-   dark/blue/mint/pink는 :root[data-theme="..."]로 덮어씀.
+   dark/blue/pink는 :root[data-theme="..."]로 덮어씀.
+
+   2026-08-31 7차: "아까 민트 없고, 다크 테마도 우주 배경 있어서
+   예뻤거든? 그렇게 4가지 테마로 바꿔 줘" 요청으로 민트(:root
+   [data-theme="mint"]) 테마 블록 자체를 삭제하고 4개 테마 체제로
+   전환. 콘솔 SKIN 드롭다운/HUD 칩 라벨도 SPACE·BLUE·PINK·DARK로
+   영문 통일(assets/js/console-frame.js SKIN_MENU_ITEMS/SKIN_LABELS
+   참고).
 
    --accent-rgb: 호버 배경 · 아바타/커서 글로우처럼 "포인트색 + 낮은
    투명도"가 필요한 곳에서 rgba(var(--accent-rgb), 0.1) 형태로 재사용
    하기 위한 R,G,B 숫자 버전(반드시 --accent-solid과 같은 색이어야
    함 — 새 테마를 추가할 때 이 값 갱신을 잊지 말 것).
 
-   처음 방문(테마를 고른 적 없는 사람)에는 5개 중 무작위로 하나가
+   처음 방문(테마를 고른 적 없는 사람)에는 4개 중 무작위로 하나가
    골라지고 localStorage에 저장됨 — 각 페이지 <head> 맨 위의 인라인
    스크립트가 담당(페이지가 그려지기 전에 data-theme을 붙여서 깜빡임
    없이 바로 그 테마로 보이게 함). 새 테마를 추가하려면: 이 파일에
-   :root[data-theme="새키"]{ ... } 블록 추가 + sidebar.js의
-   THEME_LIST 배열 + 모든 페이지 <head>의 인라인 스크립트 T 배열
+   :root[data-theme="새키"]{ ... } 블록 추가 + sidebar.js의 테마
+   스위처 스와치 목록 + 모든 페이지 <head>의 인라인 스크립트 T 배열
    세 곳에 같은 키를 넣어야 함.
 ───────────────────────────────────────────── */
 
@@ -150,10 +157,19 @@
 }
 
 /* ── 테마 2) 기본 다크 ──
-   2026-08-31: 다른 4개 테마를 드림웨이브 톤으로 맞추면서, 다크 테마도
+   2026-08-31: 다른 3개 테마를 드림웨이브 톤으로 맞추면서, 다크 테마도
    기존 회색빛 다크(#12141a)보다 더 짙은 "보이드" 톤으로 살짝 더 깊게
    조정 — 콘솔 셸(아래, 이미 짙은 남색)과 사이트 배경이 자연스럽게
-   이어지도록 함. 포인트색은 기존 하늘색 계열 유지. */
+   이어지도록 함. 포인트색은 기존 하늘색 계열 유지.
+
+   2026-08-31 7차: 원래 이 테마는 "블랙 제외"로 우주 배경(별/성운) 레이어
+   자체를 안 만들었는데, 사용자가 "다크 테마도 우주 배경 있어서 예뻤거든?"
+   이라며 그 조합을 되살려 달라고 요청 — assets/js/console-frame.js의
+   syncCosmicBg()가 이제 테마 구분 없이 항상 배경을 만들도록 바뀌었으므로
+   여기선 따로 손댈 게 없음. 이 블록이 --neb-a/-b/-c(성운 색)를 별도로
+   정의하지 않으므로, 다크 테마의 성운은 위 :root 기본값(시안↔보라↔핑크
+   그라데이션)을 그대로 물려받아 표시됨 — 이전에 버그로 다크에서도 별이
+   안 사라졌을 때 사용자가 봤던 것과 동일한 배색. */
 :root[data-theme="dark"]{
   --bg: #0a0c14;
   --sidebar-bg: #0e111c;
@@ -238,42 +254,9 @@
   --neb-c: #16e0c9;
 }
 
-/* ── 테마 4) 민트 — 파스텔 민트 그라데이션(이전까지의 기본 색상) ── */
-:root[data-theme="mint"]{
-  /* 2026-08-31: 드림웨이브 전체 적용 — 파스텔 민트 배경을 짙은 틸 보이드로,
-     포인트색은 같은 민트 계열에서 채도를 끌어올린 네온 틸/시안으로.
-     2026-08-31 2차: 시안 4테마 중 "민트" 스킨 값 그대로 이식. */
-  --bg: #06151a;
-  --sidebar-bg: #0a1c22;
-  --ink: #dffaf5;
-  --ink-soft: #7fc4bb;
-  --ink-faint: #47756e;
-  --accent-start: #2ee6c8;
-  --accent-end: #3ecbff;
-  --accent-rgb: 46, 230, 200;
-  --accent-solid: #2ee6c8;
-  --accent-soft: #0f2b2a;
-  --chrome-bg: #0a1c22;
-  --chrome-border: #16332f;
-  --danger: #f87171;
-  --danger-soft: #3a1e22;
-  --ok: #34d399;
-  --ok-soft: #163429;
-
-  /* 콘솔 "민트" 스킨 — 2026-08-31 2차: 시안 mint 스킨 그대로. */
-  --console-s1: #0a2e2a;
-  --console-s2: #0d3d3a;
-  --console-s3: #0a2e44;
-  --console-bezel: #0c332f;
-  --console-ring: #2ee6c8;
-  --console-deck-ink: #0c2e2a;
-  --console-shell-ink: #aef5ea;
-  --neb-a: #00ffc2;
-  --neb-b: #00b8ff;
-  --neb-c: #2effa1;
-}
-
-/* ── 테마 5) 핑크 — 파스텔 핑크 그라데이션 ── */
+/* ── 테마 4) 핑크 — 파스텔 핑크 그라데이션 ──
+   (2026-08-31 7차: 민트 테마를 삭제하면서 "테마 5)"였던 이 블록이
+   "테마 4)"로 당겨짐 — 값 자체는 변경 없음.) */
 :root[data-theme="pink"]{
   /* 2026-08-31: 드림웨이브 전체 적용 — 파스텔 핑크 배경을 짙은 마젠타-플럼
      보이드로, 포인트색은 같은 핑크 계열에서 채도를 끌어올린 네온 마젠타로.
@@ -439,7 +422,8 @@ a{ color: inherit; text-decoration: none; }
 }
 
 /* ---------- 테마 스위처 (사이드바 맨 위, 프로필 사진 위) ----------
-   작은 색상 점 5개 — 클릭하면 그 테마로 즉시 바뀌고(assets/js/sidebar.js가
+   작은 색상 점 4개(2026-08-31 7차: 민트 삭제로 5개→4개) — 클릭하면 그
+   테마로 즉시 바뀌고(assets/js/sidebar.js가
    처리) localStorage에 저장되어 다음 방문에도 유지됨. 각 점의 배경은
    "지금 활성화된 테마"가 아니라 "그 점이 나타내는 테마"를 항상 보여줘야
    하므로 var(--accent-*) 대신 각 테마의 실제 색을 직접 하드코딩함(위
@@ -474,7 +458,6 @@ a{ color: inherit; text-decoration: none; }
 .theme-swatch[data-theme-btn="default"]{ background: linear-gradient(135deg, #2f6fe0, #4f8ef7); }
 .theme-swatch[data-theme-btn="dark"]{ background: linear-gradient(135deg, #12141a, #4f8ef7); }
 .theme-swatch[data-theme-btn="blue"]{ background: linear-gradient(135deg, #4fb3e8, #a888f0); }
-.theme-swatch[data-theme-btn="mint"]{ background: linear-gradient(135deg, #39c5bb, #55a9e8); }
 .theme-swatch[data-theme-btn="pink"]{ background: linear-gradient(135deg, #ec6fac, #f9a8c9); }
 
 .profile{

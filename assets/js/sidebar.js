@@ -71,7 +71,6 @@
       '<button type="button" class="theme-swatch" data-theme-btn="default" title="기본(화이트·블랙·블루)" aria-label="기본 테마"></button>' +
       '<button type="button" class="theme-swatch" data-theme-btn="dark" title="기본 다크" aria-label="다크 테마"></button>' +
       '<button type="button" class="theme-swatch" data-theme-btn="blue" title="블루" aria-label="블루 테마"></button>' +
-      '<button type="button" class="theme-swatch" data-theme-btn="mint" title="민트" aria-label="민트 테마"></button>' +
       '<button type="button" class="theme-swatch" data-theme-btn="pink" title="핑크" aria-label="핑크 테마"></button>' +
     '</div>' +
     '<div class="profile">' +
@@ -289,7 +288,6 @@
     default: '#f5f6f8',
     dark: '#191c24',
     blue: '#e1f0fb',
-    mint: '#e8f5f4',
     pink: '#fbe9f1'
   };
 

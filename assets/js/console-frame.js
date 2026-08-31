@@ -40,14 +40,17 @@
   // 이뤄진 콘솔 데크(.console-deck)와 그 아래 저작권/SCORE 줄(.console-
   // deck-foot)을 통째로 없앤다. 데크가 차지하던 세로 공간은 아래
   // .console-screen-bezel이 flex:1이라 자동으로 화면(.console-screen) 몫으로
-  // 흡수된다(따로 손볼 필요 없음). 대신 콘솔 데크에 있던 스킨 전환 버튼
-  // 4개(민트 제외)가 없어진 만큼, 테마 전환은 아래 SKIN 칩을 눌러 여는
-  // 드롭다운(5개 전체, 민트 포함)으로 옮김 — 사용자가 "상단의 SKIN
-  // 부분에서 고를 수 있도록 하자"고 직접 지정한 방식.
+  // 흡수된다(따로 손볼 필요 없음). 대신 콘솔 데크에 있던 스킨 전환 버튼이
+  // 없어진 만큼, 테마 전환은 아래 SKIN 칩을 눌러 여는 드롭다운으로 옮김 —
+  // 사용자가 "상단의 SKIN 부분에서 고를 수 있도록 하자"고 직접 지정한 방식.
+  // 2026-08-31 7차: "민트 없고, 다크 테마도 우주 배경 있어서 예뻤거든?
+  // 그렇게 4가지 테마로 바꿔 줘. 이름은 SPACE/BLUE/PINK/DARK로." 요청으로
+  // 민트를 완전히 빼고 4개 테마 체제로 전환 + 라벨을 영문(SPACE/BLUE/
+  // PINK/DARK)으로 통일.
   var chipSkin = el('div', 'chip console-skin-chip');
   chipSkin.innerHTML =
     '<button type="button" class="console-skin-trigger" aria-haspopup="listbox" aria-expanded="false">' +
-    '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/></svg> SKIN <b id="console-skin">WHITE</b>' +
+    '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/></svg> SKIN <b id="console-skin">SPACE</b>' +
     '</button>';
   hud.appendChild(chipPosts);
   hud.appendChild(chipDate);
@@ -63,13 +66,13 @@
 
   // ── SKIN 칩 드롭다운 — 실제 테마 스위처(.theme-switcher [data-theme-btn])
   // 버튼을 그대로 찾아 클릭해줄 뿐이라 저장/동기화 로직은 하나로 유지된다.
-  // 순서는 sidebar.js가 그리는 진짜 스위처와 동일(기본/다크/블루/민트/핑크).
+  // 2026-08-31 7차: 민트 제외 4개 테마로, 라벨도 사용자가 지정한 순서·이름
+  // 그대로(SPACE/BLUE/PINK/DARK) 영문 통일.
   var SKIN_MENU_ITEMS = [
-    { theme: 'default', label: '기본' },
-    { theme: 'dark', label: '다크' },
-    { theme: 'blue', label: '블루' },
-    { theme: 'mint', label: '민트' },
-    { theme: 'pink', label: '핑크' }
+    { theme: 'default', label: 'SPACE' },
+    { theme: 'blue', label: 'BLUE' },
+    { theme: 'pink', label: 'PINK' },
+    { theme: 'dark', label: 'DARK' }
   ];
   var skinTrigger = chipSkin.querySelector('.console-skin-trigger');
   var skinMenu = el('div', 'console-skin-menu');
@@ -194,8 +197,9 @@
   var titleEl = document.getElementById('console-title');
   if (titleEl) titleEl.textContent = (cfg.profileName || 'MIKU-TENSHI').toUpperCase();
 
-  // ── SKIN HUD 칩 + 퀵버튼 활성 표시를 실제 테마(data-theme)와 항상 맞춤 ──
-  var SKIN_LABELS = { default: 'WHITE', dark: 'DARK', blue: 'BLUE', mint: 'MINT', pink: 'PINK' };
+  // ── SKIN HUD 칩 + 드롭다운 활성 표시를 실제 테마(data-theme)와 항상 맞춤 ──
+  // 2026-08-31 7차: 민트 삭제 + 라벨 영문 통일(SPACE/BLUE/PINK/DARK).
+  var SKIN_LABELS = { default: 'SPACE', dark: 'DARK', blue: 'BLUE', pink: 'PINK' };
   var skinLabelEl = document.getElementById('console-skin');
   function syncWithTheme() {
     var theme = document.documentElement.getAttribute('data-theme') || 'default';
@@ -203,7 +207,10 @@
     skinOptionButtons.forEach(function (b) {
       b.classList.toggle('is-active', b.dataset.consoleTheme === theme);
     });
-    syncCosmicBg(theme);
+    // 2026-08-31 7차: 다크 포함 4개 테마 전부 우주 배경을 쓰므로 테마 값과
+    // 무관하게 항상 만든다(buildCosmicBg 안의 "이미 있으면 스킵" 가드가
+    // 테마가 안 바뀌었을 때의 중복 생성을 막아줌).
+    buildCosmicBg();
   }
   syncWithTheme();
   new MutationObserver(syncWithTheme).observe(document.documentElement, {
@@ -219,8 +226,12 @@
   // 요청해서 그 부분만 빼고 옮김 — 아래엔 마우스 반응 코드가 전혀 없고,
   // 별은 제자리에서 반짝이기만, 성운은 CSS 애니메이션(cosmic-drift-1~3,
   // assets/css/style.css)으로 천천히 떠다니기만 한다.
-  // 다크 테마는 이번 요청에서 "블랙 제외"로 명시적으로 빠졌으므로, 다크
-  // 테마에서는 이 레이어 자체를 만들지 않는다(다크는 기존 모습 그대로).
+  // 2026-08-31 7차: 처음엔(위 문단) 다크 테마를 "블랙 제외"로 명시적으로
+  // 빼서 이 레이어 자체를 안 만들었는데, 다크 테마의 별 제거가 이 세션의
+  // MutationObserver 클로저 버그로 실패하는 걸 우연히 보고 "다크 테마도
+  // 우주 배경 있어서 예뻤거든? 그렇게 4가지 테마로 바꿔 줘" 라는 요청을
+  // 받아 그 조합(다크 + 우주 배경)을 정식으로 채택 — 이제 테마 구분 없이
+  // 항상 배경을 만든다(removeCosmicBg()는 더 이상 쓰이지 않아 제거함).
   //
   // 2026-08-31 4차 디버깅 메모: rAF/setTimeout으로 예약된 draw() 콜백이
   // 실행되는 시점에 resize()가 채워둔 cosmicStars(그리고 같은 스코프의
@@ -263,17 +274,14 @@
   }
 
   function buildCosmicBg() {
-    // 2026-08-31 6차 디버깅: "이미 만들어져 있음"을 cosmicState(클로저 변수)
-    // 만으로 판단하면 안 됨을 새로 발견 — 위 4차 메모의 그 "이유를 알 수 없는
-    // 클로저 변수 리셋" 버그가 requestAnimationFrame/setTimeout뿐 아니라
-    // MutationObserver 콜백(테마 전환 시 syncWithTheme을 다시 부르는 그
-    // 콜백)에서도 재현됨을 이번에 확인함 — 실제로는 canvas/nebula가 DOM에
-    // 멀쩡히 남아 있는데도 cosmicState가 그 콜백 안에서는 초기값(null)으로
-    // 보여서, removeCosmicBg()가 "이미 없다"고 착각하고 아무것도 지우지
-    // 않아 다크 테마에서도 별이 안 사라지는 버그로 이어졌었음(아래
-    // removeCosmicBg도 같은 이유로 DOM을 직접 조회하도록 고침). 그래서 여기
-    // "이미 만들어져 있는지" 판단도 cosmicState 대신 실제 DOM(진짜 상태)을
-    // 기준으로 삼는다.
+    // 2026-08-31 6차 디버깅에서 발견: "이미 만들어져 있음"을 cosmicState
+    // (클로저 변수) 만으로 판단하면 안 됨 — 위 4차 메모의 그 "이유를 알 수
+    // 없는 클로저 변수 리셋" 버그가 MutationObserver 콜백(테마 전환 시
+    // syncWithTheme을 다시 부르는 콜백)에서도 재현됨을 확인했었음(원인은
+    // 여전히 불명). 이제(7차) 테마마다 매번 buildCosmicBg()가 호출되므로
+    // (아래 syncWithTheme 참고), 이 "이미 있으면 다시 안 만든다" 가드가
+    // 중복 캔버스 생성을 막는 유일한 안전장치 — cosmicState 대신 실제
+    // DOM(진짜 상태)을 기준으로 판단한다.
     if (document.querySelector('canvas.cosmic-stars')) return;
 
     var canvas = document.createElement('canvas');
@@ -348,40 +356,11 @@
     state.raf = window.requestAnimationFrame(draw);
   }
 
-  function removeCosmicBg() {
-    // 2026-08-31 6차: "다크 테마로 바꿔도 별이 안 사라짐" 버그의 진짜 원인 —
-    // 이 함수가 실제로 호출되고는 있었지만(MutationObserver→syncWithTheme→
-    // syncCosmicBg 경로 자체는 정상), 그 콜백 안에서 cosmicState(클로저
-    // 변수)를 읽으면 실제로는 이미 buildCosmicBg()가 채워둔 객체가 있는데도
-    // null로 보이는 현상이 재현됨(Playwright로 "canvas는 DOM에 존재하는데
-    // cosmicState는 false"인 상태를 직접 확인) — 위 별 배열 리셋 버그와
-    // 같은 계열의, 원인을 특정하지 못한 클로저/비동기 콜백 버그가
-    // MutationObserver 콜백에서도 재현된 것. `if (!cosmicState) return;`
-    // 하나 때문에 아무것도 안 지워지고 조용히 리턴돼버렸던 게 실제 증상.
-    // 고친 방법(자가치유): cosmicState를 신뢰하지 않고, 지울 대상을 항상
-    // DOM에서 직접 다시 찾는다 — cosmicState가 우연히 정상이면 그 raf/
-    // resize 리스너도 같이 정리하고(있으면 하는 보너스), cosmicState가
-    // 어떤 이유로든 stale이어도 canvas/nebula 자체는 DOM 조회로 확실히
-    // 찾아서 지운다(남아있는 draw/resize 루프는 위 draw()/resize()의
-    // "내 캔버스가 DOM에 없으면 스스로 멈춤" 가드가 정리함).
-    if (cosmicState) {
-      if (cosmicState.raf) window.cancelAnimationFrame(cosmicState.raf);
-      if (cosmicState.onResize) window.removeEventListener('resize', cosmicState.onResize);
-    }
-    var existingCanvas = document.querySelector('canvas.cosmic-stars');
-    var existingNebula = document.querySelector('.cosmic-nebula');
-    if (existingCanvas && existingCanvas.parentNode) existingCanvas.parentNode.removeChild(existingCanvas);
-    if (existingNebula && existingNebula.parentNode) existingNebula.parentNode.removeChild(existingNebula);
-    cosmicState = null;
-  }
-
-  function syncCosmicBg(theme) {
-    if (theme === 'dark') {
-      removeCosmicBg();
-    } else {
-      buildCosmicBg();
-    }
-  }
+  // 2026-08-31 7차: 이전엔 다크 테마에서 우주 배경을 지우는 removeCosmicBg()
+  // 가 있었는데(그 시절 "다크 테마로 바꿔도 별이 안 사라짐" 버그는 이
+  // 함수가 MutationObserver 콜백 안에서 cosmicState를 잘못 null로 읽어
+  // 아무것도 안 지우는 게 원인이었음), 이제 4개 테마 전부 우주 배경을
+  // 쓰기로 하면서 "지우는" 경로 자체가 필요 없어져 함수를 통째로 삭제함.
 
   // ── POSTS 칩: 실제 글 개수 ──
   var postsEl = document.getElementById('console-posts');
