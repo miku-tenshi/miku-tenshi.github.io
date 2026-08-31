@@ -69,7 +69,7 @@
   mount.innerHTML =
     '<div class="theme-switcher" data-role="theme-switcher">' +
       '<button type="button" class="theme-swatch" data-theme-btn="default" title="기본(화이트·블랙·블루)" aria-label="기본 테마"></button>' +
-      '<button type="button" class="theme-swatch" data-theme-btn="dark" title="기본 다크" aria-label="다크 테마"></button>' +
+      '<button type="button" class="theme-swatch" data-theme-btn="aurora" title="아우로라" aria-label="아우로라 테마"></button>' +
       '<button type="button" class="theme-swatch" data-theme-btn="blue" title="블루" aria-label="블루 테마"></button>' +
       '<button type="button" class="theme-swatch" data-theme-btn="pink" title="핑크" aria-label="핑크 테마"></button>' +
     '</div>' +
@@ -286,7 +286,7 @@
   // --sidebar-bg와 반드시 맞춰서 관리할 것(새 테마를 추가하면 여기도 추가).
   var THEME_COLORS = {
     default: '#f5f6f8',
-    dark: '#191c24',
+    aurora: '#f2edfc',
     blue: '#e1f0fb',
     pink: '#fbe9f1'
   };

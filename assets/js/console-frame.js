@@ -68,11 +68,14 @@
   // 버튼을 그대로 찾아 클릭해줄 뿐이라 저장/동기화 로직은 하나로 유지된다.
   // 2026-08-31 7차: 민트 제외 4개 테마로, 라벨도 사용자가 지정한 순서·이름
   // 그대로(SPACE/BLUE/PINK/DARK) 영문 통일.
+  // 2026-08-31 8차: "DARK 테마를 없애 줘. 그리고 Aurora 테마를 만들 거야"
+  // 요청으로 DARK를 빼고 그 자리에 AURORA를 넣음(테마 키는 'aurora',
+  // style.css의 :root[data-theme="aurora"] 참고).
   var SKIN_MENU_ITEMS = [
     { theme: 'default', label: 'SPACE' },
     { theme: 'blue', label: 'BLUE' },
     { theme: 'pink', label: 'PINK' },
-    { theme: 'dark', label: 'DARK' }
+    { theme: 'aurora', label: 'AURORA' }
   ];
   var skinTrigger = chipSkin.querySelector('.console-skin-trigger');
   var skinMenu = el('div', 'console-skin-menu');
@@ -199,7 +202,7 @@
 
   // ── SKIN HUD 칩 + 드롭다운 활성 표시를 실제 테마(data-theme)와 항상 맞춤 ──
   // 2026-08-31 7차: 민트 삭제 + 라벨 영문 통일(SPACE/BLUE/PINK/DARK).
-  var SKIN_LABELS = { default: 'SPACE', dark: 'DARK', blue: 'BLUE', pink: 'PINK' };
+  var SKIN_LABELS = { default: 'SPACE', aurora: 'AURORA', blue: 'BLUE', pink: 'PINK' };
   var skinLabelEl = document.getElementById('console-skin');
   function syncWithTheme() {
     var theme = document.documentElement.getAttribute('data-theme') || 'default';
@@ -232,6 +235,13 @@
   // 우주 배경 있어서 예뻤거든? 그렇게 4가지 테마로 바꿔 줘" 라는 요청을
   // 받아 그 조합(다크 + 우주 배경)을 정식으로 채택 — 이제 테마 구분 없이
   // 항상 배경을 만든다(removeCosmicBg()는 더 이상 쓰이지 않아 제거함).
+  // 2026-08-31 8차: "DARK 테마를 없애 줘. 그리고 Aurora 테마를 만들 거야 —
+  // 하얀색이고 반짝이들도 보라색/파란색 느낌, 하얀 부분이 많도록" 요청으로
+  // 다크 대신 밝은 배경의 아우로라 테마를 추가함. 메커니즘(캔버스 별 +
+  // CSS 성운)은 완전히 동일하게 재사용하되, 별 색상만 아래 STAR_PALETTES로
+  // 테마별로 다르게 그림(흰 배경에서 흰 별은 안 보이므로) — 성운 쪽은
+  // style.css의 :root[data-theme="aurora"] .cosmic-nebula 오버라이드
+  // (mix-blend-mode: multiply) 참고.
   //
   // 2026-08-31 4차 디버깅 메모: rAF/setTimeout으로 예약된 draw() 콜백이
   // 실행되는 시점에 resize()가 채워둔 cosmicStars(그리고 같은 스코프의
@@ -247,6 +257,17 @@
   var cosmicState = null; // { canvas, nebulaEl, raf, stars, ctx, dpr }
   var reducedMotionMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   var cosmicReduced = !!(reducedMotionMq && reducedMotionMq.matches);
+
+  // 2026-08-31 8차: 별 색상을 테마별로 다르게 — 기존 3개 테마(SPACE/BLUE/
+  // PINK)는 전부 짙은 배경이라 흰색 위주 별이 잘 보이지만, 새로 만든
+  // AURORA는 반대로 거의 흰 배경이라 흰 별이 통째로 안 보인다. 그래서
+  // AURORA일 때만 보라/파란 계열로 바꾸고, 그 외 테마는 기존 로직을 한 글자도
+  // 안 바꾸고 그대로 재사용(회귀 방지).
+  var AURORA_STAR_COLORS = ['#a78bfa', '#7dd3fc', '#c4b5fd'];
+  function starFillColor(i, theme) {
+    if (theme === 'aurora') return AURORA_STAR_COLORS[i % AURORA_STAR_COLORS.length];
+    return (i % 6 === 0) ? '#ff8bee' : (i % 5 === 0) ? '#8bd8ff' : '#ffffff';
+  }
 
   function makeStars(w, h) {
     var count = Math.min(180, Math.round((w * h) / 9000));
@@ -335,17 +356,27 @@
       // 있으면(원래는 resize()가 채워둠) 그 자리에서 즉시 다시 채운다.
       if (!state.stars.length) state.stars = makeStars(window.innerWidth, window.innerHeight);
       state.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      // 2026-08-31 8차: 프레임당 한 번만 현재 테마를 읽어(별마다 매번
+      // 읽지 않음 — 불필요한 DOM 조회 반복 방지) 색상/발광 여부를 정한다.
+      var theme = document.documentElement.getAttribute('data-theme') || 'default';
+      var glow = theme === 'aurora'; // 흰 배경 위에서 또렷이 반짝이도록 옅은 발광 추가
       for (var i = 0; i < state.stars.length; i++) {
         var st = state.stars[i];
         var tw = cosmicReduced ? 0.7 : (0.5 + 0.5 * Math.sin(t * st.s + st.p));
         var dx = cosmicReduced ? 0 : Math.cos(t * st.driftS + st.driftP) * st.driftR;
         var dy = cosmicReduced ? 0 : Math.sin(t * st.driftS * 0.8 + st.driftP) * st.driftR;
+        var color = starFillColor(i, theme);
         state.ctx.globalAlpha = 0.2 + tw * 0.55;
-        state.ctx.fillStyle = (i % 6 === 0) ? '#ff8bee' : (i % 5 === 0) ? '#8bd8ff' : '#ffffff';
+        state.ctx.fillStyle = color;
+        if (glow) {
+          state.ctx.shadowColor = color;
+          state.ctx.shadowBlur = 5;
+        }
         state.ctx.beginPath();
         state.ctx.arc(st.x + dx, st.y + dy, st.r, 0, Math.PI * 2);
         state.ctx.fill();
       }
+      if (glow) { state.ctx.shadowBlur = 0; state.ctx.shadowColor = 'transparent'; }
       state.ctx.globalAlpha = 1;
       if (!cosmicReduced) state.raf = window.requestAnimationFrame(draw);
     }
