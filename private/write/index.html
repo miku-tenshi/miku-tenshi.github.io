@@ -72,7 +72,21 @@
      똑같은 폰트/여백으로 겹쳐놓은 읽기 전용 레이어가 마크다운 문법을 타이핑하는
      즉시 스타일로 보여준다 — textarea 글자색은 투명하게, 커서만 보이게 처리. */
   #editor-body{ display:flex; flex-direction:column; }
-  .editor-pane{ flex:1; min-height:0; display:flex; flex-direction:column; }
+  /* 2026-09-01: min-height:0 제거(→ 기본값 auto). 이유 — .editor-pane가
+     min-height:0인 채로 flex:1이면, 창이 좁아질 때 flexbox가 이 영역을 자기
+     자식(.live-editor-wrap, min-height:280px)이 실제로 필요한 크기보다 더 작게
+     눌러버릴 수 있다. 그런데 .live-editor-wrap은 여전히 자기 min-height:280px를
+     지키므로, 눌린 .editor-pane 박스 밖으로 내용이 그냥 삐져나가(overflow:visible
+     기본값) 겹쳐 보이고 — 그 바로 아래 형제인 .editor-actions 툴바는 (삐져나온
+     실제 모습이 아니라) .editor-pane에 "눌려서 배정된" 작은 높이 기준으로 다음
+     자리에 배치되면서 아직 삐져나와 있는 본문 입력창 한가운데에 겹쳐 그려졌다
+     (사용자가 캡처해 보낸 스크린샷 — 툴바의 점선 위쪽 테두리가 placeholder 문구
+     중간을 가로지르며 덮음, 위 .editor-actions sticky-only-fullscreen 수정만으로는
+     이 flex 오버플로우 자체는 안 없어져서 부족했다). min-height를 기본값(auto)으로
+     되돌리면 .editor-pane는 자기 자식들이 실제로 필요로 하는 높이보다 작게
+     눌리지 않으므로 겹침이 사라지고, 대신 공간이 부족하면 그 위의 window-body가
+     이미 갖고 있는 overflow-y:auto로 평범하게 스크롤된다(겹쳐 가리는 대신). */
+  .editor-pane{ flex:1; display:flex; flex-direction:column; }
   .editor-pane-label{ font-size:13.5px; color: var(--ink-faint); margin-bottom:8px; font-weight:600; }
 
   .live-editor-wrap{ position:relative; flex:1; min-height:280px; }
@@ -151,11 +165,24 @@
   .attach-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
 
   /* 글쓰기 창 안쪽, 본문 바로 아래에 붙는 툴바 — overflow:auto인
-     window-body 안에서 sticky이므로 전체화면으로 펼쳐도 스크롤 없이 항상 보인다. */
+     window-body 안에서 sticky이므로 전체화면으로 펼쳐도 스크롤 없이 항상 보인다.
+     2026-09-01: 전체화면이 아닐 때는 sticky를 끔. 원인 — 창이 작을 때(특히 이번에
+     .window min-height를 420px→320px로 줄인 뒤로 더 자주) #editor-body의 보이는
+     높이가 본문 입력창(.live-editor-wrap, 최소 280px)보다 작아서, sticky가 "화면
+     맨 아래에 붙어라"는 규칙대로 스크롤을 아예 하기도 전에 이 툴바를 입력창 중간
+     위로 끌어올려버렸다 — 그 결과 이 툴바의 위쪽 점선(border-top)이 아직 안 읽은
+     placeholder 문구 한가운데를 가로질러 덮어버려서, 사용자 눈에는 "글자가
+     잘렸다"로 보였다(사용자가 캡처해 보낸 스크린샷 — study/new-post.md 화면).
+     전체화면(.is-fullscreen)에서는 창이 화면 전체 높이를 쓰므로 이 문제가 없고
+     오히려 sticky가 있어야 스크롤 없이 버튼이 항상 보여 유용하므로, 전체화면일
+     때만 sticky를 켠다(아래 .window.is-fullscreen .editor-actions 참고) — 평소
+     크기일 때는 그냥 본문 입력창 바로 아래, 원래 문서 흐름대로 배치되고, 필요하면
+     #editor-body 자체가 스크롤되어 보인다(겹쳐 가리는 대신 평범하게 스크롤). */
   .editor-actions{
-    position: sticky; bottom: -1px; margin-top: 18px; padding-top: 16px;
+    margin-top: 18px; padding-top: 16px;
     background: var(--chrome-bg); border-top: 1px dashed var(--chrome-border);
   }
+  .window.is-fullscreen .editor-actions{ position: sticky; bottom: -1px; }
   .action-row{ display:flex; gap:10px; flex-wrap:wrap; width:100%; }
 
   .status-log{
