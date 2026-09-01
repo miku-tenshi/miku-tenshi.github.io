@@ -15,14 +15,14 @@ window.SITE_CONFIG = {
   // 바꾸고 싶어도 파일 19개를 전부 고쳐야 했다. 이제는 이 값 하나만 바꾸면
   // 아래 코드가 모든 페이지(글쓰기 도구가 새로 만드는 글 포함, PAGE_SKELETON도
   // 이 스크립트를 그대로 불러쓰므로 자동 반영됨)의 탭 제목을 한 번에 바꾼다.
-  siteTitle: 'miku-tenshi',
+  siteTitle: 'リミ\'s page',
 
   profileName: 'リミ\'s page',
   profileRole: '2026.08.26~',
   // 프로필 사진 여러 장 — 순서대로 나열하면 사이드바에서 옆으로 스크롤(스와이프)
   // 해서 넘겨볼 수 있는 캐러셀이 됩니다(assets/js/sidebar.js가 그림). 사진을
   // 하나만 쓰고 싶으면 배열에 경로 하나만 남기면 예전처럼 동작합니다.
-  avatarSrcs: ['/assets/img/rem.jpg', '/assets/img/sakuya.jpg', '/assets/img/bocchi.jpg'],
+  avatarSrcs: ['/assets/img/yunyun.gif', '/assets/img/qzzang.gif'],
   avatarAlt: 'リミ 프로필 사진',
 
   copyright: '© miku-tenshi.github.io',
