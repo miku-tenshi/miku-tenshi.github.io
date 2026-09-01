@@ -106,6 +106,39 @@
     overflow-y: visible;
     max-height: none;
     min-height: auto;
+    /* 2026-09-02(2차 수정): flex:none 추가. 위 수정만으로는 실제로 문제가
+       또 남아 있었다 — #editor-body는 여전히 assets/css/style.css의
+       ".console-screen .window:not(.is-fullscreen) .window-body{ flex:1; }"를
+       물려받고 있어서(이 규칙은 overflow-y/max-height/min-height만 덮어썼지
+       flex는 안 건드림), #editor-body는 계속 "부모(#editor-window)가 flex로
+       배분해주는 만큼"의 높이로 늘어나려 했다. 그런데 #editor-window 자신도
+       (바로 아래 "#editor-window:not(.is-fullscreen)" 규칙 전까지는) #tool-area
+       안에서 flex:1로 "화면에 남은 공간만큼 꽉 채우도록" 고정된 높이를
+       배정받고 있었고, .window에는 overflow:hidden까지 걸려 있어서 —
+       실제 내용(라벨+툴바+첨부줄+280px 본문+하단 버튼줄)이 그 배정된 높이보다
+       크면, 스크롤도 안 되고 그냥 잘려서 안 보였다(사용자가 다시 캡처해 보낸
+       스크린샷 — 하단 버튼줄까지 갈 수 없이 중간에서 잘림, "여기서 잘렸어").
+       flex:none(=flex-grow:0)으로 바꾸면 #editor-body는 더 이상 부모가 억지로
+       늘려주는 높이를 받지 않고, 자기 자식들이 실제로 필요로 하는 만큼만
+       (label+toolbar+attach-row+최소 280px 본문+버튼줄) 높이를 차지한다 —
+       아래 "#editor-window:not(.is-fullscreen)" 규칙과 짝을 이뤄야 완전히
+       동작한다(#editor-window도 같은 이유로 flex:none 처리). */
+    flex: none;
+  }
+  /* 2026-09-02: 위 #editor-body 수정과 짝. #editor-window(글쓰기 창 카드
+     자체)도 assets/css/style.css의 ".console-screen .window:not(.is-fullscreen)
+     { flex:1; min-height:0; }"를 물려받아 "#tool-area 안에 남은 공간만큼 꽉
+     채우도록" 고정 높이를 배정받고 있었다 — 다른 window 카드(글 보기 등)는
+     이 동작이 맞지만(콘솔 화면 안에 딱 맞게 들어가야 함, 2026-08-28 작업
+     기록 참고), 글쓰기 창은 이제 내용에 맞춰 자연스러운 높이를 갖고 남는
+     공간은 #tool-area가 스크롤로 처리해야 하므로(위 #editor-body 주석 참고)
+     ID 선택자로 이 카드 하나만 예외 처리한다 — flex:none으로 부모가 배정하는
+     고정 높이를 거부하고 자기 내용(자식들) 크기에 맞게(auto) 늘어나게 함.
+     이렇게 해야 .window의 overflow:hidden이 실제로 넘치는 내용을 자르는
+     일 자체가 없어진다(박스 크기가 항상 내용과 정확히 같아지므로). */
+  #editor-window:not(.is-fullscreen){
+    flex: none;
+    min-height: 0;
   }
   /* 2026-09-01: min-height:0 제거(→ 기본값 auto). 이유 — .editor-pane가
      min-height:0인 채로 flex:1이면, 창이 좁아질 때 flexbox가 이 영역을 자기
