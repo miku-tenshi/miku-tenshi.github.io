@@ -71,11 +71,16 @@
   // 2026-08-31 8차: "DARK 테마를 없애 줘. 그리고 Aurora 테마를 만들 거야"
   // 요청으로 DARK를 빼고 그 자리에 AURORA를 넣음(테마 키는 'aurora',
   // style.css의 :root[data-theme="aurora"] 참고).
+  // 2026-08-31 (기본 테마 변경): "오로라 테마가 제일 처음 기본값이
+  // 되도록" 요청으로 AURORA를 목록 맨 앞으로 옮김 — 각 항목은 key(theme)로
+  // 매칭되므로(위 SKIN_LABELS도 마찬가지) 순서만 바뀌어도 동작에는 영향
+  // 없음. 사이드바 실제 테마 스위처(assets/js/sidebar.js)의 스와치 순서도
+  // 동일하게 맞춰둠.
   var SKIN_MENU_ITEMS = [
+    { theme: 'aurora', label: 'AURORA' },
     { theme: 'default', label: 'SPACE' },
     { theme: 'blue', label: 'BLUE' },
-    { theme: 'pink', label: 'PINK' },
-    { theme: 'aurora', label: 'AURORA' }
+    { theme: 'pink', label: 'PINK' }
   ];
   var skinTrigger = chipSkin.querySelector('.console-skin-trigger');
   var skinMenu = el('div', 'console-skin-menu');

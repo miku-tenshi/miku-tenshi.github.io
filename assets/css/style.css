@@ -1914,15 +1914,35 @@ input, textarea, select{ cursor: text !important; }
   --btn-ring: var(--console-ring);
   /* 2026-08-31 3차: 시안의 회전하는 conic-gradient 글로우(::before, 아래
      참고)를 위해 새로 추가 — position:relative(절대위치 자손의 기준점) +
-     z-index:0(이 shell 하나만의 독립된 stacking context를 만들어서, 아래
+     z-index(이 shell 하나만의 독립된 stacking context를 만들어서, 아래
      ::before의 z-index:-1이 "이 shell 안에서만" 배경 바로 위/자손들 바로
-     아래에 오도록 국소적으로 고정됨 — 문서 전체 쌓임 순서에는 영향 없음).
+     아래에 오도록 국소적으로 고정됨).
      overflow:hidden은 그 글로우가 shell의 둥근 테두리 밖으로 안 새어나가고
      안에 갇혀서 은은하게만 보이게 함. ⚠️ position:relative/z-index/
      overflow는 위에서 금지한 transform·filter·backdrop-filter가 아니라서
-     안전 — 이 셋은 여전히 이 요소엔 걸지 않음. */
+     안전 — 이 셋은 여전히 이 요소엔 걸지 않음.
+
+     2026-08-31 (전체화면 밝기 버그 수정): 위 주석의 "문서 전체 쌓임
+     순서에는 영향 없음"이라는 전제가 틀렸다 — position:relative +
+     z-index(값 무관, 0 포함)는 이 shell을 "독립된 stacking context"로
+     만드는데, 그 안에 있는 .window(전체화면 시 position:fixed;
+     z-index:100)의 z-index:100은 이 shell 내부에서만 비교되는 "국소"
+     값이 되어버린다. 즉 문서 루트(body) 레벨에서는 .window가 아니라
+     "console-shell 통째로"가 하나의 덩어리로서 자기 z-index(예전엔 0)
+     값으로만 비교당한다. 그런데 전체화면 딤(dim) 오버레이 .backdrop(아래,
+     body 바로 아래 자식, z-index:90)도 같은 body 레벨에서 비교되므로,
+     0 < 90이라 backdrop이 shell 전체(=전체화면 중인 .window까지 포함)
+     위에 덮여 화면 전체가 어둡게 보였다(사용자 리포트: "전체 화면으로
+     바뀔 때마다 화면 밝기가 매우 낮아져").
+     .backdrop은 .window가 전체화면일 때만 보이므로(opacity:0→
+     .show일 때만 1), shell을 backdrop보다 항상 위(z-index 90 초과)에
+     두면 평소엔 backdrop이 안 보이니 아무 영향이 없고, 전체화면 순간엔
+     shell(=그 안의 .window)이 backdrop 위에 그대로 남아 있어 정상적으로
+     밝게 보인다. 500(.console-skin-menu, SKIN 드롭다운)·9999/10000(커서
+     반짝이·커서 점, 항상 최상단이어야 함)보다는 한참 낮게 잡아서 그
+     요소들과는 절대 충돌하지 않음. */
   position: relative;
-  z-index: 0;
+  z-index: 95;
   overflow: hidden;
   /* 2026-08-28 조정 이력:
      1) 1차: 사용자 피드백("내부 스크린 자체가 너무 커서 스크롤하기

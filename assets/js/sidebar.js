@@ -68,8 +68,12 @@
 
   mount.innerHTML =
     '<div class="theme-switcher" data-role="theme-switcher">' +
-      '<button type="button" class="theme-swatch" data-theme-btn="default" title="기본(화이트·블랙·블루)" aria-label="기본 테마"></button>' +
+      /* 2026-08-31: 오로라가 기본(default) 테마가 되면서, 여기 스와치
+         순서도 "제일 처음"이 되도록 오로라를 맨 앞으로 옮김 — 아래
+         "게임기 콘솔 프레임" 섹션의 SKIN 드롭다운(console-frame.js의
+         SKIN_MENU_ITEMS) 순서도 동일하게 맞춰둠. */
       '<button type="button" class="theme-swatch" data-theme-btn="aurora" title="아우로라" aria-label="아우로라 테마"></button>' +
+      '<button type="button" class="theme-swatch" data-theme-btn="default" title="기본(화이트·블랙·블루)" aria-label="기본 테마"></button>' +
       '<button type="button" class="theme-swatch" data-theme-btn="blue" title="블루" aria-label="블루 테마"></button>' +
       '<button type="button" class="theme-swatch" data-theme-btn="pink" title="핑크" aria-label="핑크 테마"></button>' +
     '</div>' +
