@@ -2472,6 +2472,16 @@ input, textarea, select{ cursor: text !important; }
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  /* 2026-09-01: private/write/의 #tool-area(아래 별도 scroll-padding-top 참고)에만
+     여백을 걸어뒀더니, 실제로는 이 바깥 .console-screen도 같이 스크롤되는 경우가
+     있어서(포커스된 필드를 화면에 보이려면 #tool-area 하나만 스크롤해서는
+     부족할 때, 브라우저가 조상 스크롤 컨테이너를 타고 올라가며 이 .console-screen
+     까지 같이 스크롤함) #tool-area 쪽 여백만으로는 부족했다 — 실측해보니
+     #tool-area 자체의 위쪽 경계가 이미 화면 밖으로 -67px만큼 밀려나 있어서,
+     안쪽 padding이 있어도 그 여백이 상당 부분 상쇄돼버림. 같은 값을 여기에도
+     걸어서 두 스크롤 컨테이너 중 어느 쪽이 실제로 움직이든 항상 위쪽에
+     최소한의 문맥(라벨 등)이 남게 한다. */
+  scroll-padding-top: 130px;
   /* ⚠️ isolation:isolate는 일부러 안 씀(위 파일 도입부 경고 참고). */
 }
 /* .app은 원래 min-height:100vh(진짜 브라우저 뷰포트 기준)였는데, 이제
@@ -2853,12 +2863,29 @@ input, textarea, select{ cursor: text !important; }
      콘텐츠(모드버튼+메타카드+글쓰기창)가 화면보다 길면 이 wrapper 안에서만
      스크롤되게 한다(사이드바가 넘칠 때와 같은 방식) — 화면 전체
      (.console-screen) 스크롤바가 다시 생기는 게 아니라 이 영역 안에서만
-     스크롤됨. */
+     스크롤됨.
+     2026-09-01: "글 쓰기/수정/새 폴더 만들기 전부, 이 영역 안 필드 하나가
+     라벨도 없이 화면 맨 위에 걸쳐 보이는 상태로 뜬다"는 신고 — 원인은 이
+     wrapper의 콘텐츠(모드 버튼+메타 카드+글쓰기 창)가 실제 화면 높이보다
+     자주 더 커서, 어떤 경로로든(포커스 이동, 뒤늦게 붙는 폴더 자동완성
+     칩 등) 스크롤이 한 번 일어나면 스크롤 위치가 그대로 눈에 보이는데,
+     지금까지는 어떤 필드가 화면 맨 위 가장자리에 딱 붙어도 그 위 라벨/문맥이
+     하나도 안 보이는 채로 방치돼 있었다. scroll-padding-top으로 "이 안의
+     무언가가 스크롤되어 보일 때는 위쪽에 최소 이만큼은 늘 남겨둬라"를
+     걸어서, 어떤 계기로 스크롤되든 적어도 방금 스크롤된 필드의 라벨과 그
+     위 필드 일부까지는 항상 같이 보이게 한다(private/write/index.html의
+     .field에 건 scroll-margin-top과 같은 목적의 이중 안전장치). */
   overflow-y: auto;
+  scroll-padding-top: 130px;
 }
 .console-screen #tool-area .window:not(.is-fullscreen),
 .console-screen #private-area .window:not(.is-fullscreen),
 .console-screen .notes-card .window:not(.is-fullscreen){
-  min-height: 420px;
+  /* 2026-09-01: 420px → 320px로 축소. 위 스크롤 관련 신고를 조사하다 보니,
+     이 최소 높이 하나가 #tool-area 전체 필요 높이의 상당 부분(약 100px)을
+     차지하고 있었다 — 글쓰기 창을 지나치게 작게 만들지 않는 선에서 이만큼만
+     줄여도, 흔한 화면 크기에서 스크롤이 아예 필요 없어지는 경우가 많이
+     생겨서 이 스크롤 관련 문제 자체가 애초에 덜 발생하게 된다. */
+  min-height: 320px;
 }
 .retro-error::before{ content: "> "; color: var(--ink-faint); }

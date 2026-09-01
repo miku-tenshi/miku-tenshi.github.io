@@ -10,6 +10,13 @@ window.SITE_CONFIG = {
   repo: 'miku-tenshi.github.io',
   branch: 'main',
 
+  // 브라우저 탭에 뜨는 제목(<title>). 예전엔 19개 HTML 파일 전부에
+  // <title>miku-tenshi</title>를 똑같이 박아뒀었는데, 그러면 제목을 하나
+  // 바꾸고 싶어도 파일 19개를 전부 고쳐야 했다. 이제는 이 값 하나만 바꾸면
+  // 아래 코드가 모든 페이지(글쓰기 도구가 새로 만드는 글 포함, PAGE_SKELETON도
+  // 이 스크립트를 그대로 불러쓰므로 자동 반영됨)의 탭 제목을 한 번에 바꾼다.
+  siteTitle: 'miku-tenshi',
+
   profileName: 'リミ\'s page',
   profileRole: '2026.08.26~',
   // 프로필 사진 여러 장 — 순서대로 나열하면 사이드바에서 옆으로 스크롤(스와이프)
@@ -33,3 +40,16 @@ window.SITE_CONFIG = {
     { key: 'private', href: '/private/', label: 'Private' }
   ]
 };
+
+// 2026-09-01: 각 HTML 파일의 <title>miku-tenshi</title>는 이제 이 스크립트가
+// 로드되는 즉시(<script src="/assets/js/site-config.js">가 <head>가 아니라
+// <body> 위쪽, 사이트의 다른 어떤 내용보다도 먼저 실행되는 자리에 있으므로
+// 체감되는 깜빡임 없이) 여기서 덮어써서 항상 이 값과 같게 유지한다. HTML
+// 파일에 남아있는 정적 <title> 태그는 JS가 실행되기 전(또는 실행이 막혔을
+// 때)의 안전한 대체값일 뿐이니, 굳이 지우지 않아도 된다 — 앞으로 탭 제목을
+// 바꾸고 싶으면 위 siteTitle 값만 고치면 된다.
+try {
+  if (window.SITE_CONFIG.siteTitle) {
+    document.title = window.SITE_CONFIG.siteTitle;
+  }
+} catch (e) { /* 조용히 무시 — 탭 제목 갱신은 부가 기능이라 실패해도 나머지 기능엔 영향 없음 */ }
