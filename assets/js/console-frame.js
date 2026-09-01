@@ -195,14 +195,29 @@
   // transform을 transform:none으로 다시 꺼두므로, 여기서 계산해 세팅하는
   // 값은 그 구간에서는 그냥 무시된다(모바일 전용 "화면 꽉 채우기" 레이아웃
   // 그대로 유지).
+  //
+  // 2026-09-01 재조정 2차: 위(94vh) 수정을 배포했는데도 "화면 비율 그대로,
+  // 큰 화면에서도 여전히 작다"는 신고를 받고 재점검 — 이번엔 세로 배율
+  // 문제가 아니라, 배율 자체를 `Math.min(..., 1)`로 항상 1(=1180×740)에서
+  // 막아뒀던 게 원인이었다. 뷰포트가 진짜로 넉넉히 큰 화면(가로/세로 모두
+  // 위 75vw/94vh 기준을 이미 넘는 경우)에서는 배율이 1에 도달한 순간
+  // 그 이상은 절대 못 커지고 그대로 멈춰버리므로, 화면이 아무리 더 커져도
+  // 콘솔은 계속 1180×740에 고정된 채였다 — "비율로 계산해서 화면 크기에
+  // 맞게" 커지길 원했던 원래 요청과 어긋나는 부분. 최대 배율 한도를 1→
+  // MAX_SCALE(1.5)로 올려서, 정말 큰 화면에서는 콘솔도 그만큼 실제로 더
+  // 커지게 함(1180×740 → 최대 1770×1110까지). 무한정 키우지 않고 1.5에서
+  // 다시 막아두는 이유는, 그 이상은 글자·아이콘이 과하게 커져서 오히려
+  // 어색해 보일 수 있어서(디자인 톤 유지) — 필요하면 이 상한선은 나중에
+  // 더 조정 가능.
   var CONSOLE_DESIGN_W = 1180;
   var CONSOLE_DESIGN_H = 740;
+  var CONSOLE_MAX_SCALE = 1.5;
   function applyConsoleScale() {
     var vw = window.innerWidth, vh = window.innerHeight;
     var scale = Math.min(
       (vw * 0.75) / CONSOLE_DESIGN_W,
       (vh * 0.94) / CONSOLE_DESIGN_H,
-      1
+      CONSOLE_MAX_SCALE
     );
     document.documentElement.style.setProperty('--console-scale', scale);
   }
