@@ -1821,6 +1821,79 @@ input, textarea, select{ cursor: text !important; }
 @keyframes cosmic-drift-2{ 0%,100%{ transform: translate(0,0) scale(1); } 50%{ transform: translate(-4vw,5vh) scale(1.05); } }
 @keyframes cosmic-drift-3{ 0%,100%{ transform: translate(0,0) scale(1); } 50%{ transform: translate(4vw,-4vh) scale(1.1); } }
 
+/* ══════════ 배경 애니메이션 ON/OFF 토글 (2026-09-01) ══════════
+   실측(Playwright + CDP Performance) 결과, 이 네뷸라의 blur 반경을 줄이는
+   것보다 "애니메이션이 붙어서 실행 중인지 자체"가 스크롤/커서 성능에
+   압도적으로 더 크게 영향을 줌 — 속도를 늦추거나 일시정지해도 효과가
+   거의 없고, animation:none으로 완전히 떼어내야만 효과가 있었음(assets/js/
+   console-frame.js의 buildNebulaMotionToggle 주석에 실측 수치 기록).
+   그래서 아래처럼 아우로라 전용 ::before/::after 포함 전부를 한 번에
+   묶어서 완전히 정지시킨다 — animation-play-state:paused가 아니라 반드시
+   animation:none이어야 실측된 효과가 남. */
+[data-nebula-motion="off"] .cosmic-nebula i,
+[data-nebula-motion="off"] .cosmic-nebula::before,
+[data-nebula-motion="off"] .cosmic-nebula::after{
+  animation: none !important;
+}
+
+/* 화면 오른쪽 아래 고정 토글 버튼 — .console-shell/.app 트리와 무관하게
+   body 바로 아래 자식(assets/js/console-frame.js가 삽입)이라 backdrop-filter/
+   transform을 걸어도 전체화면 버그(파일 도입부 경고)와 무관, 안전함. 다만
+   "성능 낮추는 걸 끄는 버튼" 자신이 무거우면 본말전도라 backdrop-filter 없이
+   불투명도 있는 단색 배경만 씀. */
+.nebula-motion-toggle{
+  all: unset;
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(10, 8, 24, 0.78);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+.nebula-motion-toggle:hover{ border-color: rgba(255, 255, 255, 0.3); }
+.nebula-motion-toggle:active{ transform: translateY(1px); }
+.nebula-motion-toggle:focus-visible{ outline: 2px solid var(--console-ring); outline-offset: 2px; }
+.nebula-motion-toggle b{
+  font-family: var(--font-pixel);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--console-shell-ink, #fff);
+}
+.nebula-motion-toggle .dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--ink-faint);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+/* aria-pressed="true" = 애니메이션 켜짐(기본값) — 점이 테마 포인트색으로
+   빛남. false(꺼짐)일 땐 위 기본 회색 점 그대로. */
+.nebula-motion-toggle[aria-pressed="true"] .dot{
+  background: var(--console-ring);
+  box-shadow: 0 0 7px 1px var(--console-ring);
+}
+:root[data-theme="aurora"] .nebula-motion-toggle{
+  /* 아우로라는 배경 자체가 밝아서(위 HUD 칩 아우로라 예외와 같은 이유)
+     짙은 유리 알약이 아니라 밝은 유리 톤으로 반전. */
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(139, 126, 245, 0.28);
+}
+:root[data-theme="aurora"] .nebula-motion-toggle b{ color: var(--ink); }
+@media (max-width: 480px){
+  .nebula-motion-toggle{ right: 12px; bottom: 12px; padding: 7px 11px; }
+  .nebula-motion-toggle b{ font-size: 9.5px; }
+}
+
 /* ── 2026-08-31 9차: 아우로라 전용 — "커튼처럼 흐르는 오로라 빛" 재설계 ──
    사용자 피드백: "성운 느낌이 안 나. 오로라 빛이 나는 하얀 테마를 만들어
    줘." 8차의 원형 블롭(다른 3개 테마와 같은 radial-gradient 원)은 옅은

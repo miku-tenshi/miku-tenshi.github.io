@@ -16,6 +16,28 @@
 
   var cfg = window.SITE_CONFIG || {};
 
+  // 2026-09-01: 아래 세 변수(cosmicState/reducedMotionMq/cosmicReduced)는
+  // 원래 이 아래 "우주 배경" 섹션 바로 위(선언과 동시에 처음 쓰이는 자리
+  // 근처)에 있었는데, 그 위치가 buildNebulaMotionToggle()/syncWithTheme()
+  // 호출 지점보다 코드상 더 아래였다 — `var x = 초기값;`은 선언만
+  // 호이스팅되고 초기화식은 실제로 그 줄에 도달했을 때 실행되므로, 스크립트가
+  // 위에서 아래로 죽 실행되는 도중 그 줄을 "다시" 지나가면서 그 사이에
+  // 이미 채워둔 값을 초기값으로 덮어써버리는 문제가 있었다(실제로
+  // Playwright로 "배경 애니메이션 토글을 끄고 새로고침한 뒤 다시 켜면 별
+  // 캔버스가 안 살아난다"는 형태로 재현/확인함). 프로젝트에 예전부터
+  // 기록돼 있던 "MutationObserver 콜백에서 클로저 변수가 이유 없이
+  // 초기값으로 보인다"던 미스터리 버그도 근본 원인이 이거였을 가능성이
+  // 있어서, 아예 이 세 변수를 맨 위(첫 사용보다 항상 먼저 실행되는 자리)로
+  // 옮겨서 이 클래스의 문제 자체를 없앤다.
+  var cosmicState = null; // { canvas, nebulaEl, raf, stars, ctx, dpr }
+  var reducedMotionMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  var cosmicReduced = !!(reducedMotionMq && reducedMotionMq.matches);
+  // 배경 애니메이션 ON/OFF 토글(아래 buildNebulaMotionToggle 참고)의 현재
+  // 적용값 캐시도 같은 이유로 여기서 먼저 선언 — 실제 초기값은 페이지 로드 시
+  // buildNebulaMotionToggle()이 localStorage를 읽어 applyNebulaMotion()으로
+  // 정확히 채워 넣는다(아래 참고), 여기 'on'은 그 전까지의 안전한 기본값일 뿐.
+  var nebulaMotionPref = 'on';
+
   function el(tag, className, html) {
     var e = document.createElement(tag);
     if (className) e.className = className;
@@ -292,6 +314,11 @@
     attributes: true,
     attributeFilter: ['data-theme']
   });
+  // 2026-09-01: 배경 애니메이션 ON/OFF 토글 버튼 — buildCosmicBg()처럼 테마
+  // 바뀔 때마다 다시 부를 필요는 없어서(버튼 자체는 테마와 무관) 여기서
+  // 한 번만 만든다. buildNebulaMotionToggle 정의는 아래 buildCosmicBg
+  // 바로 다음 참고.
+  buildNebulaMotionToggle();
 
   // ── 우주 배경(별+성운) — 2026-08-31, "다시 사이버펑크식 4가지 테마(블랙
   // 제외) 만들어 줘 ... 배경이 잘 보이도록(우주 같은 느낌) ... 3D 액션은
@@ -326,9 +353,11 @@
   // cosmicState.stars가 비어있으면 즉시 다시 채운 뒤 그린다 — resize()도
   // 같은 객체를 채우므로 이중 작업은 아니고, 그냥 "무슨 이유로든 비어
   // 있으면 그 자리에서 즉시 복구"하는 안전장치.
-  var cosmicState = null; // { canvas, nebulaEl, raf, stars, ctx, dpr }
-  var reducedMotionMq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-  var cosmicReduced = !!(reducedMotionMq && reducedMotionMq.matches);
+  // (cosmicState/reducedMotionMq/cosmicReduced 선언 자체는 2026-09-01에 이
+  // 파일 맨 위로 옮김 — 바로 위 문단에서 의심했던 "클로저 변수가 이유 없이
+  // 초기값으로 보이는" 현상의 실제 원인이 바로 이 선언 위치였을 가능성이
+  // 있어서다. 이 자리엔 남기지 않음 — 여기서 다시 `var`로 선언하면 이미
+  // 맨 위에서 정상적으로 채워진 값을 또 초기값으로 덮어써버린다.)
 
   // 2026-08-31 8차: 별 색상을 테마별로 다르게 — 기존 3개 테마(SPACE/BLUE/
   // PINK)는 전부 짙은 배경이라 흰색 위주 별이 잘 보이지만, 새로 만든
@@ -406,6 +435,11 @@
       lastDrawT: -1
     };
     cosmicState = state;
+    // 2026-09-01: 아래 "배경 애니메이션 ON/OFF 토글"이 별 캔버스 루프를
+    // 나중에(버튼 클릭 시) 다시 시작할 수 있도록 draw 함수 자체를 state에
+    // 저장해둔다 — draw는 함수 선언이라 호이스팅되므로 아직 아래에 정의된
+    // 코드지만 여기서 참조 가능하다.
+    state.draw = draw;
 
     function resize() {
       // draw()와 같은 이유(위 주석 참고) — 캔버스가 이미 DOM에서 빠졌으면
@@ -484,6 +518,117 @@
     window.addEventListener('resize', state.onResize);
     resize();
     state.raf = window.requestAnimationFrame(draw);
+  }
+
+  // ══════════ 배경 애니메이션 ON/OFF 토글 (2026-09-01) ══════════
+  // 배경: "맥에서 손으로 스크롤할 때도 느려지냐"는 질문에 실측(Playwright +
+  // CDP Performance)으로 답하는 과정에서, 코스믹 네뷸라(.cosmic-nebula, blur
+  // + mix-blend-mode:screen + 계속 도는 CSS 애니메이션)가 스크롤/커서 성능
+  // 저하의 핵심 원인임을 확인했다. 그다음 "blur를 줄이면?"/"애니메이션을
+  // 느리게 하면?"도 각각 실측했는데:
+  //   - blur 반경을 줄이는 건 효과가 작음(원본 대비 15%쯤만 개선).
+  //   - 애니메이션 속도를 10배/50배 늦추거나 steps()로 드문드문 움직이게
+  //     하거나 심지어 animation-play-state:paused로 "일시정지"해도 전부
+  //     원본과 별 차이가 없었음 — 애니메이션이 "붙어서 실행 중"이기만 하면
+  //     브라우저가 매 프레임 다시 합성하는 것으로 보임.
+  //   - animation:none으로 완전히 떼어내야만(정지가 아니라 아예 없음) 네뷸라를
+  //     통째로 숨긴 것과 맞먹는 수준으로 좋아짐.
+  // 즉 "느리게"로는 답이 안 나와서, 사용자 요청대로 화면 오른쪽 아래에 진짜
+  // ON/OFF 토글 버튼을 추가함 — 기본값 on(기존과 동일하게 보임), 끄면
+  // animation:none과 동등한 효과를 내고, 선택은 localStorage에 저장돼서
+  // 새로고침해도 유지된다(다시 버튼을 누르기 전까지).
+  // ⚠️ 위 nebulaMotionPref와 같은 이유로, 저장 키도 var로 빼서 참조하면 안
+  // 됨(실제로 처음엔 그렇게 짰다가 Playwright로 "off로 저장해도 새로고침하면
+  // on으로 돌아옴" 버그를 재현해서 원인을 찾음 — buildNebulaMotionToggle()이
+  // 코드상 더 아래에 있는 그 var 초기화식보다 먼저 실행되니, 그 시점엔 키가
+  // 아직 undefined라 localStorage.getItem(undefined)("undefined"라는 엉뚱한
+  // 키)를 읽고 있었음). 그래서 리터럴을 두 함수에 직접 박아 순서 문제 자체를
+  // 없앤다.
+  function getNebulaMotionPref() {
+    try {
+      // 저장된 값이 없거나(첫 방문) 손상된 값이면 기본값 on.
+      return window.localStorage.getItem('mt-nebula-motion') === 'off' ? 'off' : 'on';
+    } catch (e) {
+      // localStorage를 못 쓰는 환경(프라이빗 모드 등)에서도 최소한 기본값
+      // on으로는 정상 동작하도록.
+      return 'on';
+    }
+  }
+
+  function setNebulaMotionPref(pref) {
+    try { window.localStorage.setItem('mt-nebula-motion', pref); } catch (e) { /* 조용히 무시 */ }
+  }
+
+  // ⚠️ nebulaMotionPref는 이 파일 맨 위에서 이미 선언해뒀다(다시 여기서
+  // `var`로 선언하면 안 됨 — buildNebulaMotionToggle()이 코드상 더 앞쪽
+  // (syncWithTheme 바로 다음)에서 이미 실행돼 applyNebulaMotion()으로 값을
+  // 정확히 채워둔 뒤인데, 실행 흐름이 여기까지 내려오면서 `var` 초기화식이
+  // 또 실행돼 그 값을 도로 'on'으로 덮어써버리는 버그가 실제로 있었다 —
+  // Playwright로 "끄고 새로고침 후 다시 켜기"가 항상 실패하는 걸로
+  // 재현/확인함. 맨 위 선언부의 자세한 설명 참고).
+
+  function applyNebulaMotion(pref, btn) {
+    nebulaMotionPref = pref;
+    var manualOff = pref === 'off';
+    // data-nebula-motion="off"일 때 네뷸라 CSS 애니메이션을 완전히 떼어내는
+    // 규칙은 assets/css/style.css의 우주 배경 섹션 참고.
+    document.documentElement.setAttribute('data-nebula-motion', pref);
+
+    // 별 캔버스(#cosmic-stars) rAF 루프도 같이 멈추고/재개한다. cosmicReduced는
+    // 원래 OS의 prefers-reduced-motion 하나만 반영하던 변수인데, 여기서는
+    // "OS 설정 OR 이 수동 토글"로 합쳐서 쓴다 — OS가 reduce를 요청했으면
+    // 이 토글을 다시 켜도 별은 계속 정지 상태로 남는다(접근성 설정이 항상
+    // 우선하도록).
+    var osReduced = !!(reducedMotionMq && reducedMotionMq.matches);
+    cosmicReduced = osReduced || manualOff;
+    if (cosmicReduced && cosmicState && cosmicState.raf) {
+      // 2026-09-01 발견(실측): draw() 안에서는 cosmicReduced가 true가 되면
+      // 그냥 "다음 프레임을 예약하지 않는" 방식으로 루프를 멈추는데, 그때
+      // state.raf 자체는 예전에 예약해둔 id를 그대로 들고 있어서(null로
+      // 안 비움) 값 자체는 계속 "참"으로 남는다. 그래서 바로 아래
+      // "!cosmicState.raf일 때만 재시작" 조건이 다시 켤 때 항상 거짓으로
+      // 걸려 별 캔버스 루프가 딱 한 번 끈 뒤로는 영원히 안 살아나는 버그가
+      // 있었다(Playwright로 on→off→on 시퀀스에서 requestAnimationFrame
+      // 호출 자체가 0회임을 확인해 재현). 꺼질 때 예약돼 있던 프레임을
+      // 명시적으로 취소하고 raf를 null로 비워서, 아래 재시작 조건이 정상
+      // 동작하게 한다.
+      window.cancelAnimationFrame(cosmicState.raf);
+      cosmicState.raf = null;
+    }
+    if (!cosmicReduced && cosmicState && !cosmicState.raf) {
+      // 꺼져 있던 별 루프를 다시 예약한다. draw 자체는 buildCosmicBg()
+      // 클로저 안에만 있어서 밖에서 직접 못 부르니, 만들 때 저장해둔
+      // state.draw 참조를 통해 재시작한다(위 buildCosmicBg 안 "state.draw =
+      // draw;" 참고).
+      cosmicState.lastDrawT = -1;
+      cosmicState.raf = window.requestAnimationFrame(cosmicState.draw);
+    }
+
+    if (btn) {
+      btn.setAttribute('aria-pressed', String(!manualOff));
+      btn.title = manualOff
+        ? '배경 애니메이션 꺼짐 — 클릭하면 켜기'
+        : '배경 애니메이션 켜짐 — 클릭하면 끄기';
+    }
+  }
+
+  function buildNebulaMotionToggle() {
+    if (document.getElementById('nebula-motion-toggle')) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'nebula-motion-toggle';
+    btn.className = 'nebula-motion-toggle';
+    btn.setAttribute('aria-label', '배경 애니메이션 켜기/끄기');
+    btn.innerHTML = '<span class="dot" aria-hidden="true"></span><b>MOTION</b>';
+    document.body.appendChild(btn);
+
+    applyNebulaMotion(getNebulaMotionPref(), btn);
+
+    btn.addEventListener('click', function () {
+      var next = nebulaMotionPref === 'off' ? 'on' : 'off';
+      setNebulaMotionPref(next);
+      applyNebulaMotion(next, btn);
+    });
   }
 
   // 2026-08-31 7차: 이전엔 다크 테마에서 우주 배경을 지우는 removeCosmicBg()
