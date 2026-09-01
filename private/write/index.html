@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <script>(function(){try{var T=["default","aurora","blue","pink"];var C={default:"#f5f6f8",aurora:"#f2edfc",blue:"#e1f0fb",pink:"#fbe9f1"};var t=localStorage.getItem("mt-theme");if(T.indexOf(t)===-1){t="aurora";localStorage.setItem("mt-theme",t);}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m);}m.setAttribute("content",C[t]);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>write/ — private — miku-tenshi</title>
+<title>miku-tenshi</title>
 <meta name="robots" content="noindex, nofollow">
 <style>.private-pending body { visibility: hidden; }</style>
 <script src="/assets/js/private-guard.js"></script>
@@ -469,7 +469,15 @@
     return '<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n' +
       '<script>(function(){try{var T=["default","aurora","blue","pink"];var C={default:"#f5f6f8",aurora:"#f2edfc",blue:"#e1f0fb",pink:"#fbe9f1"};var t=localStorage.getItem("mt-theme");if(T.indexOf(t)===-1){t="aurora";localStorage.setItem("mt-theme",t);}document.documentElement.setAttribute("data-theme",t);var m=document.querySelector(\'meta[name="theme-color"]\');if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m);}m.setAttribute("content",C[t]);}catch(e){}})();<\/script>\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-      '<title>' + opts.pageTitle + '</title>\n' +
+      /* 2026-09-01: "글 들어갈 때마다 브라우저 탭 제목이 글 제목으로
+         바뀌는데, 그냥 miku-tenshi로 통일하고 싶어" 요청으로, 새로 쓰는
+         글/폴더 페이지도 opts.pageTitle(글 제목 — 경로 — miku-tenshi 형태)을
+         쓰지 않고 항상 고정값 "miku-tenshi"만 넣음. opts.pageTitle 자체는
+         혹시 다른 용도로 쓰일까봐 그대로 두고(현재는 다른 곳에서 안 씀),
+         <title> 태그에 넣는 값만 고정함 — 기존에 이미 게시된 19개 페이지의
+         <title>도 전부 이번에 "miku-tenshi"로 통일함(assets/css/style.css는
+         무관, HTML 파일들만 해당). */
+      '<title>miku-tenshi</title>\n' +
       '<meta name="description" content="' + opts.description + '">\n' +
       '<link rel="stylesheet" as="style" crossorigin\n  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />\n' +
       '<link rel="stylesheet" href="/assets/css/style.css">\n</head>\n<body>\n\n<div class="app">\n\n' +

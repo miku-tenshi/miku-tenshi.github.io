@@ -92,10 +92,21 @@
   window.cursorSparkleInitialized = true;
 
   // 터치 기기(마우스 없음)에서는 커스텀 커서를 만들지 않음 — style.css에서도
-  // 같은 조건(모바일 화면 폭 / prefers-reduced-motion)일 때 기본 커서를 되살려둠.
+  // 같은 조건(모바일 화면 폭)일 때 기본 커서를 되살려둠.
+  // 2026-09-01: 원래는 prefers-reduced-motion(OS/브라우저의 "동작 줄이기"
+  // 설정)이 켜져 있으면 이 커서 반짝임 효과 자체를 통째로 껐었는데,
+  // 사용자가 "커서 효과가 사라졌다"고 신고해서 조사해보니 실제 원인이
+  // 바로 이 분기였음(Playwright로 재현: reduced-motion 컨텍스트에서 커서
+  // 엘리먼트 자체가 생성 안 됨). 사용자에게 "동작 줄이기 설정과 무관하게
+  // 항상 켜지게 해달라"는 요청을 받아 이 조건에서 prefersReducedMotion을
+  // 뺌 — 이 커서 반짝임은 큰 화면 전체를 흔드는 모션이 아니라 작은 점
+  // 하나가 부드럽게 따라다니는 장식 정도라 판단. 성운/별/콘솔 테두리 발광
+  // 같은 더 큰 배경 애니메이션들은 여전히 prefers-reduced-motion을 존중함
+  // (assets/css/style.css의 다른 @media (prefers-reduced-motion: reduce)
+  // 블록들 — 이번에 손댄 건 커서(아래)와 사이드바 궤도 링(orbit ring,
+  // style.css) 딱 2곳뿐).
   const isCoarsePointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-  const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (isCoarsePointer || prefersReducedMotion) return;
+  if (isCoarsePointer) return;
 
   // ---- 마우스를 따라다니는 커서 점 ----
   const dot = document.createElement("div");
@@ -114,9 +125,52 @@
   dot.style.translate = "-9999px -9999px";
   document.body.appendChild(dot);
 
+  // 2026-08-31 (커서 버벅임 대응): "마우스는 잘 따라다니는데 노트북에서
+  // 손가락(트랙패드)으로 움직이면 커서가 느리고 버벅인다"는 리포트 조사—
+  // 원래는 mousemove가 올 때마다 그 좌표로 즉시 스냅(순간 이동)시켰는데,
+  // 이 방식은 매 프레임 화면이 원활하게 그려질 때는 문제없지만, 화면 배경
+  // 애니메이션(우주 배경 등, 위 console-frame.js 쪽 최적화 참고)이 메인
+  // 스레드를 많이 잡아먹는 순간엔 mousemove 이벤트와 실제 화면 반영(paint)
+  // 사이 간격이 벌어져서 "뚝뚝 끊기며 순간이동"하는 것처럼 보였다(트랙패드는
+  // 마우스보다 이동이 느리고 연속적이라 이런 끊김이 더 잘 눈에 띔). 이제는
+  // mousemove에서 "목표 좌표"만 기록해두고, requestAnimationFrame 루프가
+  // 매 프레임 그 목표를 향해 부드럽게 보간(lerp)하며 따라가게 해서, 실제로
+  // 그릴 수 있는 프레임이 듬성듬성해도(=이벤트 간격이 넓어도) 그 사이를
+  // 매끄럽게 이어 붙여 "쫓아가는" 느낌을 내고 뚝뚝 끊기는 느낌을 줄인다.
+  // lerp 계수는 1에 가까울수록 원래처럼 즉각 반응하고, 0에 가까울수록
+  // 부드럽지만 느려진다. 처음엔 0.45로 잡았는데, 사용자 피드백("오로라
+  // 테마가 아니어도 느려. 커서 속도를 조금만 더 빠르게 해야될 것 같아")을
+  // 받고 0.7로 올림 — 잔떨림을 완전히 못 죽이는 대신 목표 좌표를 훨씬
+  // 빨리 따라잡아 "느리다"는 느낌을 줄인다.
+  var targetX = null, targetY = null, curX = null, curY = null;
+  var cursorRaf = null;
+
+  function tickCursor() {
+    cursorRaf = null;
+    if (targetX === null) return;
+    if (curX === null) {
+      // 첫 위치는 보간 없이 바로 스냅(화면 구석에서 날아오는 것처럼
+      // 보이는 걸 방지 — 기존 "먼 곳에서 튀는" 버그 방지 원칙과 동일).
+      curX = targetX;
+      curY = targetY;
+    } else {
+      curX += (targetX - curX) * 0.7;
+      curY += (targetY - curY) * 0.7;
+    }
+    dot.style.translate = curX + "px " + curY + "px";
+    // 목표에 충분히 가까워지면(0.05px 미만 차이) 루프를 멈춰 불필요한
+    // requestAnimationFrame 예약을 없앤다 — 마우스가 멈추면 이 루프도 같이
+    // 멈춘다.
+    if (Math.abs(targetX - curX) > 0.05 || Math.abs(targetY - curY) > 0.05) {
+      cursorRaf = window.requestAnimationFrame(tickCursor);
+    }
+  }
+
   document.addEventListener("mousemove", function (event) {
     dot.classList.add("show");
-    dot.style.translate = event.clientX + "px " + event.clientY + "px";
+    targetX = event.clientX;
+    targetY = event.clientY;
+    if (cursorRaf === null) cursorRaf = window.requestAnimationFrame(tickCursor);
   });
   document.addEventListener("mousedown", function () { dot.classList.add("click"); });
   document.addEventListener("mouseup", function () { dot.classList.remove("click"); });

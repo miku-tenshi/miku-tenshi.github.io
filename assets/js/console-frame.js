@@ -332,7 +332,11 @@
       ctx: ctx,
       dpr: dpr,
       stars: [],
-      raf: null
+      raf: null,
+      // 2026-08-31 (커서 버벅임 대응): 아래 draw()의 프레임 제한(~30fps)에
+      // 쓰는 "마지막으로 실제 그린 시각" 기록. -1은 "아직 한 번도 안
+      // 그렸다"는 뜻으로, 첫 프레임은 반드시 그리게 함.
+      lastDrawT: -1
     };
     cosmicState = state;
 
@@ -357,6 +361,27 @@
       // 막기 위해, 자기 캔버스가 더 이상 문서에 붙어있지 않으면 그 자리에서
       // 루프를 스스로 멈춘다(다음 requestAnimationFrame을 예약하지 않음).
       if (!document.body.contains(state.canvas)) return;
+      // 2026-08-31 (커서 버벅임 대응): "노트북에서 손가락(트랙패드)으로
+      // 움직이면 커서가 느리고 버벅인다" 리포트를 조사해보니, 이 별
+      // 캔버스가 매 프레임(60fps)마다 최대 180개 별을 다시 그리고 있었고
+      // (특히 AURORA 테마는 별마다 shadowBlur까지 추가로 써서 더 비쌈),
+      // Playwright로 CPU를 인위적으로 6배 느리게 흉내내 보니 실제로
+      // 프레임 하나에 90ms 가까이 걸려(초당 11프레임 수준) 이 커서
+      // 점(.custom-cursor, assets/js/window.js)이 mousemove를 받고도 화면에
+      // 반영될 기회 자체가 크게 줄어드는 것으로 확인됨 — 즉 "손가락으로
+      // 움직이면" 자체가 원인이 아니라, 노트북처럼 상대적으로 약한
+      // 그래픽 성능에서 이 배경 애니메이션이 메인 스레드/렌더링 시간을
+      // 많이 잡아먹어 커서 갱신이 밀리는 것. 아래 두 가지로 이 캔버스의
+      // 비용을 줄임(별이 원래도 아주 천천히 반짝이고 떠다니는 용도라
+      // 시각적으로 체감되는 차이는 없음):
+      // 1) 30fps로 그리기 빈도를 절반으로 제한(브라우저 프레임마다
+      //    requestAnimationFrame 자체는 계속 예약하되, 마지막으로 그린
+      //    지 33ms가 안 됐으면 이번 프레임은 그냥 건너뜀).
+      if (state.lastDrawT >= 0 && t - state.lastDrawT < 33) {
+        if (!cosmicReduced) state.raf = window.requestAnimationFrame(draw);
+        return;
+      }
+      state.lastDrawT = t;
       // 위 2026-08-31 4차 디버깅 메모 참고 — 무슨 이유로든 별 목록이 비어
       // 있으면(원래는 resize()가 채워둠) 그 자리에서 즉시 다시 채운다.
       if (!state.stars.length) state.stars = makeStars(window.innerWidth, window.innerHeight);
@@ -373,15 +398,17 @@
         var color = starFillColor(i, theme);
         state.ctx.globalAlpha = 0.2 + tw * 0.55;
         state.ctx.fillStyle = color;
-        if (glow) {
-          state.ctx.shadowColor = color;
-          state.ctx.shadowBlur = 5;
-        }
+        // 2) glow(AURORA) 효과를 캔버스 shadowBlur(별 하나하나마다 흐림
+        //    효과를 다시 계산해야 해서 매우 비쌈) 대신, 반지름을 살짝
+        //    키우고 최소 투명도를 높이는 값싼 방식으로 대체 — 흰 배경
+        //    위에서 또렷해 보이는 목적은 그대로 유지하면서 렌더 비용만
+        //    없앰.
+        var radius = glow ? st.r * 1.35 : st.r;
+        if (glow) state.ctx.globalAlpha = Math.min(1, state.ctx.globalAlpha + 0.12);
         state.ctx.beginPath();
-        state.ctx.arc(st.x + dx, st.y + dy, st.r, 0, Math.PI * 2);
+        state.ctx.arc(st.x + dx, st.y + dy, radius, 0, Math.PI * 2);
         state.ctx.fill();
       }
-      if (glow) { state.ctx.shadowBlur = 0; state.ctx.shadowColor = 'transparent'; }
       state.ctx.globalAlpha = 1;
       if (!cosmicReduced) state.raf = window.requestAnimationFrame(draw);
     }

@@ -1626,19 +1626,30 @@ input, textarea, select{ cursor: text !important; }
   }
 }
 
-/* 모바일과 동작 줄이기 설정에서는 비활성화 — 커스텀 커서 대신 기본 포인터를 되살림
-   (터치 기기에는 애초에 마우스 포인터라는 개념이 없어서 숨길 이유도 없음) */
-@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+/* 모바일에서는 비활성화 — 커스텀 커서 대신 기본 포인터를 되살림
+   (터치 기기에는 애초에 마우스 포인터라는 개념이 없어서 숨길 이유도 없음)
+   2026-09-01: 원래 이 블록은 "모바일 화면 폭 또는 동작 줄이기(prefers-
+   reduced-motion) 둘 중 하나면"(콤마로 묶은 OR 조건) 커서 반짝임을 껐는데,
+   사용자가 "커서 효과가 사라졌다"고 신고 → 원인이 이 동작 줄이기 조건임을
+   확인 → "동작 줄이기 설정과 무관하게 항상 켜지게 해달라"는 요청을 받아
+   동작 줄이기 조건을 이 블록에서 뺌(모바일 폭 조건만 남김). assets/js/
+   window.js의 커서 생성 로직에서도 같은 이유로 prefersReducedMotion
+   체크를 제거함 — 둘이 항상 같은 조건을 봐야 함(하나만 고치면 어긋남). */
+@media (max-width: 768px) {
   .cursor-sparkle,
   .custom-cursor {
     display: none;
   }
-  .sea-sun, .sea-stars, .sea-cloud, .sea-waves.w1, .sea-waves.w2{ animation: none; }
   *, *::before, *::after{ cursor: auto !important; }
   a, button, .nav-item, .entry-list-item.clickable, .wbtn, .mode-btn, .page-btn:not(:disabled){
     cursor: pointer !important;
   }
   input, textarea, select{ cursor: text !important; }
+}
+/* .sea-* 애니메이션(바다 장식)은 커서와 별개 요소라 동작 줄이기를 계속
+   존중함 — 위 커서 완화와 범위가 섞이지 않도록 별도 블록으로 유지. */
+@media (prefers-reduced-motion: reduce) {
+  .sea-sun, .sea-stars, .sea-cloud, .sea-waves.w1, .sea-waves.w2{ animation: none; }
 }
 
 /* ---------- 레트로 진행 표시 (assets/js/retro-log.js) ----------
@@ -2263,9 +2274,15 @@ input, textarea, select{ cursor: text !important; }
   from{ transform: translate(-50%, -50%) rotate(0deg); }
   to{ transform: translate(-50%, -50%) rotate(360deg); }
 }
-@media (prefers-reduced-motion: reduce){
-  .console-sidebar-orbit .ring{ animation: none; }
-}
+/* 2026-09-01: 원래 여기 있던 "동작 줄이기(prefers-reduced-motion)면 링
+   회전을 끈다" 규칙을 뺌 — 사용자가 "행성 링이 멈췄다"고 신고 → 원인이
+   이 규칙임을 확인(브라우저의 동작 줄이기 설정이 켜져 있으면 이 궤도
+   회전이 꺼지고 있었음) → "동작 줄이기 설정과 무관하게 항상 켜지게
+   해달라"는 요청을 받아 제거함. 위 커서 반짝임과 같은 결정 — 둘 다
+   화면 전체를 흔드는 큰 모션이 아니라 작은 장식 요소라 예외로 둠. 성운/
+   별/콘솔 테두리 발광 등 더 큰 배경 애니메이션은 여전히 동작 줄이기를
+   존중함(이 파일의 다른 @media (prefers-reduced-motion: reduce) 블록
+   참고 — 손댄 곳은 커서(위 별도 블록)와 여기 궤도 링 딱 2곳뿐). */
 
 .console-screen-bezel{
   flex: 1;
