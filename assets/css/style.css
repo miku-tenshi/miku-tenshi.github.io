@@ -336,6 +336,55 @@
 
 *{ box-sizing: border-box; }
 
+/* ============================================================
+   커스텀 스크롤바 — 2026-09-01
+   "스크롤바를 예쁘게 편집해줘" 요청. 브라우저 기본(회색 각진) 스크롤바를
+   콘솔 테마에 맞춰 재디자인 — #tool-area, .console-screen, .window-body,
+   .sidebar .nav-group, 글쓰기 도구 본문 입력창(.live-editor-input) 등
+   사이트 안의 모든 스크롤 영역에 전역(*) 적용.
+   색은 하드코딩하지 않고 위 --accent-rgb(호버/글로우용 RGB 숫자 버전,
+   37번 줄 설명 참고)만 사용 — default/aurora/blue/pink 4개 테마를
+   오가도 스크롤바 색이 자동으로 그 테마의 포인트색을 따라감(테마별로
+   별도 규칙 추가할 필요 없음).
+   트랙은 투명 유지, 썸(thumb)만 알약(pill) 모양의 "떠 있는 네온 바"로 —
+   상하좌우 투명 테두리(border) + background-clip:padding-box 트릭으로
+   트랙 안쪽에 살짝 여백을 두고 떠 있는 것처럼 보이게 하고, 호버 시
+   진해지면서 이 사이트 다른 곳(예: 1636번 줄 근처 아바타 글로우)과 같은
+   레시피의 은은한 네온 그림자를 더함 — 새 이펙트 언어를 만들지 않고
+   기존 것을 재사용.
+   예외: .avatar-track(프로필 사진 캐러셀)은 원래부터 스크롤바를 완전히
+   숨기는 전용 규칙(".avatar-track::-webkit-scrollbar{ display:none }",
+   더 아래에 있음)이 있고 클래스 선택자라 특이도가 더 높아 항상 이김 —
+   여기서 따로 예외 처리할 필요 없음. */
+*{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent-rgb), 0.5) transparent;
+}
+*::-webkit-scrollbar{
+  width: 12px;
+  height: 12px;
+}
+*::-webkit-scrollbar-track{
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb{
+  background-color: rgba(var(--accent-rgb), 0.4);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+*::-webkit-scrollbar-thumb:hover{
+  background-color: rgba(var(--accent-rgb), 0.75);
+  box-shadow: 0 0 10px 1px rgba(var(--accent-rgb), 0.5);
+}
+*::-webkit-scrollbar-thumb:active{
+  background-color: var(--accent-solid);
+}
+*::-webkit-scrollbar-corner{
+  background: transparent;
+}
+
 html, body{
   margin: 0;
   padding: 0;
