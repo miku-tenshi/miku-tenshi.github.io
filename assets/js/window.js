@@ -28,9 +28,24 @@
     return () => applyFullscreenSize(win);
   }
 
+  // 2026-09-01: 콘솔 틀(#console-shell)이 화면 크기/해상도에 맞춰
+  // transform:scale()로 통째로 축소/확대되도록 바뀌었다(assets/js/
+  // console-frame.js의 applyConsoleScale 참고, "컴퓨터 화면 크기나
+  // 해상도가 달라져도 내부 크기를 일정하게" 요청에 대응). CSS에서 어떤
+  // 조상이든 transform이 걸려 있으면 그 조상이 position:fixed 자손의
+  // 좌표 기준(containing block)이 되어버려 뷰포트 기준이 아니게 되므로,
+  // 아래 applyFullscreenSize의 window.innerWidth/innerHeight 기반 계산이
+  // (스케일된) console-shell 기준으로 어긋나게 된다. 그래서 전체화면
+  // 진입 순간 이 카드를 콘솔 트리 밖(document.body 바로 아래, #backdrop과
+  // 같은 레벨)으로 잠깐 옮겼다가, 나갈 때 원래 있던 자리로 정확히
+  // 되돌려 놓는다 — 전체화면인 동안은 이 카드가 transform의 영향을 아예
+  // 안 받으므로 여백 계산이 항상 실제 뷰포트 기준으로 정확하다.
   function enterFocus(win) {
     const onResize = makeResizeHandler(win);
     win.__mtOnResize = onResize;
+    win.__mtOriginalParent = win.parentNode;
+    win.__mtOriginalNextSibling = win.nextSibling;
+    document.body.appendChild(win);
     win.classList.add('is-fullscreen');
     applyFullscreenSize(win);
     backdrop.classList.add('show');
@@ -50,6 +65,15 @@
     backdrop.classList.remove('show');
     document.body.style.overflow = '';
     if (win.__mtOnResize) window.removeEventListener('resize', win.__mtOnResize);
+    if (win.__mtOriginalParent) {
+      if (win.__mtOriginalNextSibling && win.__mtOriginalNextSibling.parentNode === win.__mtOriginalParent) {
+        win.__mtOriginalParent.insertBefore(win, win.__mtOriginalNextSibling);
+      } else {
+        win.__mtOriginalParent.appendChild(win);
+      }
+      win.__mtOriginalParent = null;
+      win.__mtOriginalNextSibling = null;
+    }
   }
 
   function exitAll() {
@@ -134,34 +158,34 @@
   // 사이 간격이 벌어져서 "뚝뚝 끊기며 순간이동"하는 것처럼 보였다(트랙패드는
   // 마우스보다 이동이 느리고 연속적이라 이런 끊김이 더 잘 눈에 띔). 이제는
   // mousemove에서 "목표 좌표"만 기록해두고, requestAnimationFrame 루프가
-  // 매 프레임 그 목표를 향해 부드럽게 보간(lerp)하며 따라가게 해서, 실제로
-  // 그릴 수 있는 프레임이 듬성듬성해도(=이벤트 간격이 넓어도) 그 사이를
-  // 매끄럽게 이어 붙여 "쫓아가는" 느낌을 내고 뚝뚝 끊기는 느낌을 줄인다.
-  // lerp 계수는 1에 가까울수록 원래처럼 즉각 반응하고, 0에 가까울수록
-  // 부드럽지만 느려진다. 처음엔 0.45로 잡았는데, 사용자 피드백("오로라
-  // 테마가 아니어도 느려. 커서 속도를 조금만 더 빠르게 해야될 것 같아")을
-  // 받고 0.7로 올림 — 잔떨림을 완전히 못 죽이는 대신 목표 좌표를 훨씬
-  // 빨리 따라잡아 "느리다"는 느낌을 줄인다.
+  // 매 프레임 그 목표를 향해 따라가게 한다 — 이렇게 하면 화면 배경
+  // 애니메이션이 메인 스레드를 많이 잡아먹어 mousemove 이벤트와 실제 화면
+  // 반영(paint) 사이 간격이 벌어지는 상황에서도, 다음 그릴 수 있는 프레임에
+  // 정확히 목표 좌표로 맞춰 그려서 끊김을 줄인다.
+  // 2026-08-31: 처음엔 lerp(보간) 계수 0.45로 부드럽게 따라가게 했다가,
+  // "느리다"는 피드백으로 0.7로 올렸었다.
+  // 2026-09-01: 사용자가 "커서 속도 1.0배로"를 요청 — 즉, 보간으로 늦추지
+  // 말고 매 프레임 목표 좌표에 그대로 스냅(즉시 반응)하라는 뜻이므로,
+  // lerp를 아예 제거하고 매 프레임 curX/curY를 targetX/targetY로 직접
+  // 대입한다. 그래도 여전히 requestAnimationFrame 루프를 쓰는 이유는(값을
+  // mousemove 핸들러에서 바로 그리지 않는 이유는) 위에서 설명한 "이벤트와
+  // paint 사이 간격" 문제 완화 효과는 그대로 유지하기 위함 — 목표를 향해
+  // 느리게 쫓아가는 부분만 없앴을 뿐, 프레임 스케줄링 자체는 그대로 둔다.
   var targetX = null, targetY = null, curX = null, curY = null;
   var cursorRaf = null;
 
   function tickCursor() {
     cursorRaf = null;
     if (targetX === null) return;
-    if (curX === null) {
-      // 첫 위치는 보간 없이 바로 스냅(화면 구석에서 날아오는 것처럼
-      // 보이는 걸 방지 — 기존 "먼 곳에서 튀는" 버그 방지 원칙과 동일).
-      curX = targetX;
-      curY = targetY;
-    } else {
-      curX += (targetX - curX) * 0.7;
-      curY += (targetY - curY) * 0.7;
-    }
+    const moved = curX !== targetX || curY !== targetY;
+    curX = targetX;
+    curY = targetY;
     dot.style.translate = curX + "px " + curY + "px";
-    // 목표에 충분히 가까워지면(0.05px 미만 차이) 루프를 멈춰 불필요한
-    // requestAnimationFrame 예약을 없앤다 — 마우스가 멈추면 이 루프도 같이
-    // 멈춘다.
-    if (Math.abs(targetX - curX) > 0.05 || Math.abs(targetY - curY) > 0.05) {
+    // mousemove가 계속 들어오는 동안(=목표가 계속 바뀌는 동안)에는 매
+    // 프레임 다시 예약해서 다음 목표도 즉시 반영한다. mousemove 핸들러
+    // 쪽에서도 매번 새로 예약하므로 여기서는 "이번 프레임에 실제로 위치가
+    // 바뀌었을 때만" 한 번 더 예약해 마우스가 멈추면 루프도 같이 멈춘다.
+    if (moved) {
       cursorRaf = window.requestAnimationFrame(tickCursor);
     }
   }

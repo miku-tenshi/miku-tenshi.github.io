@@ -157,6 +157,37 @@
   app.parentNode.insertBefore(viewport, app);
   screen.appendChild(app);
 
+  // ── 콘솔 내부 고정 해상도 + 비율 스케일 ── 2026-09-01: "컴퓨터 화면
+  // 크기나 해상도가 달라져도 내부 크기를 일정한 해상도와 크기로 보여주고
+  // 싶어. (비율로 계산해야 될 것 같아.)" 요청. 자세한 배경/이유는
+  // assets/css/style.css의 ".console-shell" 규칙 안 "2026-09-01 (내부
+  // 고정 해상도)" 주석 참고 — 요약하면: .console-shell은 이제 항상 고정된
+  // "디자인 해상도"(1180×740px, 예전 최대 크기와 동일)로 그려지고, 여기서
+  // 계산한 --console-scale 값만큼 CSS transform:scale()로 통째로
+  // 축소/확대된다. 계산식은 예전에 width/height 자체에 쓰던
+  // min(1180px,75vw)/min(740px,78vh)와 정확히 같은 비율(75vw/78vh)을
+  // 쓰되, 폭/높이 중 더 작게 나오는 쪽에 맞춰(Math.min) 하나의 배율로
+  // 통일한다 — 그래야 가로세로 비율이 항상 디자인 그대로 유지된다(예전
+  // 방식은 폭/높이를 각각 독립적으로 클램프해서 화면 모양에 따라 콘솔
+  // 비율 자체가 미세하게 달라질 수 있었음).
+  // 900px 이하(모바일)에서는 style.css의 @media(max-width:900px)가 이
+  // transform을 transform:none으로 다시 꺼두므로, 여기서 계산해 세팅하는
+  // 값은 그 구간에서는 그냥 무시된다(모바일 전용 "화면 꽉 채우기" 레이아웃
+  // 그대로 유지).
+  var CONSOLE_DESIGN_W = 1180;
+  var CONSOLE_DESIGN_H = 740;
+  function applyConsoleScale() {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var scale = Math.min(
+      (vw * 0.75) / CONSOLE_DESIGN_W,
+      (vh * 0.78) / CONSOLE_DESIGN_H,
+      1
+    );
+    document.documentElement.style.setProperty('--console-scale', scale);
+  }
+  applyConsoleScale();
+  window.addEventListener('resize', applyConsoleScale);
+
   // ── 사이드바 접기 버튼을 화면(.console-screen) 밖, 마퀴 왼쪽으로 옮김 ──
   // sidebar.js가 .app 안(.app의 flex 자식으로) 만들어 붙인 뒤라 이 시점엔
   // 이미 DOM에 있음 — 화면 안에 그대로 두면 스크롤할 때 같이 밀려 올라가
@@ -446,4 +477,96 @@
     var dd = String(today.getDate()).padStart(2, '0');
     dateEl.textContent = mm + '.' + dd;
   }
+})();
+
+
+/* ── URL창(브라우저 탭) 아이콘 — 움직이는 "행성" 파비콘 ── 2026-09-01
+   "url 창의 아이콘을 교체하고 싶어. 지금은 그냥 간단하게 움직이는 행성으로
+   교체해 줘" 요청. 기존엔 19개 페이지 전부에 <link rel="icon">이 아예 없었음
+   (grep으로 확인) — 새로 추가한다. 실제 이미지 파일을 두는 대신, 사이드바
+   밑 궤도 장식(.console-sidebar-orbit — 이 파일 위쪽 "메뉴 밑 행성 장식"
+   섹션 참고: 중심에서 빛나는 core + 기울어진 타원 ring 2개가 서로 반대
+   방향으로 도는 구도)과 같은 시각 언어를 작은 canvas에 그려 매번 새
+   data URL로 파비콘을 갱신 — 그래서 탭 아이콘이 실제로 살짝씩 돈다.
+   이 스크립트는 모든 페이지(private/write가 글쓰기 시 새로 만드는 페이지도
+   PAGE_SKELETON에 같은 <script src="/assets/js/console-frame.js">가 들어있어
+   포함)에서 로드되므로, 여기 한 곳에만 추가하면 사이트 전체에 자동 적용된다
+   (HTML 파일들은 손댈 필요 없음). */
+(function () {
+  'use strict';
+
+  var SIZE = 32; // 파비콘 표준 크기 중 하나. 32px 정사각형.
+  var canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  var ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  var link = document.querySelector('link[rel="icon"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+  }
+  link.type = 'image/png';
+
+  // 커서 반짝이(assets/js/window.js)와 동일한 패턴 — 지금 활성화된 색상
+  // 테마(--accent-start/--accent-end)를 그때그때 읽어서 쓴다. 테마를
+  // 바꾸면 다음 갱신 프레임(아래 130ms 간격)에 파비콘 색도 곧바로 따라감.
+  function accentColors() {
+    var cs = getComputedStyle(document.documentElement);
+    var start = cs.getPropertyValue('--accent-start').trim() || '#39c5bb';
+    var end = cs.getPropertyValue('--accent-end').trim() || '#55a9e8';
+    return [start, end];
+  }
+
+  function ring(rx, ry, rotate, lineWidth, alpha, color) {
+    ctx.save();
+    ctx.translate(SIZE / 2, SIZE / 2);
+    ctx.rotate(rotate);
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  var angle = 0;
+  function drawFavicon() {
+    var colors = accentColors();
+    var cx = SIZE / 2, cy = SIZE / 2;
+    ctx.clearRect(0, 0, SIZE, SIZE);
+
+    // 타원 궤도 2개 — .console-sidebar-orbit .r1/.r2와 같이 서로 반대
+    // 방향, 다른 속도로 돈다(r2가 더 크고 느리게, 반대 방향).
+    ring(13, 5, angle, 1.4, 0.85, colors[1]);
+    ring(10, 3.6, angle * -1.4 + 0.6, 1.1, 0.55, colors[1]);
+
+    // 중심 코어 — 흰 하이라이트에서 accent-start로 퍼지는 방사형 그라디언트
+    // (.console-sidebar-orbit .core와 같은 효과를 캔버스로 재현).
+    ctx.globalAlpha = 1;
+    var grad = ctx.createRadialGradient(cx - 2, cy - 2.5, 0.5, cx, cy, 7);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.55, colors[0]);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    link.href = canvas.toDataURL('image/png');
+    angle += 0.12;
+  }
+
+  drawFavicon();
+  // 2026-09-01: 커서 반짝임/사이드바 궤도 링(둘 다 assets/js/window.js·
+  // style.css에서 이번에 prefers-reduced-motion과 무관하게 항상 켜지도록
+  // 바꿈)과 같은 기준 적용 — 브라우저 탭 아이콘 안에서 살짝 도는 정도는
+  // 화면 전체를 흔드는 큰 모션이 아니라 작은 장식으로 판단해 이 파비콘
+  // 애니메이션도 동작 줄이기 설정과 무관하게 항상 돈다. 60fps로 매 프레임
+  // 다시 그리는 건 탭 아이콘 갱신치고 과해서(체감 차이도 없음) 약 130ms
+  // (~7.7fps) 간격으로만 갱신해 불필요한 CPU 사용을 줄인다.
+  window.setInterval(drawFavicon, 130);
 })();

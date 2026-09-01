@@ -939,8 +939,21 @@
       updateEditorCaret();
       setTimeout(updateEditorCaret, 0);
     }
+    // 2026-09-01: 콘솔 틀(#console-shell)이 화면 크기에 맞춰
+    // transform:scale()로 통째로 축소/확대되도록 바뀌면서(assets/js/
+    // console-frame.js 참고), transform이 걸린 조상 안에서는 position:fixed
+    // 좌표 기준이 뷰포트가 아니라 그 조상이 되어버려 위 applySize()의
+    // window.innerWidth/innerHeight 기반 계산이 어긋난다(assets/js/
+    // window.js의 같은 문제와 동일 — 그쪽 enterFocus/exitFocus 주석 참고).
+    // 그래서 전체화면 진입 순간 이 창을 콘솔 트리 밖(document.body 바로
+    // 아래, #editor-backdrop과 같은 레벨)으로 옮겼다가, 나갈 때 원래 있던
+    // 자리(.app 안 원래 위치)로 정확히 되돌려 놓는다.
+    let originalParent = null, originalNextSibling = null;
     function enter(refocus){
       if (win.classList.contains('is-fullscreen')) return;
+      originalParent = win.parentNode;
+      originalNextSibling = win.nextSibling;
+      document.body.appendChild(win);
       win.classList.add('is-fullscreen');
       applySize();
       backdrop.classList.add('show');
@@ -956,6 +969,15 @@
       document.body.style.overflow = '';
       window.removeEventListener('resize', applySize);
       hint.textContent = '클릭해서 전체화면으로 쓰기 →';
+      if (originalParent) {
+        if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
+          originalParent.insertBefore(win, originalNextSibling);
+        } else {
+          originalParent.appendChild(win);
+        }
+        originalParent = null;
+        originalNextSibling = null;
+      }
       updateEditorCaret();
       setTimeout(updateEditorCaret, 0);
     }

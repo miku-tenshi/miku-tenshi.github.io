@@ -1893,8 +1893,19 @@ input, textarea, select{ cursor: text !important; }
    position:fixed라 원래도 이 레이어와 무관하게 잘 동작함) 새 래퍼 하나만
    추가해서 그 안에서만 flex 중앙정렬한다. */
 .console-viewport{
-  min-height: 100vh;
-  min-height: 100dvh;
+  /* 2026-09-01: min-height → height로 바꾸고 overflow:hidden 추가 —
+     .console-shell이 이제 항상 고정 1180×740px 레이아웃 공간을 차지하고
+     (transform:scale은 페인트만 줄일 뿐 레이아웃 크기는 그대로라서) 화면이
+     그보다 작으면 그 "레이아웃상 공간"이 실제 화면(뷰포트)보다 커질 수
+     있다 — min-height였다면 이 박스 자신이 그 오버사이즈 자식을 담으려고
+     100vh보다 더 커져버려서(가로도 마찬가지) 페이지에 스크롤이 생겼을 것.
+     height를 뷰포트 크기로 고정하고 overflow:hidden을 주면 이 박스 자체는
+     항상 정확히 화면 크기만큼만 차지하고, 안 보이게 잘라내는 부분은 실제로
+     생기지 않는다(스케일 계산이 항상 화면에 맞게 줄여두므로 평소엔 아무것도
+     안 잘림 — 이건 순전히 방어적 안전장치). */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1967,11 +1978,11 @@ input, textarea, select{ cursor: text !important; }
         .console-viewport 바깥 여백도 최소로 줄임), 안쪽 사이드바 축소는
         그대로 유지 — 콘솔이 커진 만큼 화면(.console-screen) 세로 길이도
         커져서 "글 쓰는 창"이 자연히 더 길게 보인다.
-     트랜스폼(transform:scale)으로 안쪽을 시각적으로 줄이는 방법은 여전히
-     쓰지 않는다 — /project 등 페이지의 "창(.window) 전체화면" 기능이
-     position:fixed + JS가 계산한 실제 뷰포트 픽셀값에 의존하는데, 조상에
-     transform이 걸리면 그 조상이 fixed의 새 기준점이 되어버려 전체화면
-     위치/크기가 깨진다(직접 클릭 테스트로 확인됨).
+     (수정 이력: 여기 있던 "트랜스폼(transform:scale)은 여전히 쓰지 않는다"는
+     설명은 2026-09-01부터 더 이상 사실이 아님 — 아래 "내부 고정 해상도"
+     섹션 참고. 전체화면 기능과의 충돌 문제 자체는 여전히 유효하지만,
+     .window를 전체화면 진입 시 이 트리 밖으로 잠깐 옮기는 방식으로
+     해결해서 transform을 다시 쓸 수 있게 됐다.)
 
      2026-08-31 3차: "이거랑 똑같이 해달라고" — 사용자가 시안(Artifact)
      스크린샷을 직접 캡처해서 보여주며 정확히 이 비율을 요구함. 시안의
@@ -2008,9 +2019,44 @@ input, textarea, select{ cursor: text !important; }
      "우주 배경이 사방에 넉넉히 보여야 한다"는 제약이 확정돼 있으므로 과하게
      키우진 않고 70vw→75vw(1080px→1180px)로만 소폭 확대 — 세로는 데크가
      빠지면서 화면(.console-screen)이 자동으로 더 커지므로 높이 값 자체는
-     그대로 둠. */
-  width: min(1180px, 75vw);
-  height: min(740px, 78vh);
+     그대로 둠.
+
+     2026-09-01 (내부 고정 해상도): "컴퓨터 화면 크기나 해상도가 달라져도
+     내부 크기를 일정한 해상도와 크기로 보여주고 싶어. (비율로 계산해야
+     될 것 같아.)" 요청 — 여태까지는 width/height 자체를 min(1180px,75vw)/
+     min(740px,78vh)로 화면마다 다시 계산했는데, 그 안의 폰트 크기·패딩·
+     행성 장식(.console-sidebar-orbit) 크기는 전부 고정 px값이라 화면
+     해상도가 바뀌면 "콘솔 안에서 UI가 차지하는 비율" 자체가 미묘하게
+     달라져 보였다(작은 화면일수록 내부가 더 빡빡해 보임, 그리고 폭/높이가
+     서로 다른 비율(vw/vh)로 각각 잘려서 화면 모양에 따라 콘솔 비율 자체가
+     미세하게 달라지기도 했음).
+     이제는 .console-shell을 항상 고정된 "디자인 해상도"(1180×740px —
+     예전의 최대 크기, 즉 큰 모니터에서 보이던 그 크기와 완전히 동일)로
+     그리고, 화면 크기에 맞춰 CSS `transform: scale()` 하나로 그 전체를
+     통째로 축소/확대한다 — 스크린샷 한 장을 확대·축소하는 것과 같아서,
+     내부 모든 요소가 항상 서로 같은 비율을 유지한 채 화면 크기에 맞춰
+     커지거나 작아진다. 스케일 값(--console-scale)은 assets/js/
+     console-frame.js의 applyConsoleScale()이 원래 폭/높이 계산식과 똑같은
+     비율(75vw/78vh, 최대 1)로 매 리사이즈마다 다시 계산해서 세팅한다 —
+     그래서 큰 모니터에서는 예전과 완전히 동일하게 정확히 1180×740px로
+     보이고(scale(1)), 작은 화면에서는 그 디자인을 그대로 축소해서 보여준다.
+     flex-shrink:0은 부모(.console-viewport)의 flex 레이아웃이 이 고정
+     1180×740 박스를 자기 마음대로 다시 줄이지 못하게 막는 것 — 크기 조절은
+     오직 이 transform: scale()만 담당한다(레이아웃 계산과 시각적 축소를
+     분리). transform이 걸린 박스는 실제 레이아웃 공간은 여전히 1180×740을
+     그대로 차지하므로(transform은 페인트만 바꾸고 레이아웃엔 영향이 없음)
+     화면보다 그 공간이 커질 수 있는데, 이건 아래 .console-viewport에
+     overflow:hidden을 줘서 안전하게 잘라낸다(실제로 화면에 그려지는
+     크기는 이미 스케일로 줄여놨으므로 평소엔 아무것도 안 잘림).
+     ⚠️ 900px 이하(모바일)에서는 이 스케일을 쓰지 않는다 — 모바일은
+     원래도 별도의 "화면 꽉 채우기" 레이아웃(아래 @media(max-width:900px)
+     참고)이라 디자인 해상도를 그대로 축소하면 글자가 너무 작아져 못 쓰게
+     되므로, 그 미디어쿼리 안에서 transform:none으로 다시 꺼둔다. */
+  width: 1180px;
+  height: 740px;
+  flex-shrink: 0;
+  transform: scale(var(--console-scale, 1));
+  transform-origin: center center;
   display: flex;
   flex-direction: column;
   padding: var(--console-pad-shell) var(--console-pad-shell) 18px;
@@ -2503,6 +2549,15 @@ input, textarea, select{ cursor: text !important; }
     width: 100%;
     height: calc(100vh - 16px);
     height: calc(100dvh - 16px);
+    /* 2026-09-01: 위(901px 이상)의 "내부 고정 해상도(1180×740px) +
+       transform:scale()" 규칙이 모바일에도 그대로 적용되면, 디자인
+       해상도 그대로 축소된 콘솔의 글자/버튼이 실제 손가락으로 누르기엔
+       너무 작아진다 — 모바일은 원래도 이 미디어쿼리에서 별도의 "화면 꽉
+       채우기"(위 width/height) 레이아웃을 쓰므로, 스케일 자체를 꺼서
+       flex-shrink:0/width/height 값이 있는 그대로(스케일 없이) 적용되게
+       한다. */
+    transform: none;
+    flex-shrink: 1;
     border-width: 3px;
     padding: 10px 10px 8px;
     border-radius: 20px;
