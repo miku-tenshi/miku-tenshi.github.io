@@ -86,6 +86,16 @@
       // 링크(폴더/파일 이동)나 버튼(페이지 번호 등)을 눌렀을 때는
       // 전체화면으로 들어가지 않고 그대로 동작하게 둡니다.
       if (e.target.closest('a, button')) return;
+      // 2026-09-02: 사용자 요청 — "본문은 아무리 클릭되어도 확대되지 않고,
+      // 이 위부분(점 세 개 + 경로 + "click to focus" 힌트가 있는 맨 위
+      // 제목표시줄, .window-chrome)만 클릭되었을 때 확대되는 방식으로
+      // 바꿔줘". 예전에는 카드(.window) 전체 어디를 클릭해도(본문 포함)
+      // 전체화면으로 들어갔는데, 이제 클릭 지점이 .window-chrome 안이
+      // 아니면 그냥 무시하고 리턴 — 본문을 클릭해도(텍스트 선택/드래그
+      // 등) 더 이상 전체화면으로 안 들어감. style.css의 cursor:pointer도
+      // 같은 이유로 .window-chrome에만 남겨둠(위 ".window" 규칙 주석
+      // 참고) — 실제 클릭 가능한 영역과 커서 모양이 일치하도록.
+      if (!e.target.closest('.window-chrome')) return;
       enterFocus(win);
     });
 

@@ -1215,13 +1215,28 @@ a{ color: inherit; text-decoration: none; }
   border-radius: var(--radius);
   box-shadow: 0 1px 2px rgba(15,23,42,0.05), 0 16px 40px -20px rgba(15,23,42,0.18);
   overflow: hidden;
-  cursor: pointer;
+  /* 2026-09-02: 여기 걸려있던 cursor:pointer 제거 — 예전에는 카드
+     전체(본문 포함) 어디를 눌러도 전체화면으로 들어갔지만, 아래
+     ".window-chrome" 관련 규칙과 assets/js/window.js 수정으로 이제
+     "click to focus" 힌트가 있는 맨 위 제목표시줄(.window-chrome)을
+     눌러야만 전체화면으로 들어간다("본문은 아무리 클릭되어도 확대되지
+     않고, 위쪽 부분만 클릭되었을 때 확대되게" 요청). 커서 모양도 실제
+     클릭 가능한 영역(.window-chrome)에만 pointer로 남기고, 본문
+     (.window-body)은 기본 커서로 되돌려서 "여기는 눌러도 아무 일 없다"는
+     걸 시각적으로도 알 수 있게 함. */
 }
 
-.window:not(.is-fullscreen):hover{
+/* 카드를 눌렀을 때의 "떠오르는" 호버 효과 자체는 예전처럼 카드 전체
+   (.window)에 적용하되, 그 효과가 나타나는 조건만 "지금 마우스가
+   .window-chrome 위에 있을 때"로 좁힘(:has() 사용) — 실제로 클릭했을 때
+   반응하는 영역(제목표시줄)과 호버 시 보여주는 시각적 신호가 서로
+   일치하도록. */
+.window:not(.is-fullscreen):has(.window-chrome:hover){
   box-shadow: 0 1px 2px rgba(15,23,42,0.06), 0 22px 48px -20px rgba(15,23,42,0.22);
   transform: translateY(-1px);
 }
+
+.window:not(.is-fullscreen) .window-chrome{ cursor: pointer; }
 
 .window-chrome{
   display: flex;
@@ -1257,7 +1272,10 @@ a{ color: inherit; text-decoration: none; }
   transition: opacity 0.15s ease;
 }
 
-.window:not(.is-fullscreen):hover .chrome-hint{ opacity: 1; }
+/* 2026-09-02: 힌트("click to focus →")도 실제 클릭 가능 영역과 똑같이
+   .window-chrome에 호버했을 때만 나타나게 — 예전엔 카드 어디에 마우스를
+   올려도(본문 포함) 나타났었음. */
+.window:not(.is-fullscreen) .window-chrome:hover .chrome-hint{ opacity: 1; }
 
 .window-body{
   padding: 52px 48px;

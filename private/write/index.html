@@ -78,6 +78,35 @@
      똑같은 폰트/여백으로 겹쳐놓은 읽기 전용 레이어가 마크다운 문법을 타이핑하는
      즉시 스타일로 보여준다 — textarea 글자색은 투명하게, 커서만 보이게 처리. */
   #editor-body{ display:flex; flex-direction:column; }
+  /* 2026-09-02: 사용자 요청 — "(제목표시줄 밑) 서식 툴바·첨부 버튼 부분은 스크롤
+     없이 그냥 쭉 길게 써주고, 큰 본문(입력창)만 스크롤해서 보이게 해달라."
+     원인: #editor-body(= .window-body, 아래 class="window-body" id="editor-body"
+     참고)가 콘솔 화면 안에서는 assets/css/style.css의
+     ".console-screen .window:not(.is-fullscreen) .window-body{ flex:1;
+     min-height:0; overflow-y:auto; }"를 물려받는다 — min-height:0 때문에
+     flexbox가 이 박스를 실제 내용(라벨+서식 툴바+첨부 줄+최소 280px인 본문
+     입력창+하단 버튼줄)보다 작게 눌러버리고, overflow-y:auto가 그 눌린 박스
+     기준으로 내부 스크롤바를 만든다 — 그 결과 서식 툴바·첨부 버튼까지도 좁은
+     창 안에 갇혀서 스크롤해야만 다 보였다(사용자가 캡처해 보낸 스크린샷).
+     전체화면이 아닐 때는 이 "창 전체 내부 스크롤"이 필요 없다 — 대신
+     #editor-body가 필요한 만큼 자연스럽게(auto) 늘어나게 하고, 그러고도
+     화면보다 크면 이 window 카드 전체를 감싸는 #tool-area가 대신
+     스크롤한다(#tool-area는 이미 overflow-y:auto가 걸려 있음 — style.css의
+     "#tool-area" scroll-padding-top 규칙 참고). 실제로 긴 글을 쓸 때 스크롤이
+     필요한 곳은 본문 입력창 하나뿐이어야 하므로,
+     .live-editor-highlight/.live-editor-input 자기 자신에 이미 걸려 있는
+     overflow:auto(그 요소 자체의 스크롤, 아래 규칙 참고)는 그대로 둔다 —
+     즉 "창 전체 스크롤"을 없애고 "본문 입력창 자체 스크롤"만 남긴다.
+     :not(.is-fullscreen)로 한정한 이유: 전체화면(.is-fullscreen)일 때는
+     position:fixed로 화면에 고정되므로 그 안에서는 반드시 내부 스크롤이
+     필요하다 — style.css의 ".window.is-fullscreen .window-body{ overflow-y:
+     auto; }" 규칙은 그대로 유지되고, 이 규칙(ID 선택자라 우선순위가 더 높음)은
+     :not(.is-fullscreen) 덕분에 전체화면일 때는 아예 적용되지 않는다. */
+  .window:not(.is-fullscreen) #editor-body{
+    overflow-y: visible;
+    max-height: none;
+    min-height: auto;
+  }
   /* 2026-09-01: min-height:0 제거(→ 기본값 auto). 이유 — .editor-pane가
      min-height:0인 채로 flex:1이면, 창이 좁아질 때 flexbox가 이 영역을 자기
      자식(.live-editor-wrap, min-height:280px)이 실제로 필요한 크기보다 더 작게
