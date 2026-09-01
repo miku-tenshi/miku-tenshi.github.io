@@ -2845,9 +2845,19 @@ input, textarea, select{ cursor: text !important; }
    이 중간 div들 자체를 flex 세로 컨테이너로 만들고 .main처럼 flex:1로
    화면 높이를 이어받게 하면, 그 안의 .window는 위 규칙(이미 flex:1 걸려
    있음)이 그제서야 실제로 작동해서 다른 페이지들과 똑같이 화면에 꽉 차게
-   맞춰진다. */
-.console-screen #tool-area,
+   맞춰진다.
+   2026-09-01: #tool-area 자신도 :not([hidden])로 바꾸고 #preview-section을
+   같은 목록에 추가함 — private/write/의 "미리보기" 버튼을 누르면 이제
+   #tool-area는 hidden 속성으로 숨기고 #preview-section만 보여주는 방식으로
+   바뀌었는데(예전에는 미리보기가 .app 바깥에 따로 떨어져 있어서 콘솔 밖에
+   테두리도 배경도 없이 이상하게 보이는 버그가 있었다 — private/write/
+   index.html의 #preview-section 자리 이동 주석 참고), #tool-area가 원래
+   이 규칙으로 항상 display:flex였다면 hidden 속성을 줘도(우선순위상 이
+   ID 선택자가 이겨서) 안 숨겨졌을 것이므로 여기서도 :not([hidden])로
+   맞춰줘야 한다. */
+.console-screen #tool-area:not([hidden]),
 .console-screen #private-area:not([hidden]),
+.console-screen #preview-section:not([hidden]),
 .console-screen .notes-card{
   display: flex;
   flex-direction: column;
@@ -2880,6 +2890,7 @@ input, textarea, select{ cursor: text !important; }
 }
 .console-screen #tool-area .window:not(.is-fullscreen),
 .console-screen #private-area .window:not(.is-fullscreen),
+.console-screen #preview-section .window:not(.is-fullscreen),
 .console-screen .notes-card .window:not(.is-fullscreen){
   /* 2026-09-01: 420px → 320px로 축소. 위 스크롤 관련 신고를 조사하다 보니,
      이 최소 높이 하나가 #tool-area 전체 필요 높이의 상당 부분(약 100px)을

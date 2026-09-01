@@ -10,6 +10,12 @@
 <script src="/assets/js/private-guard.js"></script>
 <link rel="stylesheet" as="style" crossorigin
   href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
+<!-- 2026-09-01: "옵시디언처럼 수식(B/I/수식 버튼) 눌러도 자동으로 스타일 적용해줘"
+     요청 — 아래 "미리보기"에서 $...$/$$...$$ 수식을 실제로 렌더링하는 데 씀
+     (KaTeX). 타이핑 중인 라이브 하이라이트 쪽은 안 씀(이유는 renderMathInPreview
+     주석 참고) — 그래서 <head>에서 미리 불러와도 타이핑 성능에 영향 없음. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <link rel="stylesheet" href="/assets/css/style.css">
 <style>
   /* 이 페이지 전용 보조 스타일. 최대한 site style.css의 클래스(.window, .window-chrome,
@@ -149,6 +155,41 @@
     background: var(--accent-soft); color: var(--accent-solid); padding:1px 5px; border-radius:5px;
     font-family:"SFMono-Regular", Consolas, Menlo, monospace; font-size:0.92em;
   }
+  /* 2026-09-01: "입력해도 스타일이 직접 반영 안 되는 경우가 많음" 신고 —
+     기울임/취소선/링크/수식/체크박스/번호 목록/코드 블록은 여태 라이브
+     하이라이트가 아예 모르는 문법이라 그냥 맨 글자(#, **, ~~ 등 기호까지
+     그대로)로만 보였다. 위 mdLineParts()/inlineFormat()에 각각 처리를
+     추가하면서 여기 스타일도 같이 늘림 — $...$ 수식은 지금 이 라이브
+     오버레이 안에서는 실제로 렌더링하지 않고(캐럿 위치 계산이 KaTeX가 만드는
+     복잡한 구조 때문에 흔들릴 수 있어서) .md-code와 같은 "코드처럼 옅게
+     표시"만 하고, 실제 수식 렌더링은 캐럿과 무관한 "미리보기"에서만 한다
+     (아래 renderMathInPreview() 참고). */
+  .md-italic{ font-style: italic; }
+  .md-strike{ text-decoration: line-through; opacity: 0.65; }
+  .md-link{ color: var(--accent-solid); text-decoration: underline; text-underline-offset: 2px; }
+  .md-link-url{ color: var(--ink-faint); text-decoration: none; }
+  .md-fence-marker{ color: var(--ink-faint); font-family:"SFMono-Regular", Consolas, Menlo, monospace; font-size:0.9em; }
+  .md-fence-content{
+    font-family:"SFMono-Regular", Consolas, Menlo, monospace; font-size:0.92em; color: var(--ink-soft);
+  }
+
+  /* 옵시디언 스타일 서식 툴바 — 굵게/기울임/취소선/코드/수식 버튼은 선택한
+     글자를 문법 기호로 감싸고(선택이 없으면 안내 문구를 넣고 그 부분을
+     선택 상태로 남겨서 바로 이어 칠 수 있게 함), 제목/인용/목록 버튼은 지금
+     커서가 있는 줄 앞에 문법 기호를 붙였다 뗐다 한다 — 눌렀을 때 바로 위
+     라이브 하이라이트에 스타일이 반영된다(사용자 요청 "B, I, 수식 이런거
+     누르면 자동으로 스타일이 적용되도록 해 줘"). 실제 동작은 아래
+     wrapSelection()/toggleLinePrefix() 참고. */
+  .format-toolbar{ display:flex; align-items:center; gap:4px; margin-bottom:10px; flex-wrap:wrap; }
+  .fmt-btn{
+    min-width:32px; height:30px; padding:0 9px; border-radius:7px; border:1px solid var(--chrome-border);
+    background: var(--chrome-bg); color: var(--ink-soft); font-family:inherit; font-size:13px; font-weight:700;
+    cursor:pointer;
+  }
+  .fmt-btn:hover{ border-color: var(--accent-solid); color: var(--accent-solid); background: var(--accent-soft); }
+  .fmt-btn[data-fmt="italic"]{ font-style:italic; }
+  .fmt-btn[data-fmt="strike"]{ text-decoration:line-through; }
+  .fmt-sep{ width:1px; height:20px; background: var(--chrome-border); margin:0 4px; }
 
   .wbtn{
     display:inline-flex; align-items:center; gap:8px; padding: 12px 20px; border-radius: 12px;
@@ -364,6 +405,26 @@
 
           <div class="editor-pane">
             <div class="editor-pane-label" id="body-label">본문 <span class="hint">마크다운 문법을 쓰면 바로 스타일이 적용돼요 — # 제목, **굵게**, `코드`, - 목록, &gt; 인용</span></div>
+
+            <!-- 2026-09-01: "옵시디언처럼 B/I/수식 버튼 누르면 자동으로 스타일 적용해줘" 요청.
+                 버튼을 누르면 선택한 텍스트를 마크다운 기호로 감싸거나(굵게/기울임/취소선/코드/수식/링크),
+                 줄 앞에 기호를 붙였다 뗐다(제목/인용/목록) 함 — 실제 로직은 아래 스크립트의
+                 wrapSelection()/toggleLinePrefix()와 #format-toolbar 클릭 리스너 참고.
+                 Ctrl/Cmd+B, Ctrl/Cmd+I 단축키도 같은 함수를 호출함. -->
+            <div class="format-toolbar" id="format-toolbar">
+              <button type="button" class="fmt-btn" data-fmt="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
+              <button type="button" class="fmt-btn" data-fmt="italic" title="기울임 (Ctrl+I)"><i>I</i></button>
+              <button type="button" class="fmt-btn" data-fmt="strike" title="취소선"><s>S</s></button>
+              <button type="button" class="fmt-btn" data-fmt="code" title="인라인 코드">&lt;/&gt;</button>
+              <button type="button" class="fmt-btn" data-fmt="math" title="수식 (KaTeX)">√x</button>
+              <button type="button" class="fmt-btn" data-fmt="link" title="링크">URL</button>
+              <span class="fmt-sep"></span>
+              <button type="button" class="fmt-btn" data-fmt="h1" title="제목 1">H1</button>
+              <button type="button" class="fmt-btn" data-fmt="h2" title="제목 2">H2</button>
+              <button type="button" class="fmt-btn" data-fmt="quote" title="인용">&rdquo;</button>
+              <button type="button" class="fmt-btn" data-fmt="list" title="목록">&bull;</button>
+            </div>
+
             <div class="attach-row">
               <input type="file" id="attach-file-input" accept="image/*,.pdf,application/pdf" style="display:none;">
               <button class="wbtn wbtn-ghost wbtn-small" id="btn-attach" type="button">이미지 · PDF 첨부</button>
@@ -426,20 +487,27 @@
       </div>
     </div>
 
-  </main>
-</div>
-
-<div class="backdrop" id="editor-backdrop"></div>
-
-<!-- ============ 미리보기 (페이지 맨 아래) ============ -->
-<section id="preview-section" style="display:none;">
-  <div class="app" style="min-height:0;">
-    <div style="width:var(--sidebar-w); flex-shrink:0;"></div>
-    <main class="main" style="padding-top:0;">
-      <div class="main-heading">
-        <h1>미리보기</h1>
-        <p>실제로 게시하면 이렇게 보여요.</p>
+    <!-- ============ 미리보기 ============
+         2026-09-01: 예전에는 이 section이 .app 바깥(<body> 바로 아래)에
+         따로 떨어져 있었다 — assets/js/console-frame.js는 .app 하나만 골라서
+         콘솔 화면(#console-shell) 안으로 옮기기 때문에(그 스크립트 도입부
+         주석 참고), .app 밖에 있던 이 미리보기는 콘솔 틀에 실려 들어가지
+         못하고 화면 맨 아래, 콘솔 밖 우주 배경 위에 테두리도 배경도 없이
+         뚝 떨어진 것처럼 보였다(사용자 신고: "미리보기 창이 이상해서 이 부분
+         수정해 줘" — 실제로 스크린샷을 찍어 확인한 원인). #tool-area와
+         나란히 .main 안으로 옮겨서 다른 도구 화면들과 완전히 같은 방식으로
+         콘솔 화면 안에 자리잡게 했다 — 그 김에 가짜 사이드바 자리채움
+         div/중첩 .app/.main 껍데기도 필요 없어져서 걷어냈다(진짜
+         sidebar-mount를 그대로 재사용하므로). 이제 "미리보기" 버튼을 누르면
+         #tool-area는 숨기고 이 section만 보여주고(모드 전환 버튼들과 같은
+         방식), 아래 "← 돌아가기" 버튼으로 되돌아간다 — 예전처럼 편집 화면과
+         미리보기가 동시에 겹쳐 보이지 않는다. -->
+    <section id="preview-section" style="width:100%; max-width:940px;" hidden>
+      <div class="main-heading" style="margin-bottom:20px;">
+        <h1 style="margin:0;">미리보기</h1>
+        <p style="margin:6px 0 0;">실제로 게시하면 이렇게 보여요.</p>
       </div>
+      <button class="wbtn wbtn-ghost" id="btn-preview-back" type="button" style="margin-bottom:16px;">&larr; 돌아가기</button>
       <article class="window" id="window">
         <div class="window-chrome">
           <div class="chrome-dots"><span></span><span></span><span></span></div>
@@ -452,10 +520,12 @@
           <div id="pv-content"></div>
         </div>
       </article>
-    </main>
-  </div>
-</section>
+    </section>
 
+  </main>
+</div>
+
+<div class="backdrop" id="editor-backdrop"></div>
 <div class="backdrop" id="backdrop"></div>
 <script src="/assets/js/marked.umd.js"></script>
 <script src="/assets/js/window.js"></script>
@@ -495,6 +565,44 @@
   function markdownToHtml(raw){
     if (!raw || !raw.trim()) return '';
     return marked.parse(raw, { breaks: true });
+  }
+  // 2026-09-01: "옵시디언처럼" 요청 — marked.js는 $...$/$$...$$ 수식 문법을
+  // 모르기 때문에 그냥 글자 그대로 남겨두는데, 여기서 렌더링된 HTML을 한 번
+  // 훑으면서(텍스트 노드만) 그 부분을 실제 KaTeX 수식으로 바꿔친다. HTML
+  // 태그는 건드리지 않도록 문자열 치환이 아니라 TreeWalker로 텍스트 노드만
+  // 순회한다 — 예를 들어 속성값이나 태그 이름 안에 우연히 $ 두 개가 들어있는
+  // 경우까지 잘못 건드리는 일이 없다. KaTeX가 아직 로드되지 않았거나(느린
+  // 네트워크 등) 수식 문법이 잘못됐으면 조용히 원래 글자 그대로 둔다.
+  function renderMathInPreview(container){
+    if (!window.katex) return;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach((tn) => {
+      const text = tn.nodeValue;
+      if (!text || text.indexOf('$') === -1) return;
+      const re = /\$\$([^$]+?)\$\$|\$([^$\n]+?)\$/g;
+      let m, lastIndex = 0, matched = false;
+      const frag = document.createDocumentFragment();
+      while ((m = re.exec(text))) {
+        matched = true;
+        if (m.index > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+        const isBlock = m[1] !== undefined;
+        const expr = isBlock ? m[1] : m[2];
+        const el = document.createElement(isBlock ? 'div' : 'span');
+        try {
+          katex.render(expr, el, { throwOnError: false, displayMode: isBlock });
+        } catch (err) {
+          el.textContent = (isBlock ? '$$' : '$') + expr + (isBlock ? '$$' : '$');
+        }
+        frag.appendChild(el);
+        lastIndex = re.lastIndex;
+      }
+      if (!matched) return;
+      if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      tn.parentNode.replaceChild(frag, tn);
+    });
   }
   function indentHtml(html, indent){
     indent = indent || '        ';
@@ -833,13 +941,42 @@
   // 위/아래로 정확히 겹친 읽기 전용 레이어가 같은 텍스트를 스타일 적용해서
   // 보여준다 — textarea 글자는 투명 처리하고 깜빡이는 커서만 보이게 한다.
   // ---------------------------------------------------------------
+  // 2026-09-01: "입력해도 스타일이 직접 반영되지 않는 경우가 많음 / 옵시디언처럼
+  // 작동시켜줘" 요청으로 인라인 문법을 code/굵게 두 개뿐이던 것에서 기울임(*·_)/
+  // 취소선(~~)/링크([]())/수식($·$$)까지 늘림. 순서가 중요함 — 코드를 제일 먼저
+  // 처리해서 그 안 내용은(이론상) 코드로 남고, **굵게**를 *기울임*보다 먼저
+  // 처리해야 별표 두 개짜리가 기울임 정규식에 한 글자씩 먼저 먹히지 않는다.
+  // $...$ 부분은 문자열 치환 인자에 "$$"를 그대로 쓰면 JS String.replace가
+  // 이걸 "캡처 그룹 없음" 특수 문법으로 오해해서 글자가 하나 사라지므로,
+  // 함수형 콜백으로 직접 이어붙인다.
   function inlineFormat(s){
     s = s.replace(/`([^`]+)`/g, '<span class="md-code"><span class="md-mark">`</span>$1<span class="md-mark">`</span></span>');
     s = s.replace(/\*\*([^*]+)\*\*/g, '<span class="md-bold"><span class="md-mark">**</span>$1<span class="md-mark">**</span></span>');
+    s = s.replace(/~~([^~]+)~~/g, '<span class="md-strike"><span class="md-mark">~~</span>$1<span class="md-mark">~~</span></span>');
+    s = s.replace(/\*([^*]+)\*/g, '<span class="md-italic"><span class="md-mark">*</span>$1<span class="md-mark">*</span></span>');
+    s = s.replace(/(^|[^\w_])_([^_]+)_(?!\w)/g, '$1<span class="md-italic"><span class="md-mark">_</span>$2<span class="md-mark">_</span></span>');
+    s = s.replace(/\$\$([^$]+?)\$\$/g, (_, inner) => '<span class="md-code"><span class="md-mark">$$</span>' + inner + '<span class="md-mark">$$</span></span>');
+    s = s.replace(/\$([^$\n]+?)\$/g, (_, inner) => '<span class="md-code"><span class="md-mark">$</span>' + inner + '<span class="md-mark">$</span></span>');
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span class="md-link"><span class="md-mark">[</span>$1<span class="md-mark">](</span><span class="md-mark md-link-url">$2</span><span class="md-mark">)</span></span>');
     return s;
   }
-  function mdLineParts(line){
+  // state.inFence는 ```로 시작하는 코드 블록이 몇 줄에 걸쳐 있는지 기억하는
+  // 용도 — 한 줄씩 독립적으로 처리하던 예전 방식으로는 여러 줄짜리 코드
+  // 블록을 표현할 수 없었다(이것도 "스타일이 반영 안 됨" 신고의 일부).
+  // 호출하는 쪽(syncHighlight/mirrorMeasureCaret)에서 줄 배열을 순서대로 돌며
+  // 같은 state 객체를 계속 넘겨줘야 한다.
+  function mdLineParts(line, state){
     const esc = escapeHtml(line);
+
+    const fenceMatch = line.match(/^```(.*)$/);
+    if (fenceMatch){
+      state.inFence = !state.inFence;
+      return { cls: 'md-fence-marker', inner: '<span class="md-mark">```' + escapeHtml(fenceMatch[1]) + '</span>' };
+    }
+    if (state.inFence){
+      return { cls: 'md-fence-content', inner: esc };
+    }
+
     let m = esc.match(/^(#{1,6})(\s+)(.*)$/);
     if (m){
       const level = Math.min(4, m[1].length);
@@ -849,7 +986,15 @@
     if (m){
       return { cls: 'md-quote', inner: '<span class="md-mark">' + m[1] + '</span>' + inlineFormat(m[2]) };
     }
+    m = esc.match(/^([-*]\s+)(\[[ xX]\]\s+)(.*)$/);
+    if (m){
+      return { cls: 'md-list', inner: '<span class="md-mark">' + m[1] + m[2] + '</span>' + inlineFormat(m[3]) };
+    }
     m = esc.match(/^([-*]\s+)(.*)$/);
+    if (m){
+      return { cls: 'md-list', inner: '<span class="md-mark">' + m[1] + '</span>' + inlineFormat(m[2]) };
+    }
+    m = esc.match(/^(\d+[.)]\s+)(.*)$/);
     if (m){
       return { cls: 'md-list', inner: '<span class="md-mark">' + m[1] + '</span>' + inlineFormat(m[2]) };
     }
@@ -859,8 +1004,9 @@
     const editorEl = document.getElementById('editor-textarea');
     const highlightEl = document.getElementById('editor-highlight');
     const lines = editorEl.value.split('\n');
+    const state = { inFence: false };
     highlightEl.innerHTML = lines.map((line) => {
-      const { cls, inner } = mdLineParts(line);
+      const { cls, inner } = mdLineParts(line, state);
       return '<div class="' + cls + '">' + (inner || '<br>') + '</div>';
     }).join('');
     highlightEl.scrollTop = editorEl.scrollTop;
@@ -891,6 +1037,83 @@
   }
 
   // ---------------------------------------------------------------
+  // 서식 툴바(B/I/S/코드/수식/제목/인용/목록/링크) — 옵시디언처럼 버튼을
+  // 누르면 바로 문법 기호가 붙고 위 라이브 하이라이트에 스타일이 반영된다.
+  // ---------------------------------------------------------------
+  // 선택한 글자를 문법 기호(before/after)로 감싼다. 선택한 글자가 없으면
+  // placeholder를 넣고 그 부분을 선택 상태로 남겨서, 버튼을 누르자마자 바로
+  // 이어서 타이핑해 덮어쓸 수 있게 한다(예: B 버튼 → "**굵은 텍스트**"가
+  // 들어가고 "굵은 텍스트" 부분이 선택됨).
+  function wrapSelection(before, after, placeholder){
+    if (after === undefined) after = before;
+    const editorEl = document.getElementById('editor-textarea');
+    const start = editorEl.selectionStart, end = editorEl.selectionEnd;
+    const value = editorEl.value;
+    const selected = value.slice(start, end);
+    const text = selected || (placeholder || '');
+    editorEl.value = value.slice(0, start) + before + text + after + value.slice(end);
+    editorEl.focus();
+    editorEl.setSelectionRange(start + before.length, start + before.length + text.length);
+    syncHighlight();
+    updateEditorCaret();
+  }
+  // 지금 커서가 있는 줄의 맨 앞에 문법 기호를 붙였다 뗐다(토글) 한다 — 제목/
+  // 인용/목록처럼 줄 단위 문법용. 이미 같은 기호로 시작하면 눌렀을 때 떼진다.
+  function toggleLinePrefix(prefix){
+    const editorEl = document.getElementById('editor-textarea');
+    const pos = editorEl.selectionStart;
+    const value = editorEl.value;
+    const lineStart = value.lastIndexOf('\n', pos - 1) + 1;
+    let lineEnd = value.indexOf('\n', pos);
+    if (lineEnd === -1) lineEnd = value.length;
+    const line = value.slice(lineStart, lineEnd);
+    let newLine, cursorDelta;
+    if (line.startsWith(prefix)){
+      newLine = line.slice(prefix.length);
+      cursorDelta = -prefix.length;
+    } else {
+      newLine = prefix + line;
+      cursorDelta = prefix.length;
+    }
+    editorEl.value = value.slice(0, lineStart) + newLine + value.slice(lineEnd);
+    editorEl.focus();
+    const newPos = Math.max(lineStart, pos + cursorDelta);
+    editorEl.setSelectionRange(newPos, newPos);
+    syncHighlight();
+    updateEditorCaret();
+  }
+  (function(){
+    const toolbar = document.getElementById('format-toolbar');
+    const editorEl = document.getElementById('editor-textarea');
+    if (!toolbar || !editorEl) return;
+    const ACTIONS = {
+      bold:   () => wrapSelection('**', '**', '굵은 텍스트'),
+      italic: () => wrapSelection('*', '*', '기울임 텍스트'),
+      strike: () => wrapSelection('~~', '~~', '취소선 텍스트'),
+      code:   () => wrapSelection('`', '`', '코드'),
+      math:   () => wrapSelection('$', '$', 'x^2'),
+      h1:     () => toggleLinePrefix('# '),
+      h2:     () => toggleLinePrefix('## '),
+      quote:  () => toggleLinePrefix('> '),
+      list:   () => toggleLinePrefix('- '),
+      link:   () => wrapSelection('[', '](https://)', '링크 텍스트'),
+    };
+    toolbar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.fmt-btn');
+      if (!btn) return;
+      const fn = ACTIONS[btn.dataset.fmt];
+      if (fn) fn();
+    });
+    // 옵시디언과 같은 단축키: Ctrl/Cmd+B(굵게), Ctrl/Cmd+I(기울임).
+    editorEl.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'b'){ e.preventDefault(); ACTIONS.bold(); }
+      else if (key === 'i'){ e.preventDefault(); ACTIONS.italic(); }
+    });
+  })();
+
+  // ---------------------------------------------------------------
   // 가짜 커서 위치 계산 — 실제 캐럿은 항상 "한 가지 글자 크기"만 아는 textarea
   // 안에 있어서, 제목처럼 커지는 줄에서는 화면에 보이는(커진) 글자와 어긋난다.
   // 그래서 진짜 캐럿은 투명하게 숨기고(caret-color:transparent), 대신 커서
@@ -903,8 +1126,9 @@
     const mirror = document.getElementById('editor-caret-mirror');
     mirror.style.width = highlightEl.clientWidth + 'px';
     const lines = uptoText.split('\n');
+    const state = { inFence: false };
     mirror.innerHTML = lines.map((line, i) => {
-      const { cls, inner } = mdLineParts(line);
+      const { cls, inner } = mdLineParts(line, state);
       if (i === lines.length - 1){
         return '<div class="' + cls + '">' + (inner || '') + '<span id="caret-tail-marker">​</span></div>';
       }
@@ -1574,7 +1798,6 @@
     if (window.__exitEditorFullscreen) window.__exitEditorFullscreen();
 
     const section = document.getElementById('preview-section');
-    section.style.display = '';
     if (currentMode === 'post' || currentMode === 'edit'){
       document.getElementById('pv-path').innerHTML = buildBreadcrumb(data.folder, data.slug + '.md');
       document.getElementById('pv-date').textContent = data.dateLabel;
@@ -1586,7 +1809,23 @@
       document.getElementById('pv-title').textContent = data.slug + '/';
       document.getElementById('pv-content').innerHTML = markdownToHtml(data.descMd) || '<p style="color:var(--ink-faint)">폴더 설명을 입력하면 여기에 나타납니다.</p>';
     }
-    section.scrollIntoView({ behavior:'smooth', block:'start' });
+    // 2026-09-01: 옵시디언처럼 실제 게시 결과에 가깝게 보여주기 위해, 마크다운
+    // 렌더 결과 안의 $...$/$$...$$ 수식도 KaTeX로 실제 렌더링한다(아래
+    // renderMathInPreview() — assets 공용 스크립트가 아니라 이 페이지에서만
+    // 씀). 타이핑 중인 라이브 하이라이트(#editor-highlight)까지 매 키 입력마다
+    // KaTeX를 새로 그리면 캐럿 위치 계산(mirrorMeasureCaret)이 KaTeX가 그리는
+    // 복잡한 내부 구조 때문에 흔들릴 수 있어 그쪽은 손대지 않고, 캐럿과 무관한
+    // 이 "미리보기"에서만 실제 렌더링한다.
+    renderMathInPreview(document.getElementById('pv-content'));
+    document.getElementById('tool-area').hidden = true;
+    section.hidden = false;
+    section.scrollIntoView({ behavior:'instant', block:'start' });
+  });
+  // "← 돌아가기" — 미리보기를 닫고 원래 도구 화면(모드 전환 버튼 + 메타 카드 +
+  // 글쓰기 창)으로 되돌아간다.
+  document.getElementById('btn-preview-back').addEventListener('click', () => {
+    document.getElementById('preview-section').hidden = true;
+    document.getElementById('tool-area').hidden = false;
   });
 
   // ---------------------------------------------------------------
