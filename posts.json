@@ -1,6 +1,14 @@
 [
   {
     "folder": "study",
+    "slug": "md-grammer",
+    "title": "마크다운 문법 정리",
+    "meta": "09.01",
+    "date": "2026-09-01",
+    "href": "/study/md-grammer.html"
+  },
+  {
+    "folder": "study",
     "slug": "css-position-fixed",
     "title": "CSS position: fixed 와 레이아웃 시프트",
     "meta": "08.25",
