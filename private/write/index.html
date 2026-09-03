@@ -429,6 +429,10 @@
             </div>
           </div>
           <button class="wbtn wbtn-ghost" id="btn-folder-load" type="button" style="margin-bottom:18px;">불러오기</button>
+          <!-- 2026-09-03: "불러오기"를 누르면 뜨는 성공/실패 메시지가 이 폴더 고르는 영역
+               바로 밑이 아니라 한참 아래(글쓰는 창 안, #publish-log)에 나타나서 놓치기 쉽다는
+               신고로 전용 로그 자리를 따로 둠 — doLoadForFolderEdit()가 이제 이 요소를 씀. -->
+          <div class="status-log" id="folderedit-load-log"></div>
           <div class="field" style="margin-bottom:0;">
             <label>새 폴더 이름(슬러그) <span class="hint">바꾸면 이 폴더 안의 글·하위 폴더까지 전부 새 이름의 경로로 함께 옮겨져요. 그대로 두면 설명만 저장돼요.</span></label>
             <input type="text" id="fe-new-slug" placeholder="불러오기를 먼저 눌러주세요">
@@ -1043,6 +1047,7 @@
       document.getElementById('body-label').innerHTML = BODY_LABELS[currentMode] || BODY_LABELS.post;
       document.getElementById('publish-log').innerHTML = '';
       document.getElementById('reorder-log').innerHTML = '';
+      document.getElementById('folderedit-load-log').innerHTML = '';
       if (prevMode !== currentMode && (prevMode === 'edit' || currentMode === 'edit')){
         editState = null;
         setEditorRawText('');
@@ -1847,7 +1852,7 @@
   // 모양이지만 대상이 글이 아니라 폴더 index.html이라 별도 함수로 둔다.
   // ---------------------------------------------------------------
   async function doLoadForFolderEdit(){
-    const log = document.getElementById('publish-log');
+    const log = document.getElementById('folderedit-load-log');
     log.innerHTML = '';
     if (!GH_CFG){ logTo(log, '❌ 로그인 정보가 없어요. 새로고침 후 토큰을 다시 입력해주세요.', 'err'); return false; }
     const parent = cleanPath(document.getElementById('fe-parent').value);
