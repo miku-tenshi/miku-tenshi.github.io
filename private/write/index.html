@@ -91,6 +91,13 @@
   .folder-chip-row{ display:flex; flex-wrap:wrap; gap:6px; }
   .folder-chip.is-home{ font-weight:600; }
 
+  /* #post-picker-e — "글 수정 · 삭제" 모드에서 대상 폴더의 실제 글 목록을
+     파일명(슬러그) 입력창 바로 밑에 칩으로 보여준다(renderPostPicker() 참고).
+     내용이 없을 땐(폴더 미선택 등) :empty로 자동으로 접혀서 빈 여백을 남기지
+     않는다 — 기존 .status-log의 :empty{display:none} 관행과 동일. */
+  #post-picker-e:empty{ display:none; }
+  #post-picker-e{ margin-top:8px; }
+
   /* 글쓰기 창(window-body) — 본문만 놓는다. 실제 입력은 평범한 textarea가 받고
      (Enter/undo/IME/붙여넣기 전부 브라우저 기본 동작 그대로라 안전하다), 그 밑에
      똑같은 폰트/여백으로 겹쳐놓은 읽기 전용 레이어가 마크다운 문법을 타이핑하는
@@ -468,6 +475,7 @@
             <div class="field">
               <label>파일명(슬러그)</label>
               <input type="text" id="e-slug" placeholder="query-tuning-long-example">
+              <div class="folder-chip-row" id="post-picker-e"></div>
             </div>
           </div>
           <button class="wbtn wbtn-ghost" id="btn-load" type="button" style="margin-bottom:18px;">불러오기</button>
@@ -995,6 +1003,9 @@
   // ---------------------------------------------------------------
   let ALL_FOLDERS = []; // 전체 폴더 경로 flat 목록 — 자동완성 검색에 씀
   let FOLDER_TREE = null; // buildFolderTree() 결과 — 칩 네비게이터가 드릴다운할 때 씀
+  let POSTS_BY_FOLDER = {}; // 폴더 경로 -> 그 폴더 바로 밑에 있는 글 슬러그(파일명, ".html" 제외) 목록.
+  // "글 수정 · 삭제" 모드에서 대상 폴더를 고르면 그 폴더의 실제 글 목록을 칩으로
+  // 보여주기 위한 것 — renderPostPicker() 참고.
   const FOLDER_NAVS = {}; // containerId -> createFolderNav()가 반환한 컨트롤러(자동완성이 골랐을 때 칩 쪽도 같이 그 위치로 맞추려고 보관)
 
   // folders(flat 경로 배열, 예: ["study","study/db","study/db/legacy",...])를
@@ -1060,6 +1071,24 @@
         .sort();
       FOLDER_TREE = buildFolderTree(ALL_FOLDERS);
 
+      // 같은 트리 응답에서 폴더(tree)뿐 아니라 파일(blob)도 훑어서, 폴더별 실제
+      // 글 목록(POSTS_BY_FOLDER)을 만든다 — API를 한 번 더 부르지 않고 같은
+      // 응답을 재사용. 각 폴더 자신의 설명 파일인 index.html은 "글"이 아니므로 뺀다.
+      const postsMap = {};
+      (json.tree || []).forEach(item => {
+        if (item.type !== 'blob') return;
+        if (!/^(study|project|contact)\//.test(item.path)) return;
+        if (!/\.html$/.test(item.path)) return;
+        const parts = item.path.split('/');
+        const file = parts.pop();
+        if (file === 'index.html') return;
+        const folder = parts.join('/');
+        const slug = file.slice(0, -5); // ".html" 제거
+        (postsMap[folder] = postsMap[folder] || []).push(slug);
+      });
+      Object.keys(postsMap).forEach(k => postsMap[k].sort());
+      POSTS_BY_FOLDER = postsMap;
+
       // p-folder / f-parent / e-folder / r-folder — 값 하나만 채우면 되는 필드들.
       // 최상위(study/project/contact) 자체도 유효한 값이라(예: 글이 study
       // 바로 밑에 있는 경우), 어떤 깊이에서 클릭해도 그 즉시 값이 채워진다.
@@ -1097,9 +1126,47 @@
       };
       attachFolderAutocomplete(document.getElementById('fe-parent'), { getSource: feSource, onSelect: selectFolderEditTarget, onTypingSync: feTypingSync });
       attachFolderAutocomplete(document.getElementById('fe-slug'), { getSource: feSource, onSelect: selectFolderEditTarget, onTypingSync: feTypingSync });
+
+      // "글 수정 · 삭제" 모드: 대상 폴더(e-folder)가 바뀔 때마다(직접 타이핑,
+      // 칩 클릭, 자동완성 선택 — 셋 다 e-folder에 input 이벤트를 발생시킴) 그
+      // 폴더의 실제 글 목록을 파일명(슬러그) 입력창 밑에 칩으로 보여준다.
+      document.getElementById('e-folder').addEventListener('input', renderPostPicker);
+      renderPostPicker();
     }catch(e){
       // 네트워크 오류 등 — 폴더 칩/자동완성 없이도 직접 입력으로 계속 쓸 수 있으니 무시
     }
+  }
+
+  // e-folder에 입력된 폴더의 실제 글 슬러그 목록을 #post-picker-e에 칩으로
+  // 그린다. 폴더가 비어있거나 아직 존재하지 않는 경로면(타이핑 중 등) 조용히
+  // 비워서 잘못된 안내를 하지 않는다. 클릭하면 e-slug만 채우고(폴더 칩과 같은
+  // 방식 — 곧바로 "불러오기"를 대신 누르지는 않음) 값이 채워졌다는 것만 알려준다.
+  function renderPostPicker(){
+    const container = document.getElementById('post-picker-e');
+    if (!container) return;
+    const folder = cleanPath(document.getElementById('e-folder').value);
+    // 존재 여부는 ALL_FOLDERS(트리에 실제 있는 폴더 목록)로 판단 — POSTS_BY_FOLDER는
+    // 글이 하나도 없는 폴더는 키 자체가 없으므로, 이걸로만 판단하면 "이 폴더엔
+    // 글이 없음" 안내를 못 보여주고 그냥 빈 채로 남는 문제가 생긴다.
+    if (!folder || ALL_FOLDERS.indexOf(folder) === -1){
+      container.innerHTML = '';
+      return;
+    }
+    const slugs = POSTS_BY_FOLDER[folder] || [];
+    if (!slugs.length){
+      container.innerHTML = '<span class="folder-nav-empty">이 폴더엔 글이 없음</span>';
+      return;
+    }
+    container.innerHTML = slugs.map(s =>
+      '<button type="button" class="folder-chip" data-slug="' + escapeHtml(s) + '">' + escapeHtml(s) + '</button>'
+    ).join('');
+    container.querySelectorAll('.folder-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const input = document.getElementById('e-slug');
+        input.value = chip.dataset.slug;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    });
   }
 
   function makeSingleFieldSelect(inputId, navKey){
