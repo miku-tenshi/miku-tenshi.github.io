@@ -8,14 +8,6 @@
     "href": "/study/css-position-fixed.html"
   },
   {
-    "folder": "study",
-    "slug": "title",
-    "title": "TITLE",
-    "meta": "테스트 중입니다.",
-    "date": "2026-08-25",
-    "href": "/study/title.html"
-  },
-  {
     "folder": "study/db",
     "slug": "query-tuning-long-example",
     "title": "쿼리 튜닝 삽질기 (긴 글 예시)",
