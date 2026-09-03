@@ -354,6 +354,7 @@
       <div class="mode-switch">
         <button class="mode-btn active" data-mode="post">새 글 추가</button>
         <button class="mode-btn" data-mode="folder">새 폴더 만들기</button>
+        <button class="mode-btn" data-mode="folderedit">폴더 수정</button>
         <button class="mode-btn" data-mode="edit">글 수정 / 삭제</button>
         <button class="mode-btn" data-mode="reorder">글 순서 바꾸기</button>
       </div>
@@ -407,7 +408,34 @@
           </div>
         </div>
 
-        <!-- 모드 C: 글 수정/삭제 -->
+        <!-- 모드 C: 폴더 수정 (이름 변경 + index.md 설명 수정)
+             "폴더 이름이랑, 폴더의 index.md도 같이 수정할 수 있도록" 요청으로 추가.
+             위 "새 폴더 만들기"(모드 B)와 필드 구성은 비슷하지만 용도가 다르다 —
+             여기는 이미 있는 폴더를 대상으로 fe-parent/fe-slug로 먼저 "불러오기"한
+             뒤, 아래쪽 "새 폴더 이름(슬러그)" 칸을 그대로 두면 설명만 바뀌고,
+             바꾸면 그 폴더 안의 글·하위 폴더까지 전부 새 경로로 함께 옮겨진다
+             (실제 이동 로직은 아래 스크립트의 buildFolderEditUpdate()/
+             runFolderEditSave() 참고). -->
+        <div id="fields-folderedit" style="display:none;">
+          <div class="row2">
+            <div class="field">
+              <label>상위 폴더 경로 <span class="hint">예: study</span></label>
+              <input type="text" id="fe-parent" placeholder="study" list="folder-suggestions" autocomplete="off">
+              <div class="folder-picker" id="folder-picker-fe"></div>
+            </div>
+            <div class="field">
+              <label>폴더 이름(슬러그)</label>
+              <input type="text" id="fe-slug" placeholder="db">
+            </div>
+          </div>
+          <button class="wbtn wbtn-ghost" id="btn-folder-load" type="button" style="margin-bottom:18px;">불러오기</button>
+          <div class="field" style="margin-bottom:0;">
+            <label>새 폴더 이름(슬러그) <span class="hint">바꾸면 이 폴더 안의 글·하위 폴더까지 전부 새 이름의 경로로 함께 옮겨져요. 그대로 두면 설명만 저장돼요.</span></label>
+            <input type="text" id="fe-new-slug" placeholder="불러오기를 먼저 눌러주세요">
+          </div>
+        </div>
+
+        <!-- 모드 D: 글 수정/삭제 -->
         <div id="fields-edit" style="display:none;">
           <div class="row2">
             <div class="field">
@@ -441,7 +469,7 @@
           </div>
         </div>
 
-        <!-- 모드 D: 글 순서 바꾸기 -->
+        <!-- 모드 E: 글 순서 바꾸기 -->
         <div id="fields-reorder" style="display:none;">
           <div class="field" style="margin-bottom:0;">
             <label>대상 폴더 경로 <span class="hint">예: study, study/db, project — 이 폴더 페이지의 목록 순서를 바꿔요</span></label>
@@ -747,6 +775,19 @@
     }
     return null;
   }
+  // "폴더 수정"에서 이름을 바꿀 때, 부모 index.html에 있는 이 폴더의 항목 줄에서
+  // "N개 항목" 같은 표기(meta)만 뽑아온다 — 새 항목 줄을 만들 때 이 값을 그대로
+  // 이어받아야, 이름만 바뀌었을 뿐인데 항목 개수 표기가 "0개 항목"으로 리셋되는
+  // 일이 없다. parseEntryLineText()는 아래 "글 순서 바꾸기" 절에서 이미 정의됨
+  // (함수 선언이라 순서 상관없이 호출 가능).
+  function extractEntryMeta(indexContent, href){
+    const lines = indexContent.split('\n');
+    const hrefAttr = 'href="' + href + '"';
+    for (let i=0;i<lines.length;i++){
+      if (lines[i].includes(hrefAttr)) return parseEntryLineText(lines[i]).meta;
+    }
+    return '';
+  }
 
   // ---------------------------------------------------------------
   // GitHub API
@@ -817,6 +858,17 @@
     if (!res.ok) throw new Error('DELETE ' + path + ' 실패 (' + res.status + '): ' + (await res.text()));
     return res.json();
   }
+  // 저장소 전체 파일 목록을 한 번에 가져온다 — "폴더 수정"에서 이름을 바꿀 때
+  // 그 폴더 안에 있는 글/하위 폴더 파일들을 전부 찾아내는 데 씀
+  // (loadFolderList()가 폴더만 걸러서 자동완성 칩을 만들 때 쓰는 것과 같은
+  // API, recursive=1로 하위 트리까지 한 번에 받아온다).
+  async function ghGetTree(cfg){
+    const url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/git/trees/' + encodeURIComponent(cfg.branch) + '?recursive=1';
+    const res = await fetch(url, { headers: authHeaders(cfg.token), cache: 'no-store' });
+    if (!res.ok) throw new Error('저장소 파일 목록을 가져오지 못했어요 (' + res.status + ')');
+    const json = await res.json();
+    return json.tree || [];
+  }
 
   // ---------------------------------------------------------------
   // posts.json (홈 화면 "최근 글" 목록용 카탈로그) 동기화
@@ -851,6 +903,26 @@
     if (next.length === m.list.length) return;
     await saveManifest(next, m.sha, 'Update posts.json: remove ' + href);
   }
+  // "폴더 수정"에서 폴더 이름을 바꿔 옮길 때, posts.json 안에 그 폴더 밑에
+  // 있던 글들의 href/folder도 같이 새 경로로 고쳐준다 — 안 그러면 홈 화면
+  // "최근 글" 목록이 이미 없어진 옛 경로를 계속 가리키게 된다.
+  async function remapManifestPaths(oldFullPath, newFullPath){
+    const m = await loadManifest();
+    const oldPrefix = '/' + oldFullPath + '/';
+    const newPrefix = '/' + newFullPath + '/';
+    let changed = false;
+    m.list.forEach(p => {
+      if (p.href && p.href.indexOf(oldPrefix) === 0){
+        p.href = newPrefix + p.href.slice(oldPrefix.length);
+        changed = true;
+      }
+      if (p.folder && (p.folder === oldFullPath || p.folder.indexOf(oldFullPath + '/') === 0)){
+        p.folder = newFullPath + p.folder.slice(oldFullPath.length);
+        changed = true;
+      }
+    });
+    if (changed) await saveManifest(m.list, m.sha, 'Update posts.json: move ' + oldFullPath + ' -> ' + newFullPath);
+  }
 
   // ---------------------------------------------------------------
   // 접근 — /private/ 에서 인증된 세션을 그대로 사용
@@ -869,10 +941,12 @@
   const BODY_LABELS = {
     post: '본문 <span class="hint">마크다운 문법을 쓰면 바로 스타일이 적용돼요 — # 제목, **굵게**, `코드`, - 목록, &gt; 인용</span>',
     folder: '폴더 설명 <span class="hint">마크다운 문법 사용 가능</span>',
+    folderedit: '폴더 설명 <span class="hint">"불러오기"를 누르면 기존 설명이 여기 채워져요. 마크다운 문법 사용 가능</span>',
     edit: '본문 <span class="hint">"불러오기"를 누르면 기존 글 내용이 여기 채워져요. 마크다운 문법 사용 가능</span>',
   };
   let currentMode = 'post';
   let editState = null; // { folder, slug, path, sha, parentIndexPath } — "수정/삭제" 모드에서 불러온 글
+  let folderEditState = null; // { parent, slug, path, sha, parentIndexPath, entryListBlockHtml } — "폴더 수정" 모드에서 불러온 폴더
   let reorderState = null; // { folder, path, items: [{href, raw, isFolder, title, meta}] } — "순서 바꾸기" 모드에서 불러온 폴더
   // ↑ renderReorderList() 등 아래 "글 순서 바꾸기" 절의 함수들이 이 변수를 참조하는데,
   // let은 선언 이전에 접근하면 에러가 나므로(editState와 같은 이유) 초기 호출부보다
@@ -910,6 +984,7 @@
 
       renderFolderPicker('folder-picker-p', 'p-folder', folders);
       renderFolderPicker('folder-picker-f', 'f-parent', folders);
+      renderFolderPicker('folder-picker-fe', 'fe-parent', folders);
       renderFolderPicker('folder-picker-e', 'e-folder', folders);
       renderFolderPicker('folder-picker-r', 'r-folder', folders);
     }catch(e){
@@ -939,6 +1014,10 @@
     if (currentMode === 'edit' && editState){
       btn.textContent = '수정 저장';
       del.style.display = '';
+    } else if (currentMode === 'folderedit' && folderEditState){
+      btn.textContent = '폴더 저장';
+      del.style.display = 'none';
+      document.getElementById('delete-confirm').style.display = 'none';
     } else {
       btn.textContent = 'GitHub에 올리기';
       del.style.display = 'none';
@@ -954,6 +1033,7 @@
       currentMode = btn.dataset.mode;
       document.getElementById('fields-post').style.display = currentMode === 'post' ? '' : 'none';
       document.getElementById('fields-folder').style.display = currentMode === 'folder' ? '' : 'none';
+      document.getElementById('fields-folderedit').style.display = currentMode === 'folderedit' ? '' : 'none';
       document.getElementById('fields-edit').style.display = currentMode === 'edit' ? '' : 'none';
       document.getElementById('fields-reorder').style.display = currentMode === 'reorder' ? '' : 'none';
       // "글 순서 바꾸기" 모드는 본문 에디터가 필요 없으니, 그 창(editor-window)
@@ -970,6 +1050,11 @@
         document.getElementById('e-date').value = '';
         document.getElementById('e-meta').value = '';
       }
+      if (prevMode !== currentMode && (prevMode === 'folderedit' || currentMode === 'folderedit')){
+        folderEditState = null;
+        setEditorRawText('');
+        document.getElementById('fe-new-slug').value = '';
+      }
       updatePublishButtonLabel();
       updateEditorPath();
     });
@@ -985,6 +1070,10 @@
       const parent = cleanPath(document.getElementById('f-parent').value) || 'study';
       const slug = slugify(document.getElementById('f-slug').value) || 'new-folder';
       path.innerHTML = buildBreadcrumb(parent + '/' + slug, 'index.md');
+    } else if (currentMode === 'folderedit'){
+      const parent = cleanPath(document.getElementById('fe-parent').value) || 'study';
+      const slug = slugify(document.getElementById('fe-new-slug').value || document.getElementById('fe-slug').value) || 'folder';
+      path.innerHTML = buildBreadcrumb(parent + '/' + slug, 'index.md');
     } else {
       const folder = cleanPath(document.getElementById('e-folder').value) || 'study';
       const slug = slugify(document.getElementById('e-slug').value) || 'existing-post';
@@ -993,6 +1082,7 @@
   }
   ['p-folder','p-slug'].forEach(id => document.getElementById(id).addEventListener('input', updateEditorPath));
   ['f-parent','f-slug'].forEach(id => document.getElementById(id).addEventListener('input', updateEditorPath));
+  ['fe-parent','fe-slug','fe-new-slug'].forEach(id => document.getElementById(id).addEventListener('input', updateEditorPath));
   ['e-folder','e-slug'].forEach(id => document.getElementById(id).addEventListener('input', updateEditorPath));
   document.getElementById('p-date').valueAsDate = new Date();
 
@@ -1358,22 +1448,30 @@
     return { folder, slug, title, dateLabel, dateVal, meta, thumbnail, bodyMd, filePath, fileHtml, entryLine, parentIndexPath: folder + '/index.html' };
   }
 
-  function buildFolderFile(){
-    const parent = cleanPath(document.getElementById('f-parent').value);
-    const slug = slugify(document.getElementById('f-slug').value);
-    const descMd = getEditorRawText();
-    if (!parent || !slug) throw new Error('상위 폴더 경로와 새 폴더 이름은 필수입니다.');
+  // "새 폴더 만들기"(buildFolderFile)와 "폴더 수정"(buildFolderEditUpdate)이
+  // 공유하는 폴더 index.html 조립기. entryListBlockHtml은 이미 완성된
+  // "<div class=\"entry-list\">\n...\n        </div>" 통짜 문자열을 그대로
+  // 받는다 — 새 폴더는 상위 폴더 줄 하나뿐이고, 폴더 수정은 기존에 있던
+  // (상위 폴더 줄 + 그 안 글/하위 폴더 줄들) 목록을 findEntryListBlock()으로
+  // 그대로 떠와서 건드리지 않고 넘긴다(설명만 바뀌고 목록은 안 바뀌도록).
+  // 2026-09-02: "폴더 수정" 기능을 만들면서, 글(post)처럼 폴더 설명도
+  // md-source 주석으로 원문 마크다운을 같이 저장해둔다 — 이래야 나중에
+  // "불러오기"를 눌렀을 때 서식이 안 깨지고 그대로 복원된다(이전에 만든
+  // 폴더에는 이 주석이 없어서, parseFolderHtml()이 그런 경우 HTML을 대충
+  // 마크다운으로 되돌리는 roughHtmlToMarkdown()으로 대신 복원한다).
+  function buildFolderIndexHtml(parent, slug, descMd, entryListBlockHtml){
     const topKey = parent.split('/')[0];
     const info = SECTION_INFO[topKey];
     if (!info) throw new Error('"' + topKey + '" 는 알 수 없는 최상위 섹션입니다 (study / project / contact 중 하나여야 해요).');
-
     const fullPath = parent + '/' + slug;
-    const bodyHtml = '\n        <div class="entry-date">' + escapeHtml(parent + ' / ' + slug) + '</div>\n' +
+    const sourceComment = '<!-- md-source:' + b64EncodeUnicode(descMd) + ' -->';
+    const bodyHtml = '\n        ' + sourceComment + '\n' +
+      '        <div class="entry-date">' + escapeHtml(parent + ' / ' + slug) + '</div>\n' +
       '        <h2>' + escapeHtml(slug) + '/</h2>\n' +
       (descMd.trim() ? indentHtml(markdownToHtml(descMd)) + '\n' : '') +
-      '        <div class="entry-list">\n' + upLine('/' + parent + '/', '상위 폴더') + '\n        </div>\n';
+      '        ' + entryListBlockHtml + '\n';
 
-    const fileHtml = PAGE_SKELETON({
+    return PAGE_SKELETON({
       pageTitle: fullPath + '/ — miku-tenshi',
       description: slug + ' 폴더',
       navKey: topKey,
@@ -1382,10 +1480,213 @@
       breadcrumb: buildBreadcrumb(fullPath, 'index.md'),
       bodyHtml: bodyHtml,
     });
+  }
+
+  function buildFolderFile(){
+    const parent = cleanPath(document.getElementById('f-parent').value);
+    const slug = slugify(document.getElementById('f-slug').value);
+    const descMd = getEditorRawText();
+    if (!parent || !slug) throw new Error('상위 폴더 경로와 새 폴더 이름은 필수입니다.');
+
+    const fullPath = parent + '/' + slug;
+    const entryListBlockHtml = '<div class="entry-list">\n' + upLine('/' + parent + '/', '상위 폴더') + '\n        </div>';
+    const fileHtml = buildFolderIndexHtml(parent, slug, descMd, entryListBlockHtml);
 
     const filePath = fullPath + '/index.html';
     const entryLine = folderLine('/' + fullPath + '/', slug, '0개 항목');
     return { parent, slug, descMd, filePath, fileHtml, entryLine, parentIndexPath: parent + '/index.html' };
+  }
+
+  // ---------------------------------------------------------------
+  // 폴더 수정 (이름 변경 + index.md 설명 수정)
+  // ---------------------------------------------------------------
+  // 저장된 폴더 index.html에서 설명(마크다운)과 entry-list 블록(상위 폴더 줄 +
+  // 그 안 글/하위 폴더 줄들)을 그대로 뽑아온다. parsePostHtml()과 구조가
+  // 비슷하지만, 폴더는 날짜/제목이 없고 대신 entry-list를 통째로 보존해야
+  // 한다는 점이 다르다.
+  function parseFolderHtml(html){
+    const srcMatch = html.match(/<!--\s*md-source:([A-Za-z0-9+\/=]+)\s*-->/);
+    let descMd, recoveredExactly;
+    if (srcMatch){
+      descMd = b64DecodeUnicode(srcMatch[1]);
+      recoveredExactly = true;
+    } else {
+      const bodyMatch = html.match(/<h2>[\s\S]*?<\/h2>([\s\S]*?)<div class="entry-list">/);
+      descMd = bodyMatch ? roughHtmlToMarkdown(bodyMatch[1]) : '';
+      recoveredExactly = false;
+    }
+    const { lines, startIdx, endIdx } = findEntryListBlock(html);
+    const entryListBlockHtml = lines.slice(startIdx, endIdx + 1).join('\n');
+    return { descMd, entryListBlockHtml, recoveredExactly };
+  }
+
+  // 불러온 폴더의 entry-list(자식 글/하위 폴더 줄들)는 그대로 두고, 설명만
+  // 새로 반영해서 "지금(옛) 경로" 기준 파일을 만든다 — 실제로 이름이
+  // 바뀌었는지(그래서 옮겨야 하는지)는 이 함수가 아니라 저장 시점의
+  // runFolderEditSave()가 newSlug와 비교해서 판단한다. 미리보기/복사용
+  // 코드도 이 함수 하나로 처리되므로, 이름을 바꾸는 중이어도 미리보기에는
+  // "지금 경로 기준 설명"만 반영되고 실제 이동은 "GitHub에 올리기"를 눌러야
+  // 일어난다.
+  function buildFolderEditUpdate(){
+    if (!folderEditState) throw new Error('먼저 "불러오기"로 수정할 폴더를 불러와주세요.');
+    const descMd = getEditorRawText();
+    const parent = folderEditState.parent, slug = folderEditState.slug;
+    const newSlug = slugify(document.getElementById('fe-new-slug').value) || slug;
+
+    const fileHtml = buildFolderIndexHtml(parent, slug, descMd, folderEditState.entryListBlockHtml);
+    const entryLine = folderLine('/' + parent + '/' + slug + '/', slug, '');
+    return { parent, slug, newSlug, descMd, filePath: folderEditState.path, fileHtml, entryLine, parentIndexPath: folderEditState.parentIndexPath };
+  }
+
+  // 폴더 이름을 바꿔서 옮길 때, 옮겨지는 파일(글 하나하나 / 하위 폴더의
+  // index.html)마다 그 안에 박혀 있는 "경로 표시줄"(breadcrumb)과 "위로"
+  // 줄을 새 경로 기준으로 다시 만들어 끼워 넣는다.
+  //
+  // 왜 필요한가: entry-list 안 링크(href="/study/db/foo.html" 같은 것)는
+  // "폴더의 전체 경로" 문자열이 그대로 박혀 있는 단순한 형태라 oldFullPath를
+  // newFullPath로 통째로 바꿔치기하면 항상 정확히 고쳐진다(아래
+  // remapMovedFilePaths()). 하지만 breadcrumb(<span class="chrome-path">)는
+  // "study / db / foo.md"처럼 구간(segment)마다 링크와 글자가 따로따로 —
+  // db를 database로 바꾸면 링크(href="/study/database/")는 문자열 치환으로
+  // 맞게 바뀌어도, 화면에 보이는 글자("db")는 그대로 남아 링크와 안 맞는
+  // 상태가 된다. 그래서 breadcrumb과 "위로" 줄만큼은 문자열 치환이 아니라
+  // 이 파일의 "새 경로"(newPath) 하나만 가지고 buildBreadcrumb()/upLine()으로
+  // 아예 새로 만들어서 통째로 갈아 끼운다 — 몇 단계 깊이든 항상 정확하다.
+  function repairMovedFile(content, newPath){
+    const isIndex = /\/index\.html$/.test(newPath);
+    let breadcrumbFolder, lastLabel, upHref, upLabel;
+    if (isIndex){
+      breadcrumbFolder = newPath.slice(0, -'/index.html'.length);
+      lastLabel = 'index.md';
+      const parentSegs = breadcrumbFolder.split('/');
+      parentSegs.pop();
+      upHref = '/' + parentSegs.join('/') + '/';
+      upLabel = '상위 폴더';
+    } else {
+      const slashAt = newPath.lastIndexOf('/');
+      breadcrumbFolder = newPath.slice(0, slashAt);
+      lastLabel = newPath.slice(slashAt + 1).replace(/\.html$/, '.md');
+      upHref = '/' + breadcrumbFolder + '/';
+      upLabel = breadcrumbFolder.split('/').pop() + '/ 로';
+    }
+    let out = content.replace(
+      /(<span class="chrome-path"[^>]*>)[\s\S]*?(<\/span>)/,
+      (m, open, close) => open + buildBreadcrumb(breadcrumbFolder, lastLabel) + close
+    );
+    out = out.replace(
+      /^[ \t]*<a class="entry-list-item clickable up"[\s\S]*?<\/a>[ \t]*$/m,
+      upLine(upHref, upLabel)
+    );
+    return out;
+  }
+  // 옮겨지는 파일들 사이에서(자기 자신 포함) 서로를 가리키는 entry-list
+  // 링크(자식 목록 줄, "위로" 줄)는 항상 "/oldFullPath/..." 형태의 완전한
+  // 경로 문자열이라, 그 접두어만 통째로 바꿔치기하면 깊이에 상관없이 정확히
+  // 맞는 새 경로가 된다("study/db"를 "study/db2" 같은 다른 폴더까지
+  // 잘못 건드리지 않도록 앞뒤에 "/"를 포함해서 찾는다).
+  function remapMovedFilePaths(content, oldFullPath, newFullPath){
+    return content.split('/' + oldFullPath + '/').join('/' + newFullPath + '/');
+  }
+
+  // 실제 "폴더 수정 저장"에서 이름이 바뀐 경우(newSlug !== slug)에 호출됨 —
+  // 이름이 안 바뀌었으면(설명만 고친 경우) btn-publish 핸들러가 이 함수를
+  // 부르지 않고 그 자리에서 바로 ghPutFile 한 번으로 끝낸다.
+  //
+  // 순서: (1) 새 경로가 이미 있으면 중단 → (2) 옮길 파일 전부를 새 경로에
+  // 먼저 "복사"(만들기) → (3) 전부 성공한 뒤에만 옛 경로들을 삭제 → (4) 부모
+  // index.html의 항목 줄과 posts.json을 새 경로로 갱신. (2)에서 중간에
+  // 실패해도 옛 파일들은 아직 하나도 지우지 않은 상태라 원본은 안전하게
+  // 남아있다 — 대신 새 경로에 이미 만들어진 파일 몇 개가 남을 수 있어서,
+  // 에러 메시지에 이 점을 안내한다.
+  async function runFolderEditSave(data, rl){
+    const oldFullPath = data.parent + '/' + data.slug;
+    const newSlug = data.newSlug;
+    if (!newSlug) throw new Error('폴더 이름(슬러그)은 비어 있을 수 없어요.');
+    const newFullPath = data.parent + '/' + newSlug;
+
+    if (newFullPath === oldFullPath){
+      // 이름은 그대로, 설명만 저장
+      const fresh = await ghGetFile(GH_CFG, data.filePath);
+      if (!fresh) throw new Error(data.filePath + ' 를 찾을 수 없어요. 이미 삭제되었을 수 있어요.');
+      await ghPutFile(GH_CFG, data.filePath, data.fileHtml, 'Update folder description: ' + data.filePath, fresh.sha);
+      rl.done('complete', '<a href="/' + oldFullPath + '/" target="_blank">/' + escapeHtml(oldFullPath) + '/</a> 의 설명을 저장했어요.');
+      return;
+    }
+
+    // 이름이 바뀜 — 이 폴더 안의 글·하위 폴더까지 전부 새 경로로 옮긴다
+    const newIndexPath = newFullPath + '/index.html';
+    const already = await ghGetFile(GH_CFG, newIndexPath);
+    if (already) throw new Error('이미 같은 이름의 폴더가 있어요: ' + newFullPath + ' (다른 이름을 써주세요)');
+
+    const tree = await ghGetTree(GH_CFG);
+    const prefix = oldFullPath + '/';
+    const blobs = tree.filter(item => item.type === 'blob' &&
+      (item.path === data.filePath || item.path.indexOf(prefix) === 0));
+    if (!blobs.some(b => b.path === data.filePath)){
+      throw new Error(data.filePath + ' 를 찾지 못했어요. 이미 삭제되었을 수 있어요.');
+    }
+
+    const moved = [];
+    try{
+      for (const blob of blobs){
+        const relPath = blob.path.slice(oldFullPath.length); // '/index.html' 또는 '/foo.html', '/sub/index.html' 등
+        const newPath = newFullPath + relPath;
+        let content;
+        if (blob.path === data.filePath){
+          // 이 폴더 자기 자신의 index.html — data.fileHtml은 "옛 이름" 기준으로
+          // 만들어져 있어서(h2 제목, 경로 표시줄, 목록 안 자식 항목들의 href까지)
+          // 그대로 못 쓰고, 새 이름(newSlug) 기준으로 다시 만든다. 자식 항목
+          // 목록(entry-list)은 새로 만들지 않고 불러올 때 떠온 것을 그대로 쓰되,
+          // 그 안 href들만 새 경로 접두어로 바꿔치기해서 자식들이 이동한 새
+          // 위치를 가리키게 한다 — repairMovedFile()은 이 파일에는 따로 쓸
+          // 필요 없다(buildFolderIndexHtml이 이미 새 경로 기준 경로 표시줄을
+          // 만들어주고, 이 파일은 자기 폴더의 index이므로 "위로" 줄도 부모
+          // 경로(안 바뀜) 그대로면 됨).
+          const remappedEntryList = remapMovedFilePaths(folderEditState.entryListBlockHtml, oldFullPath, newFullPath);
+          content = buildFolderIndexHtml(data.parent, newSlug, data.descMd, remappedEntryList);
+        } else {
+          const file = await ghGetFile(GH_CFG, blob.path);
+          if (!file) throw new Error(blob.path + ' 를 읽지 못했어요.');
+          content = remapMovedFilePaths(file.content, oldFullPath, newFullPath);
+          content = repairMovedFile(content, newPath);
+        }
+        await ghPutFile(GH_CFG, newPath, content, 'Move: ' + blob.path + ' -> ' + newPath);
+        moved.push({ oldPath: blob.path, sha: blob.sha });
+      }
+    }catch(moveErr){
+      throw new Error('옮기는 중 실패했어요 (' + moveErr.message + '). 기존 파일(' + oldFullPath + '/)은 아직 그대로 안전하게 남아있어요 — 다만 새 경로(' + newFullPath + '/)에 파일이 일부 만들어졌을 수 있으니 확인 후 필요하면 지워주세요.');
+    }
+
+    // 여기까지 왔으면 새 경로 전부 정상적으로 만들어진 것 — 이제 옛 파일들을 지운다.
+    // 삭제 하나가 실패해도(예: 그 사이 다른 곳에서 건드림) 새 경로는 이미
+    // 정상 동작하므로 계속 진행하고, 실패한 옛 경로만 마지막 안내에 남긴다.
+    const deleteFailed = [];
+    for (const m of moved){
+      try{ await ghDeleteFile(GH_CFG, m.oldPath, m.sha, 'Remove old path after move: ' + m.oldPath); }
+      catch(delErr){ deleteFailed.push(m.oldPath); }
+    }
+
+    const parentIdx = await ghGetFile(GH_CFG, data.parentIndexPath);
+    if (parentIdx){
+      const oldMeta = extractEntryMeta(parentIdx.content, '/' + oldFullPath + '/');
+      const newLine = folderLine('/' + newFullPath + '/', newSlug, oldMeta || '');
+      const updatedIdx = replaceEntryLine(parentIdx.content, '/' + oldFullPath + '/', newLine);
+      await ghPutFile(GH_CFG, data.parentIndexPath, updatedIdx, 'Rename entry: ' + oldFullPath + ' -> ' + newFullPath, parentIdx.sha);
+    }
+
+    await remapManifestPaths(oldFullPath, newFullPath);
+
+    folderEditState = null;
+    setEditorRawText('');
+    document.getElementById('fe-slug').value = '';
+    document.getElementById('fe-new-slug').value = '';
+    updatePublishButtonLabel();
+
+    let detail = '<a href="/' + newFullPath + '/" target="_blank">/' + escapeHtml(newFullPath) + '/</a> 로 옮겼어요.';
+    if (deleteFailed.length){
+      detail += ' (옛 경로 일부를 못 지웠어요: ' + deleteFailed.map(escapeHtml).join(', ') + ' — 새 폴더는 정상 동작하니 나중에 직접 지워도 돼요.)';
+    }
+    rl.done('complete', detail);
   }
 
   function buildEditUpdate(){
@@ -1426,6 +1727,7 @@
   function currentData(){
     if (currentMode === 'post') return buildPostFile();
     if (currentMode === 'folder') return buildFolderFile();
+    if (currentMode === 'folderedit') return buildFolderEditUpdate();
     return buildEditUpdate();
   }
 
@@ -1539,6 +1841,45 @@
     return ok;
   }
   document.getElementById('btn-load').addEventListener('click', doLoadForEdit);
+
+  // ---------------------------------------------------------------
+  // 기존 폴더 불러오기 ("폴더 수정" 모드) — 위 doLoadForEdit()와 같은
+  // 모양이지만 대상이 글이 아니라 폴더 index.html이라 별도 함수로 둔다.
+  // ---------------------------------------------------------------
+  async function doLoadForFolderEdit(){
+    const log = document.getElementById('publish-log');
+    log.innerHTML = '';
+    if (!GH_CFG){ logTo(log, '❌ 로그인 정보가 없어요. 새로고침 후 토큰을 다시 입력해주세요.', 'err'); return false; }
+    const parent = cleanPath(document.getElementById('fe-parent').value);
+    const slug = slugify(document.getElementById('fe-slug').value);
+    if (!parent || !slug){ logTo(log, '❌ 상위 폴더 경로와 폴더 이름을 입력해주세요.', 'err'); return false; }
+    const path = parent + '/' + slug + '/index.html';
+    const btn = document.getElementById('btn-folder-load');
+    btn.disabled = true;
+    let ok = false;
+    try{
+      logTo(log, path + ' 불러오는 중...', 'info');
+      const file = await ghGetFile(GH_CFG, path);
+      if (!file) throw new Error(path + ' 를 찾을 수 없어요. 상위 폴더 경로와 폴더 이름을 확인해주세요.');
+      const parsed = parseFolderHtml(file.content);
+      setEditorRawText(parsed.descMd);
+      document.getElementById('fe-new-slug').value = slug;
+      folderEditState = { parent, slug, path, sha: file.sha, parentIndexPath: parent + '/index.html', entryListBlockHtml: parsed.entryListBlockHtml };
+      updatePublishButtonLabel();
+      updateEditorPath();
+      logTo(log, '✅ 불러왔어요. 설명을 고치거나 아래 "새 폴더 이름"을 바꾼 뒤 저장하세요.', 'ok');
+      if (!parsed.recoveredExactly){
+        logTo(log, 'ℹ️ 이 폴더는 원문 마크다운이 따로 저장되어 있지 않아서(예전에 만든 폴더) 설명을 최대한 비슷하게 복원했어요 — 서식이 완전히 같지 않을 수 있으니 확인해주세요.', 'info');
+      }
+      ok = true;
+    }catch(e){
+      logTo(log, '❌ ' + e.message, 'err');
+    }finally{
+      btn.disabled = false;
+    }
+    return ok;
+  }
+  document.getElementById('btn-folder-load').addEventListener('click', doLoadForFolderEdit);
 
   // ---------------------------------------------------------------
   // 삭제 (2단계 확인 — 브라우저 기본 confirm() 대신 화면 안에서 확인)
@@ -1866,9 +2207,14 @@
       document.getElementById('pv-title').textContent = data.title;
       document.getElementById('pv-content').innerHTML = markdownToHtml(data.bodyMd) || '<p style="color:var(--ink-faint)">본문을 입력하면 여기에 나타납니다.</p>';
     } else {
-      document.getElementById('pv-path').innerHTML = buildBreadcrumb(data.parent + '/' + data.slug, 'index.md');
-      document.getElementById('pv-date').textContent = data.parent + ' / ' + data.slug;
-      document.getElementById('pv-title').textContent = data.slug + '/';
+      // "폴더 수정" 모드에서 이름을 바꾸는 중이면(data.newSlug가 옛 slug와
+      // 다르면) 미리보기도 바뀔 이름 기준으로 보여준다 — 실제 이동은
+      // "GitHub에 올리기"를 눌러야 일어나지만, 미리보기는 저장했을 때 어떤
+      // 모습이 될지 미리 보여주는 용도이므로.
+      const previewSlug = (currentMode === 'folderedit' && data.newSlug) ? data.newSlug : data.slug;
+      document.getElementById('pv-path').innerHTML = buildBreadcrumb(data.parent + '/' + previewSlug, 'index.md');
+      document.getElementById('pv-date').textContent = data.parent + ' / ' + previewSlug;
+      document.getElementById('pv-title').textContent = previewSlug + '/';
       document.getElementById('pv-content').innerHTML = markdownToHtml(data.descMd) || '<p style="color:var(--ink-faint)">폴더 설명을 입력하면 여기에 나타납니다.</p>';
     }
     // 2026-09-01: 옵시디언처럼 실제 게시 결과에 가깝게 보여주기 위해, 마크다운
@@ -1901,7 +2247,7 @@
 
     const btn = document.getElementById('btn-publish');
     btn.disabled = true;
-    const rl = RetroLog.start(log, currentMode === 'edit' ? 'saving' : 'publishing');
+    const rl = RetroLog.start(log, (currentMode === 'edit' || currentMode === 'folderedit') ? 'saving' : 'publishing');
     try{
       if (currentMode === 'edit'){
         const fresh = await ghGetFile(GH_CFG, data.filePath);
@@ -1918,6 +2264,8 @@
         await syncManifestUpsert(data);
 
         rl.done('complete', '<a href="/' + data.filePath + '" target="_blank">/' + escapeHtml(data.filePath) + '</a> 에서 확인할 수 있어요.');
+      } else if (currentMode === 'folderedit'){
+        await runFolderEditSave(data, rl);
       } else {
         const existing = await ghGetFile(GH_CFG, data.filePath);
         if (existing) throw new Error('이미 같은 이름이 있어요: ' + data.filePath + ' (이름을 바꿔주세요)');
