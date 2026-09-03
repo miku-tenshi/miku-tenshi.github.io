@@ -73,6 +73,39 @@
   .folder-chip:hover{ border-color: var(--accent-solid); color: var(--accent-solid); background: var(--accent-soft); }
   .folder-chip .depth-dot{ color: var(--ink-faint); }
 
+  /* 2026-09-03: 드릴다운 폴더 네비게이터(createFolderNav) — 브레드크럼 한 줄 +
+     그 아래 현재 위치의 자식 폴더 칩 한 줄. 칩 자체는 위 .folder-chip을 그대로
+     쓰고, 여기서는 브레드크럼과 "홈" 칩, 자동완성 드롭다운만 추가로 스타일한다. */
+  .folder-picker{ flex-direction:column; align-items:flex-start; gap:8px; }
+  .folder-crumbs{
+    display:flex; flex-wrap:wrap; align-items:center; gap:5px;
+    font-size:12.5px; color: var(--ink-faint);
+  }
+  .crumb-link{
+    color: var(--ink-soft); text-decoration:none; border-bottom:1px dashed var(--chrome-border);
+  }
+  .crumb-link:hover{ color: var(--accent-solid); border-color: var(--accent-solid); }
+  .crumb-sep{ color: var(--ink-faint); }
+  .crumb-current{ color: var(--ink); font-weight:600; }
+  .folder-nav-empty{ font-size:12.5px; color: var(--ink-faint); font-style:italic; }
+  .folder-chip-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .folder-chip.is-home{ font-weight:600; }
+
+  /* 타이핑 자동완성 드롭다운(attachFolderAutocomplete) — 입력창 바로 밑에
+     떠서 최대 6개까지 후보를 보여준다. 입력창을 담은 .field에
+     position:relative를 JS가 인라인으로 걸어두므로 여기서는 absolute만 잡으면 됨. */
+  .folder-autocomplete{
+    position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:20;
+    background: var(--chrome-bg); border:1px solid var(--chrome-border); border-radius:10px;
+    box-shadow: 0 6px 18px rgba(32,31,43,0.12); max-height:220px; overflow-y:auto; padding:4px;
+  }
+  .folder-ac-item{
+    padding:7px 10px; border-radius:7px; font-size:13.5px; color: var(--ink-soft);
+    cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .folder-ac-item:hover, .folder-ac-item.active{ background: var(--accent-soft); color: var(--accent-solid); }
+  .folder-ac-item mark{ background:none; color: var(--accent-solid); font-weight:700; }
+
   /* 글쓰기 창(window-body) — 본문만 놓는다. 실제 입력은 평범한 textarea가 받고
      (Enter/undo/IME/붙여넣기 전부 브라우저 기본 동작 그대로라 안전하다), 그 밑에
      똑같은 폰트/여백으로 겹쳐놓은 읽기 전용 레이어가 마크다운 문법을 타이핑하는
@@ -366,7 +399,7 @@
         <div id="fields-post">
           <div class="field">
             <label>대상 폴더 경로 <span class="hint">예: study/db, project, contact</span></label>
-            <input type="text" id="p-folder" placeholder="study/db" list="folder-suggestions" autocomplete="off">
+            <input type="text" id="p-folder" placeholder="study/db" autocomplete="off">
             <div class="folder-picker" id="folder-picker-p"></div>
           </div>
           <div class="row2">
@@ -399,7 +432,7 @@
         <div id="fields-folder" style="display:none;">
           <div class="field">
             <label>상위 폴더 경로 <span class="hint">예: study</span></label>
-            <input type="text" id="f-parent" placeholder="study" list="folder-suggestions" autocomplete="off">
+            <input type="text" id="f-parent" placeholder="study" autocomplete="off">
             <div class="folder-picker" id="folder-picker-f"></div>
           </div>
           <div class="field" style="margin-bottom:0;">
@@ -420,7 +453,7 @@
           <div class="row2">
             <div class="field">
               <label>상위 폴더 경로 <span class="hint">예: study</span></label>
-              <input type="text" id="fe-parent" placeholder="study" list="folder-suggestions" autocomplete="off">
+              <input type="text" id="fe-parent" placeholder="study" autocomplete="off">
               <div class="folder-picker" id="folder-picker-fe"></div>
             </div>
             <div class="field">
@@ -444,7 +477,7 @@
           <div class="row2">
             <div class="field">
               <label>대상 폴더 경로 <span class="hint">예: study/db</span></label>
-              <input type="text" id="e-folder" placeholder="study/db" list="folder-suggestions" autocomplete="off">
+              <input type="text" id="e-folder" placeholder="study/db" autocomplete="off">
               <div class="folder-picker" id="folder-picker-e"></div>
             </div>
             <div class="field">
@@ -477,17 +510,12 @@
         <div id="fields-reorder" style="display:none;">
           <div class="field" style="margin-bottom:0;">
             <label>대상 폴더 경로 <span class="hint">예: study, study/db, project — 이 폴더 페이지의 목록 순서를 바꿔요</span></label>
-            <input type="text" id="r-folder" placeholder="study" list="folder-suggestions" autocomplete="off">
+            <input type="text" id="r-folder" placeholder="study" autocomplete="off">
             <div class="folder-picker" id="folder-picker-r"></div>
           </div>
           <button class="wbtn wbtn-ghost" id="btn-reorder-load" type="button" style="margin-top:14px;">불러오기</button>
         </div>
       </div>
-
-      <!-- 폴더 입력창 3개가 공유하는 자동완성 목록 — 실제 저장소에 있는 폴더로 채워진다
-           (아래 loadFolderList()). 키보드로 입력하면서 브라우저 기본 자동완성으로도
-           뜨고, 그 아래 folder-picker 칩을 눌러서 클릭만으로 채울 수도 있다. -->
-      <datalist id="folder-suggestions"></datalist>
 
       <article class="window" id="editor-window" data-no-autofocus>
         <div class="window-chrome" id="editor-chrome">
@@ -968,8 +996,52 @@
   // ---------------------------------------------------------------
   // 폴더 시각화 — 저장소에 어떤 폴더가 이미 있는지 안 보고 텍스트만 입력하면
   // 오타로 새 폴더가 잘못 생기기 쉬워서, Git Trees API로 폴더 목록을 한 번에
-  // 가져와 datalist(자동완성) + 클릭용 칩으로 보여준다.
+  // 가져와 (1) 클릭해서 한 단계씩 들어가는 칩 네비게이터 + (2) 입력창에 타이핑할
+  // 때 뜨는 자동완성 드롭다운, 두 가지로 보여준다.
+  //
+  // 2026-09-03: "폴더 고르기 UI가 한눈에 너무 많은 칩(depth-dot 붙은 전체
+  // 폴더 목록)을 한 줄에 쏟아내서 보기 불편하다, home/study/project/contact
+  // 4개만 먼저 보여주고 그 안을 눌러야 하위 폴더가 나오는 드릴다운 방식이었으면
+  // 좋겠다, 폴더 수정 모드는 굳이 이름을 따로 타이핑 안 해도 클릭만으로 정확한
+  // 위치가 채워지면 좋겠다, 타이핑할 때는 두 번째 사진처럼(일치하는 부분이
+  // 강조되는) 자동완성이 뜨되 너무 많이 뜨지는 않았으면 좋겠다" 요청으로 기존
+  // renderFolderPicker()(전체 폴더를 depth-dot 붙여 한 줄에 나열)를 통째로
+  // 이 절로 교체함.
   // ---------------------------------------------------------------
+  let ALL_FOLDERS = []; // 전체 폴더 경로 flat 목록 — 자동완성 검색에 씀
+  let FOLDER_TREE = null; // buildFolderTree() 결과 — 칩 네비게이터가 드릴다운할 때 씀
+  const FOLDER_NAVS = {}; // containerId -> createFolderNav()가 반환한 컨트롤러(자동완성이 골랐을 때 칩 쪽도 같이 그 위치로 맞추려고 보관)
+
+  // folders(flat 경로 배열, 예: ["study","study/db","study/db/legacy",...])를
+  // { name, path, children:[], childMap:{} } 트리로 바꾼다. path가 빈 문자열인
+  // 루트 노드의 children이 곧 최상위 폴더들(study/project/contact)이 된다.
+  function buildFolderTree(folders){
+    const root = { name: '', path: '', children: [], childMap: {} };
+    folders.forEach(f => {
+      let node = root, acc = '';
+      f.split('/').forEach(part => {
+        acc = acc ? acc + '/' + part : part;
+        let child = node.childMap[part];
+        if (!child){
+          child = { name: part, path: acc, children: [], childMap: {} };
+          node.childMap[part] = child;
+          node.children.push(child);
+        }
+        node = child;
+      });
+    });
+    return root;
+  }
+  function findTreeNode(root, path){
+    if (!path) return root;
+    let node = root;
+    for (const part of path.split('/')){
+      node = node.childMap[part];
+      if (!node) return null;
+    }
+    return node;
+  }
+
   async function loadFolderList(){
     if (!GH_CFG) return;
     try{
@@ -978,38 +1050,203 @@
       const res = await fetch(url, { headers: authHeaders(GH_CFG.token) });
       if (!res.ok) return; // 폴더 시각화는 부가 기능이라 실패해도 조용히 넘어감(직접 입력은 계속 가능)
       const json = await res.json();
-      const folders = (json.tree || [])
+      ALL_FOLDERS = (json.tree || [])
         .filter(item => item.type === 'tree' && /^(study|project|contact)(\/|$)/.test(item.path))
         .map(item => item.path)
         .sort();
+      FOLDER_TREE = buildFolderTree(ALL_FOLDERS);
 
-      const datalist = document.getElementById('folder-suggestions');
-      datalist.innerHTML = folders.map(f => '<option value="' + f.replace(/"/g,'&quot;') + '">').join('');
+      // p-folder / f-parent / e-folder / r-folder — 값 하나만 채우면 되는 필드들.
+      // 최상위(study/project/contact) 자체도 유효한 값이라(예: 글이 study
+      // 바로 밑에 있는 경우), 어떤 깊이에서 클릭해도 그 즉시 값이 채워진다.
+      FOLDER_NAVS.p = createFolderNav(document.getElementById('folder-picker-p'), makeSingleFieldSelect('p-folder', 'p'));
+      FOLDER_NAVS.f = createFolderNav(document.getElementById('folder-picker-f'), makeSingleFieldSelect('f-parent', 'f'));
+      FOLDER_NAVS.e = createFolderNav(document.getElementById('folder-picker-e'), makeSingleFieldSelect('e-folder', 'e'));
+      FOLDER_NAVS.r = createFolderNav(document.getElementById('folder-picker-r'), makeSingleFieldSelect('r-folder', 'r'));
+      // fe-parent + fe-slug — "폴더 수정" 모드는 두 필드를 합쳐 "폴더 경로 하나"를
+      // 고르는 개념이라, 클릭 한 번으로 두 필드를 한꺼번에 채운다(selectFolderEditTarget
+      // 참고). study/project/contact 자기 자신은 이 도구로 수정할 수 있는 대상이
+      // 아니라서(doLoadForFolderEdit()가 상위 폴더 경로를 필수로 요구함 — 최상위
+      // 폴더는 상위 경로가 없음) minSelectDepth:2로 최상위 칩은 "선택"은 안 되고
+      // "그 안으로 들어가기"만 되도록 막는다.
+      FOLDER_NAVS.fe = createFolderNav(document.getElementById('folder-picker-fe'), selectFolderEditTarget, { minSelectDepth: 2 });
 
-      renderFolderPicker('folder-picker-p', 'p-folder', folders);
-      renderFolderPicker('folder-picker-f', 'f-parent', folders);
-      renderFolderPicker('folder-picker-fe', 'fe-parent', folders);
-      renderFolderPicker('folder-picker-e', 'e-folder', folders);
-      renderFolderPicker('folder-picker-r', 'r-folder', folders);
+      attachFolderAutocomplete(document.getElementById('p-folder'), { getSource: () => ALL_FOLDERS, onSelect: makeSingleFieldSelect('p-folder', 'p') });
+      attachFolderAutocomplete(document.getElementById('f-parent'), { getSource: () => ALL_FOLDERS, onSelect: makeSingleFieldSelect('f-parent', 'f') });
+      attachFolderAutocomplete(document.getElementById('e-folder'), { getSource: () => ALL_FOLDERS, onSelect: makeSingleFieldSelect('e-folder', 'e') });
+      attachFolderAutocomplete(document.getElementById('r-folder'), { getSource: () => ALL_FOLDERS, onSelect: makeSingleFieldSelect('r-folder', 'r') });
+      // fe-parent/fe-slug 둘 다 같은 "전체 폴더 중 하나를 고른다" 자동완성을 공유—
+      // 어느 칸에 타이핑하든 골라지면 두 필드가 한꺼번에 정확히 채워진다. 최상위
+      // 폴더는 위와 같은 이유로 후보에서 아예 뺀다(depth 1 = 슬래시 없음).
+      const feSource = () => ALL_FOLDERS.filter(f => f.indexOf('/') !== -1);
+      attachFolderAutocomplete(document.getElementById('fe-parent'), { getSource: feSource, onSelect: selectFolderEditTarget });
+      attachFolderAutocomplete(document.getElementById('fe-slug'), { getSource: feSource, onSelect: selectFolderEditTarget });
     }catch(e){
-      // 네트워크 오류 등 — 폴더 칩 없이도 직접 입력으로 계속 쓸 수 있으니 무시
+      // 네트워크 오류 등 — 폴더 칩/자동완성 없이도 직접 입력으로 계속 쓸 수 있으니 무시
     }
   }
-  function renderFolderPicker(containerId, inputId, folders){
-    const el = document.getElementById(containerId);
-    if (!folders.length){ el.innerHTML = ''; return; }
-    el.innerHTML = folders.map(f => {
-      const depth = f.split('/').length - 1;
-      const dots = depth > 0 ? '<span class="depth-dot">' + '· '.repeat(depth) + '</span>' : '';
-      return '<button type="button" class="folder-chip" data-path="' + f.replace(/"/g,'&quot;') + '">' + dots + f.split('/').pop() + '/</button>';
-    }).join('');
-    el.querySelectorAll('.folder-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const input = document.getElementById(inputId);
-        input.value = chip.dataset.path;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+
+  function makeSingleFieldSelect(inputId, navKey){
+    return function(path){
+      const input = document.getElementById(inputId);
+      input.value = path;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      if (FOLDER_NAVS[navKey]) FOLDER_NAVS[navKey].setPath(path);
+    };
+  }
+  function selectFolderEditTarget(path){
+    const parts = (path || '').split('/');
+    const slug = parts.pop() || '';
+    const parent = parts.join('/');
+    const parentInput = document.getElementById('fe-parent');
+    const slugInput = document.getElementById('fe-slug');
+    parentInput.value = parent;
+    slugInput.value = slug;
+    parentInput.dispatchEvent(new Event('input', { bubbles: true }));
+    slugInput.dispatchEvent(new Event('input', { bubbles: true }));
+    if (FOLDER_NAVS.fe) FOLDER_NAVS.fe.setPath(path);
+  }
+
+  // 칩 네비게이터 — container 안에 "브레드크럼(현재 위치) + 그 아래 한 단계
+  // 자식 폴더 칩들"을 그려주고, 칩을 클릭하면 onSelect(path)를 호출한다.
+  // 맨 처음(path='')에는 "🏠 Home / study / project / contact" 4개가 한
+  // 줄에 나오고, study를 누르면 그 밑(db/frontend/2026-2nd 등)만 새로
+  // 보여준다 — Home은 그때부터 브레드크럼 쪽으로 옮겨가 "위로" 가는 역할을 함.
+  function createFolderNav(container, onSelect, opts){
+    opts = opts || {};
+    const minSelectDepth = opts.minSelectDepth || 1;
+    let path = '';
+
+    function depthOf(p){ return p ? p.split('/').length : 0; }
+
+    function crumbHtml(){
+      if (!path) return '';
+      const segs = path.split('/');
+      let acc = '', out = '<a href="#" class="crumb-link" data-path="">🏠 Home</a>';
+      segs.forEach((seg, i) => {
+        acc = acc ? acc + '/' + seg : seg;
+        out += '<span class="crumb-sep">›</span>';
+        out += (i === segs.length - 1)
+          ? '<span class="crumb-current">' + escapeHtml(seg) + '</span>'
+          : '<a href="#" class="crumb-link" data-path="' + escapeHtml(acc) + '">' + escapeHtml(seg) + '</a>';
       });
+      return '<div class="folder-crumbs">' + out + '</div>';
+    }
+
+    function childChips(){
+      let children;
+      if (!path){
+        // 최상위 — Home 포함 4개를 고정 순서로 보여준다. 실제 저장소에 그
+        // 폴더가 없으면(=Git Tree에 없으면) 조용히 건너뛴다.
+        const top = ['study','project','contact']
+          .map(name => FOLDER_TREE && FOLDER_TREE.childMap[name])
+          .filter(Boolean);
+        children = [{ name: 'Home', path: '', isHome: true }].concat(top);
+      } else {
+        const node = FOLDER_TREE ? findTreeNode(FOLDER_TREE, path) : null;
+        children = node ? node.children.slice().sort((a,b) => a.name.localeCompare(b.name)) : [];
+      }
+      if (!children.length) return path ? '<div class="folder-nav-empty">하위 폴더 없음</div>' : '';
+      return '<div class="folder-chip-row">' + children.map(c =>
+        '<button type="button" class="folder-chip' + (c.isHome ? ' is-home' : '') + '" data-path="' + escapeHtml(c.path) + '">' +
+          (c.isHome ? '🏠 Home' : escapeHtml(c.name) + '/') +
+        '</button>'
+      ).join('') + '</div>';
+    }
+
+    function render(){
+      container.innerHTML = crumbHtml() + childChips();
+      container.querySelectorAll('.crumb-link').forEach(a => {
+        a.addEventListener('click', (e) => { e.preventDefault(); path = a.dataset.path; render(); });
+      });
+      container.querySelectorAll('.folder-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const p = chip.dataset.path;
+          const isHome = chip.classList.contains('is-home');
+          // Home은 항상 선택(=필드 비우기) + 최상위로 이동. 그 외에는 깊이가
+          // minSelectDepth 이상일 때만 실제로 필드를 채우고, 그보다 얕으면
+          // (예: 폴더 수정 모드의 study/project/contact 자체) 그냥 그 안으로
+          // 들어가서 하위 폴더만 보여준다.
+          if (isHome || depthOf(p) >= minSelectDepth) onSelect(p);
+          path = p;
+          render();
+        });
+      });
+    }
+    render();
+    return {
+      setPath(p){ path = p || ''; render(); },
+    };
+  }
+
+  // 타이핑 자동완성 — inputEl에 입력이 있을 때마다 getSource()의 전체 폴더
+  // 목록에서 일치하는 걸 찾아 최대 6개까지만 드롭다운으로 보여준다(요청:
+  // "너무 많이 뜨지 않도록"). 접두어로 시작하는 것(또는 마지막 폴더 이름이
+  // 그 접두어로 시작하는 것)을 부분 일치보다 앞에 두고, 일치하는 부분은
+  // <mark>로 강조한다. 방향키/Enter/Esc로도 고를 수 있다.
+  const FOLDER_AC_MAX = 6;
+  function attachFolderAutocomplete(inputEl, opts){
+    const field = inputEl.closest('.field') || inputEl.parentNode;
+    field.style.position = field.style.position || 'relative';
+    const box = document.createElement('div');
+    box.className = 'folder-autocomplete';
+    box.style.display = 'none';
+    inputEl.insertAdjacentElement('afterend', box);
+
+    let items = [];
+    let activeIndex = -1;
+
+    function close(){ box.style.display = 'none'; box.innerHTML = ''; items = []; activeIndex = -1; }
+    function setActive(i){
+      activeIndex = i;
+      box.querySelectorAll('.folder-ac-item').forEach((el, idx) => el.classList.toggle('active', idx === activeIndex));
+    }
+    function choose(idx){
+      const path = items[idx];
+      if (path === undefined) return;
+      opts.onSelect(path);
+      close();
+    }
+    function open(list){
+      items = list;
+      if (!list.length){ close(); return; }
+      const q = inputEl.value.trim();
+      box.innerHTML = list.map((f, i) => '<div class="folder-ac-item" data-idx="' + i + '">' + highlightMatch(f, q) + '</div>').join('');
+      box.style.display = '';
+      setActive(-1);
+      box.querySelectorAll('.folder-ac-item').forEach(el => {
+        // click 대신 mousedown — input의 blur가 먼저 발생해 드롭다운이 닫혀버리는 것을 막는다.
+        el.addEventListener('mousedown', (e) => { e.preventDefault(); choose(Number(el.dataset.idx)); });
+      });
+    }
+
+    inputEl.addEventListener('input', () => {
+      const q = inputEl.value.trim().toLowerCase();
+      if (!q){ close(); return; }
+      const starts = [], contains = [];
+      opts.getSource().forEach(f => {
+        const lf = f.toLowerCase();
+        if (lf === q) return; // 이미 완전히 같은 값이면 굳이 제안하지 않음
+        if (lf.startsWith(q) || lf.split('/').pop().startsWith(q)) starts.push(f);
+        else if (lf.indexOf(q) !== -1) contains.push(f);
+      });
+      open(starts.concat(contains).slice(0, FOLDER_AC_MAX));
     });
+    inputEl.addEventListener('keydown', (e) => {
+      if (box.style.display === 'none') return;
+      if (e.key === 'ArrowDown'){ e.preventDefault(); setActive(Math.min(activeIndex + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp'){ e.preventDefault(); setActive(Math.max(activeIndex - 1, 0)); }
+      else if (e.key === 'Enter'){ if (activeIndex >= 0){ e.preventDefault(); choose(activeIndex); } }
+      else if (e.key === 'Escape'){ close(); }
+    });
+    inputEl.addEventListener('blur', () => { setTimeout(close, 120); });
+  }
+  function highlightMatch(fullPath, query){
+    const q = (query || '').trim();
+    if (!q) return escapeHtml(fullPath);
+    const idx = fullPath.toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return escapeHtml(fullPath);
+    return escapeHtml(fullPath.slice(0, idx)) + '<mark>' + escapeHtml(fullPath.slice(idx, idx + q.length)) + '</mark>' + escapeHtml(fullPath.slice(idx + q.length));
   }
 
   function updatePublishButtonLabel(){
