@@ -8,6 +8,14 @@
    오픈소스(SIL OFL) 도트(픽셀) 폰트 패밀리. */
 @import url("https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css");
 
+/* 2026-09-04: "코드 블럭은 코딩 위주의 글씨체로" 요청 — 인라인 코드(`code`)·
+   코드 블록(```)·private/write/의 라이브 타이핑 미리보기가 전부 이 폰트
+   하나(아래 --font-mono)를 같이 쓴다. JetBrains Mono는 글자 폭이 일정한
+   진짜 코딩용 서체라 변수명/괄호/들여쓰기가 시스템 monospace보다 훨씬
+   또렷이 구분됨 — 웹폰트 로드가 실패해도 기존에 쓰던 시스템 monospace
+   스택(SFMono-Regular 등)으로 자연스럽게 대체된다. */
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
 /* ─────────────────────────────────────────────
    색상 테마 (4종): 사이드바 위쪽 테마 스위처(.theme-switcher)에서
    고르면 <html data-theme="..."> 속성이 바뀌고, 그 값에 따라 아래
@@ -50,6 +58,8 @@
 
 :root {
   --font-pixel: "Galmuri11", "Galmuri9", "Galmuri14", monospace;
+  /* 인라인 코드·코드 블록(```)용 — 테마마다 안 바뀌는 값이라 :root에만 한 번 둠. */
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
   /* 게임기 콘솔 프레임(.console-shell) 치수 — 아래 "게임기 콘솔 프레임" 섹션
      (파일 맨 끝) 참고. */
@@ -1428,7 +1438,7 @@ a{ color: inherit; text-decoration: none; }
   padding: 2px 6px;
   border-radius: 5px;
   font-size: 0.92em;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family: var(--font-mono);
 }
 
 /* 마크다운으로 쓴 본문에서 나올 수 있는 요소들 (글쓰기 도구 산출물 포함) */
@@ -1444,13 +1454,40 @@ a{ color: inherit; text-decoration: none; }
   margin: 0 0 16px; padding: 6px 18px; border-left: 3px solid var(--accent-soft);
   color: var(--ink-faint); font-style: italic;
 }
+/* 2026-09-04: 예전엔 배경(#201f2b)·글자색(#eceafc)이 하드코딩이라 라이트
+   테마(aurora)에서도 항상 같은 짙은 박스로 나왔음 — "색상도 테마에 맞게"
+   요청으로 테마 변수(다른 창 내부 요소들과 같은 --chrome-bg/--chrome-border)로
+   바꿔서, 코드 블록도 사이드바 테마 스위처를 바꾸면 같이 바뀐다. */
 .window-body pre{
-  background: #201f2b; color: #eceafc; padding: 16px 18px; border-radius: 10px;
+  background: var(--chrome-bg); color: var(--ink-soft);
+  border: 1px solid var(--chrome-border);
+  padding: 16px 18px; border-radius: 10px;
   overflow-x: auto; margin: 0 0 16px; font-size: 14.5px; line-height: 1.7;
 }
 .window-body pre code{ background: none; color: inherit; padding: 0; }
 .window-body hr{ border: none; border-top: 1px dashed var(--chrome-border); margin: 24px 0; }
 .window-body img{ max-width: 100%; border-radius: 10px; }
+
+/* 2026-09-04: 코드 블록 문법 강조(highlight.js) — 색은 새 변수를 따로 만들지
+   않고 이미 테마마다 있는 변수를 재사용한다(사이트 전체가 4개 테마
+   (default/aurora/blue/pink)를 공유하는 구조라, 새 --code-* 변수를 4곳에
+   각각 새로 정의하는 대신 이미 테마별로 존재하는 --accent-*/--ok/--danger/
+   --ink*를 그대로 빌려 쓰면 테마 스위처를 바꿀 때 자동으로 같이 바뀜).
+   private/write/index.html이 marked 렌더러(renderer.code)에서 highlight.js로
+   미리 색칠해 <span class="hljs-...">로 구운 정적 HTML을 내놓으므로, 게시된
+   글 페이지는 highlight.js를 전혀 안 불러오고 이 CSS만으로 색이 보인다. */
+.hljs-comment, .hljs-quote{ color: var(--ink-faint); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-tag, .hljs-name, .hljs-strong{ color: var(--accent-solid); font-weight: 600; }
+.hljs-string, .hljs-regexp, .hljs-addition, .hljs-meta .hljs-string{ color: var(--ok); }
+.hljs-number, .hljs-literal{ color: var(--accent-end); }
+.hljs-title, .hljs-title.function_, .hljs-title.class_, .hljs-section{ color: var(--accent-end); font-weight: 600; }
+.hljs-attr, .hljs-attribute, .hljs-variable, .hljs-template-variable,
+.hljs-params, .hljs-selector-attr, .hljs-selector-pseudo{ color: var(--ink); }
+.hljs-built_in, .hljs-type, .hljs-class, .hljs-selector-class, .hljs-selector-id{ color: var(--danger); }
+.hljs-symbol, .hljs-bullet, .hljs-link{ color: var(--accent-solid); }
+.hljs-deletion{ color: var(--danger); }
+.hljs-meta, .hljs-doctag, .hljs-formula{ color: var(--ink-faint); }
+.hljs-emphasis{ font-style: italic; }
 
 /* 2026-09-04: "노션처럼 사진 좌/중앙/우 정렬 + 크기 조절" 요청 — private/write/의
    글쓰기 도구가 이미지 마크다운 `![alt](url "mtimg align=... width=...")`의

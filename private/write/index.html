@@ -240,7 +240,7 @@
   .md-quote{ color: var(--ink-soft); font-style: italic; }
   .md-code{
     background: var(--accent-soft); color: var(--accent-solid); padding:1px 5px; border-radius:5px;
-    font-family:"SFMono-Regular", Consolas, Menlo, monospace; font-size:0.92em;
+    font-family: var(--font-mono); font-size:0.92em;
   }
   /* 2026-09-01: "입력해도 스타일이 직접 반영 안 되는 경우가 많음" 신고 —
      기울임/취소선/링크/수식/체크박스/번호 목록/코드 블록은 여태 라이브
@@ -255,9 +255,9 @@
   .md-strike{ text-decoration: line-through; opacity: 0.65; }
   .md-link{ color: var(--accent-solid); text-decoration: underline; text-underline-offset: 2px; }
   .md-link-url{ color: var(--ink-faint); text-decoration: none; }
-  .md-fence-marker{ color: var(--ink-faint); font-family:"SFMono-Regular", Consolas, Menlo, monospace; font-size:0.9em; }
+  .md-fence-marker{ color: var(--ink-faint); font-family: var(--font-mono); font-size:0.9em; }
   .md-fence-content{
-    font-family:"SFMono-Regular", Consolas, Menlo, monospace; font-size:0.92em; color: var(--ink-soft);
+    font-family: var(--font-mono); font-size:0.92em; color: var(--ink-soft);
   }
 
   /* 옵시디언 스타일 서식 툴바 — 굵게/기울임/취소선/코드/수식 버튼은 선택한
@@ -701,6 +701,7 @@
 <div class="backdrop" id="editor-backdrop"></div>
 <div class="backdrop" id="backdrop"></div>
 <script src="/assets/js/marked.umd.js"></script>
+<script src="/assets/js/highlight.min.js"></script>
 <script src="/assets/js/window.js"></script>
 <script src="/assets/js/retro-log.js"></script>
 
@@ -746,6 +747,29 @@
   // 메타데이터가 없는 이미지(예: 이 기능 이전에 쓴 글, 또는 그냥 순수
   // 마크다운으로 쓴 이미지)는 항상 기본값(가운데 정렬·100%)으로 보이므로 기존
   // 글을 다시 열어 편집해도 모양이 달라지지 않는다.
+  // 2026-09-04: "```로 되는 코드 블럭도 필요해. 코딩 위주의 글씨체로 하고,
+  // 변수 같은 걸 구분할 수 있게 색상을 (테마에 맞게) 써줘" 요청 — marked 기본
+  // 코드 렌더러는 그냥 <pre><code>이스케이프된 원문</code></pre>만 찍어내고
+  // 색은 전혀 안 입히는데, 여기서 highlight.js(assets/js/highlight.min.js —
+  // 이 페이지에서만 불러오는 이유는 위 파일 헤더 주석 참고)로 실제 문법
+  // 강조를 해서 그 결과 HTML을 대신 찍어낸다. ```js/```sql처럼 언어를
+  // 적었으면 그 언어로, 언어를 안 적었거나 highlight.js가 모르는 언어면
+  // highlightAuto()로 자동 감지 — 아무 것도 안 칠하는 것보단 낫다는 판단.
+  // 색상 자체(.hljs-키워드/문자열/주석 등)는 assets/css/style.css에서
+  // 사이트 테마 변수(--accent-*, --ok, --danger, --ink*)로 칠해서, 이미지
+  // 정렬 기능(위 renderer.image)과 마찬가지로 테마를 바꾸면 코드 색도 같이
+  // 바뀐다. 글꼴은 같은 style.css의 --font-mono(JetBrains Mono) 하나로
+  // 인라인 코드·코드 블록·이 페이지의 라이브 타이핑 미리보기(.md-code 등)가
+  // 전부 통일된다.
+  function highlightCode(text, lang){
+    const langName = (lang || '').trim().split(/\s+/)[0].toLowerCase();
+    if (!window.hljs) return { html: escapeHtml(text), lang: '' };
+    if (langName && hljs.getLanguage(langName)){
+      return { html: hljs.highlight(text, { language: langName }).value, lang: langName };
+    }
+    const auto = hljs.highlightAuto(text);
+    return { html: auto.value, lang: auto.language || '' };
+  }
   (function(){
     const renderer = new marked.Renderer();
     renderer.image = function({ href, title, text }){
@@ -753,6 +777,11 @@
       return '<span class="mt-img align-' + meta.align + '" data-align="' + meta.align +
         '" data-width="' + meta.width + '" style="--mt-w:' + meta.width + '%">' +
         '<img src="' + escapeHtml(href || '') + '" alt="' + escapeHtml(text || '') + '" loading="lazy"></span>';
+    };
+    renderer.code = function({ text, lang }){
+      const result = highlightCode(text, lang);
+      const langClass = result.lang ? ' language-' + result.lang : '';
+      return '<pre><code class="hljs' + langClass + '">' + result.html + '</code></pre>\n';
     };
     marked.use({ renderer });
   })();
