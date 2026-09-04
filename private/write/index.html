@@ -292,6 +292,64 @@
 
   .attach-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
 
+  /* 2026-09-04: "노션처럼 사진 정렬 + 크기 조절" 요청 — "미리보기" 화면 안에서만
+     동작하는 편집용 UI. 이미지에 마우스를 올리면 위쪽에 좌/중앙/우 정렬 버튼
+     툴바가 뜨고, 양옆에 드래그해서 너비를 바꾸는 손잡이가 뜬다. 실제 정렬/너비
+     스타일(.mt-img 등)은 assets/css/style.css에 있음(게시된 글에도 반영되어야
+     하므로) — 여기 있는 건 전부 "편집 중에만 보이는" 것들뿐이다.
+     툴바를 이미지 바깥(위)이 아니라 안쪽 위 모서리에 겹쳐서 배치한 이유 —
+     #pv-body(.window-body)는 사이트 공용 규칙(.console-screen .window
+     .window-body{ overflow-y:auto })의 영향을 받는데, 이미지가 미리보기 맨
+     위쪽에 있을 때 툴바를 이미지 "바깥 위"로 튀어나오게 두면 그 overflow에
+     잘려서 안 보이는, 글쓰기 창에서 이미 한 번 겪었던 것과 같은 종류의 버그가
+     재현된다(9번 항목 참고) — 이미지 안쪽에 겹쳐 두면 애초에 잘릴 여지가 없다. */
+  .mt-img{ position:relative; }
+  .mt-img-toolbar{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    display:flex; gap:2px; padding:5px; border-radius:9px;
+    background: var(--chrome-bg); border:1px solid var(--chrome-border);
+    box-shadow: 0 6px 18px rgba(0,0,0,.28);
+    opacity:0; pointer-events:none; transition:opacity .15s ease;
+    z-index:6;
+  }
+  .mt-img:hover .mt-img-toolbar{ opacity:1; pointer-events:auto; }
+  .mt-img-btn{
+    display:flex; align-items:center; justify-content:center;
+    width:26px; height:22px; border:none; border-radius:6px;
+    background:transparent; color: var(--ink-soft); cursor:pointer;
+  }
+  .mt-img-btn:hover{ background: var(--accent-soft); color: var(--accent-solid); }
+  .mt-img-btn.active{ background: var(--accent-soft); color: var(--accent-solid); }
+  .mt-align-icon{
+    display:block; width:15px; height:11px; border:1.5px solid currentColor;
+    border-radius:2px; position:relative;
+  }
+  .mt-align-icon::after{
+    content:''; position:absolute; top:2.5px; bottom:2.5px; width:4px;
+    background:currentColor; border-radius:1px;
+  }
+  .mt-align-icon.al::after{ left:2px; }
+  .mt-align-icon.ac::after{ left:50%; transform:translateX(-50%); }
+  .mt-align-icon.ar::after{ right:2px; }
+  .mt-img-handle{
+    position:absolute; top:0; bottom:0; width:16px;
+    display:flex; align-items:center; justify-content:center;
+    cursor: ew-resize; opacity:0; transition:opacity .15s ease; z-index:6;
+  }
+  .mt-img-handle::after{
+    content:''; width:4px; height:42px; border-radius:3px;
+    background: var(--accent-solid); box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18);
+  }
+  .mt-img-handle-left{ left:2px; }
+  .mt-img-handle-right{ right:2px; }
+  .mt-img:hover .mt-img-handle, .mt-img.is-resizing .mt-img-handle{ opacity:1; }
+  .mt-img-size-badge{
+    position:absolute; bottom:8px; right:8px; padding:3px 8px; border-radius:7px;
+    background: rgba(0,0,0,.55); color:#fff; font-size:11.5px; font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+    opacity:0; pointer-events:none; transition:opacity .15s ease;
+  }
+  .mt-img.is-resizing .mt-img-size-badge{ opacity:1; }
+
   /* 글쓰기 창 안쪽, 본문 바로 아래에 붙는 툴바 — overflow:auto인
      window-body 안에서 sticky이므로 전체화면으로 펼쳐도 스크롤 없이 항상 보인다.
      2026-09-01: 전체화면이 아닐 때는 sticky를 끔. 원인 — 창이 작을 때(특히 이번에
@@ -677,6 +735,27 @@
     linked.push(lastLabel);
     return linked.join(' / ');
   }
+  // 2026-09-04: "노션처럼 사진 정렬 + 크기 조절" 요청 — marked 기본 이미지
+  // 렌더러는 그냥 <img src alt title>만 찍어내는데, title 자리에 숨겨둔
+  // "mtimg align=... width=..." 메타데이터(parseImageMeta 참고, 없으면 기본값
+  // 가운데 정렬·100%)를 읽어서 <span class="mt-img align-*" data-align
+  // data-width style="--mt-w:NN%">로 감싼다. 이 span의 정렬/너비 스타일 자체는
+  // assets/css/style.css에 있음(게시된 글도 똑같이 적용돼야 하는 부분) —
+  // 마우스 올렸을 때 뜨는 정렬 버튼·드래그 손잡이 같은 편집 전용 UI는
+  // enhanceImagesInPreview()가 미리보기 화면에서만 따로 붙인다. title에
+  // 메타데이터가 없는 이미지(예: 이 기능 이전에 쓴 글, 또는 그냥 순수
+  // 마크다운으로 쓴 이미지)는 항상 기본값(가운데 정렬·100%)으로 보이므로 기존
+  // 글을 다시 열어 편집해도 모양이 달라지지 않는다.
+  (function(){
+    const renderer = new marked.Renderer();
+    renderer.image = function({ href, title, text }){
+      const meta = parseImageMeta(title);
+      return '<span class="mt-img align-' + meta.align + '" data-align="' + meta.align +
+        '" data-width="' + meta.width + '" style="--mt-w:' + meta.width + '%">' +
+        '<img src="' + escapeHtml(href || '') + '" alt="' + escapeHtml(text || '') + '" loading="lazy"></span>';
+    };
+    marked.use({ renderer });
+  })();
   function markdownToHtml(raw){
     if (!raw || !raw.trim()) return '';
     return marked.parse(raw, { breaks: true });
@@ -718,6 +797,116 @@
       if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
       tn.parentNode.replaceChild(frag, tn);
     });
+  }
+
+  // ---------------------------------------------------------------
+  // 이미지 정렬 · 크기 조절 (노션처럼 — 미리보기에서만 동작하는 편집 UI)
+  // ---------------------------------------------------------------
+  // 원문(마크다운)에는 표준 이미지 문법을 그대로 쓰고(`![alt](url)`), 정렬/
+  // 너비를 실제로 만졌을 때만 title 자리에 "mtimg align=... width=..."를
+  // 덧붙인다 — 아무 것도 안 건드리면 그냥 평범한 마크다운 이미지라 다른
+  // 마크다운 도구로 열어봐도 안 깨진다.
+  function parseImageMeta(title){
+    const meta = { align: 'center', width: 100 };
+    if (!title) return meta;
+    const m = /^mtimg(?:\s+align=(left|center|right))?(?:\s+width=(\d{1,3}))?/.exec(title);
+    if (!m) return meta;
+    if (m[1]) meta.align = m[1];
+    if (m[2]) meta.width = Math.max(20, Math.min(100, parseInt(m[2], 10)));
+    return meta;
+  }
+  // 원문 안에서 index번째(0-based) 이미지 하나만 골라 정렬/너비를 바꾼 새
+  // 원문을 돌려준다 — 미리보기 안 이미지는 항상 원문에 나오는 순서 그대로
+  // 그려지므로(marked가 왼쪽→오른쪽으로 순서대로 파싱), 미리보기에서 몇 번째
+  // 이미지인지만 알면 원문에서 정확히 같은 이미지를 찾아 고칠 수 있다.
+  function updateImageMetaInSource(md, index, patch){
+    const re = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
+    let i = -1;
+    return md.replace(re, (whole, alt, href, title) => {
+      i++;
+      if (i !== index) return whole;
+      const meta = parseImageMeta(title);
+      if (patch.align !== undefined) meta.align = patch.align;
+      if (patch.width !== undefined) meta.width = Math.max(20, Math.min(100, Math.round(patch.width)));
+      return '![' + alt + '](' + href + ' "mtimg align=' + meta.align + ' width=' + meta.width + '")';
+    });
+  }
+  function applyImagePatch(index, patch){
+    const editorEl = document.getElementById('editor-textarea');
+    editorEl.value = updateImageMetaInSource(editorEl.value, index, patch);
+    syncHighlight();
+    updateEditorCaret();
+  }
+  // 미리보기 화면 안 이미지마다: 호버하면 뜨는 좌/중앙/우 정렬 버튼 툴바 +
+  // 양옆 드래그 손잡이(너비 조절)를 붙인다. 렌더된 순서 = 원문에 등장하는
+  // 순서이므로 querySelectorAll의 인덱스를 그대로 updateImageMetaInSource의
+  // index로 쓸 수 있다.
+  function enhanceImagesInPreview(container){
+    container.querySelectorAll('.mt-img').forEach((wrap, index) => {
+      const align = wrap.dataset.align || 'center';
+      const toolbar = document.createElement('div');
+      toolbar.className = 'mt-img-toolbar';
+      [['left','al','왼쪽 정렬'], ['center','ac','가운데 정렬'], ['right','ar','오른쪽 정렬']].forEach(([a, iconCls, label]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'mt-img-btn' + (a === align ? ' active' : '');
+        btn.title = label;
+        btn.innerHTML = '<span class="mt-align-icon ' + iconCls + '"></span>';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          applyImagePatch(index, { align: a });
+          refreshPreviewAfterImageEdit();
+        });
+        toolbar.appendChild(btn);
+      });
+      wrap.appendChild(toolbar);
+      ['left','right'].forEach(side => {
+        const handle = document.createElement('span');
+        handle.className = 'mt-img-handle mt-img-handle-' + side;
+        handle.addEventListener('mousedown', (e) => beginImageResize(e, wrap, index, side));
+        wrap.appendChild(handle);
+      });
+    });
+  }
+  // 손잡이를 드래그하는 동안에는(마우스 이동마다) 눈에 보이는 크기만 즉시
+  // 바꾸고(--mt-w 변수), 원문(마크다운)에는 손을 떼는 순간(mouseup) 딱 한 번만
+  // 반영한다 — 드래그 중에 매 픽셀마다 텍스트를 고치고 다시 렌더링하면
+  // 버벅이고, syncHighlight/캐럿 계산까지 매번 다시 돌아 불필요하게 무겁다.
+  function beginImageResize(e, wrap, index, side){
+    e.preventDefault();
+    const parent = wrap.parentElement;
+    const containerWidth = (parent && parent.clientWidth) || 1;
+    const startWidth = parseInt(wrap.dataset.width, 10) || 100;
+    const startX = e.clientX;
+    let liveWidth = startWidth;
+    let badge = wrap.querySelector('.mt-img-size-badge');
+    if (!badge){
+      badge = document.createElement('span');
+      badge.className = 'mt-img-size-badge';
+      wrap.appendChild(badge);
+    }
+    wrap.classList.add('is-resizing');
+    badge.textContent = liveWidth + '%';
+    const prevUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = 'none';
+    function onMove(ev){
+      const deltaPercent = ((ev.clientX - startX) / containerWidth) * 100;
+      const raw = side === 'right' ? startWidth + deltaPercent : startWidth - deltaPercent;
+      liveWidth = Math.max(20, Math.min(100, Math.round(raw)));
+      wrap.style.setProperty('--mt-w', liveWidth + '%');
+      wrap.dataset.width = liveWidth;
+      badge.textContent = liveWidth + '%';
+    }
+    function onUp(){
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.userSelect = prevUserSelect;
+      wrap.classList.remove('is-resizing');
+      applyImagePatch(index, { width: liveWidth });
+      refreshPreviewAfterImageEdit();
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   }
   function indentHtml(html, indent){
     indent = indent || '        ';
@@ -2467,14 +2656,13 @@
   // ---------------------------------------------------------------
   // 미리보기 (페이지 맨 아래에 표시)
   // ---------------------------------------------------------------
-  document.getElementById('btn-preview').addEventListener('click', () => {
-    const log = document.getElementById('publish-log');
-    log.innerHTML = '';
-    let data;
-    try{ data = currentData(); }catch(e){ logTo(log, '❌ ' + e.message, 'err'); return; }
-    if (window.__exitEditorFullscreen) window.__exitEditorFullscreen();
-
-    const section = document.getElementById('preview-section');
+  // 2026-09-04: 이미지 정렬/크기 조절(위 enhanceImagesInPreview 참고)이
+  // 미리보기 화면 자체를 다시 그려야 해서, "데이터 계산 + 화면 갱신" 부분을
+  // paintPreview(data)로 분리했다 — "미리보기" 버튼 클릭(처음 열 때, 아래
+  // 유효성 검사·화면 전환 포함)과 이미지 편집 후 재갱신(화면은 이미 열려
+  // 있으므로 검사·전환 없이 내용만 다시 그림, refreshPreviewAfterImageEdit)
+  // 둘 다 이 함수를 그대로 재사용한다.
+  function paintPreview(data){
     if (currentMode === 'post' || currentMode === 'edit'){
       document.getElementById('pv-path').innerHTML = buildBreadcrumb(data.folder, data.slug + '.md');
       document.getElementById('pv-date').textContent = data.dateLabel;
@@ -2499,6 +2687,28 @@
     // 복잡한 내부 구조 때문에 흔들릴 수 있어 그쪽은 손대지 않고, 캐럿과 무관한
     // 이 "미리보기"에서만 실제 렌더링한다.
     renderMathInPreview(document.getElementById('pv-content'));
+    // 2026-09-04: 이미지마다 정렬 버튼 툴바 + 크기 조절 손잡이를 붙인다(노션
+    // 스타일). innerHTML을 통째로 새로 그렸으므로 매번 다시 붙여야 한다.
+    enhanceImagesInPreview(document.getElementById('pv-content'));
+  }
+  // 이미지 정렬 버튼을 누르거나 손잡이 드래그를 끝냈을 때 — 화면은 이미 열려
+  // 있으니 유효성 검사 실패 메시지를 새로 띄우거나 화면을 전환할 필요 없이,
+  // 그냥 조용히 다시 그리기만 한다(실패해도 무시 — 애초에 미리보기가 열려있던
+  // 시점엔 이미 유효성 검사를 통과했었다는 뜻이므로 사실상 실패할 일이 없다).
+  function refreshPreviewAfterImageEdit(){
+    let data;
+    try{ data = currentData(); }catch(e){ return; }
+    paintPreview(data);
+  }
+  document.getElementById('btn-preview').addEventListener('click', () => {
+    const log = document.getElementById('publish-log');
+    log.innerHTML = '';
+    let data;
+    try{ data = currentData(); }catch(e){ logTo(log, '❌ ' + e.message, 'err'); return; }
+    if (window.__exitEditorFullscreen) window.__exitEditorFullscreen();
+
+    const section = document.getElementById('preview-section');
+    paintPreview(data);
     document.getElementById('tool-area').hidden = true;
     section.hidden = false;
     section.scrollIntoView({ behavior:'instant', block:'start' });

@@ -1452,6 +1452,25 @@ a{ color: inherit; text-decoration: none; }
 .window-body hr{ border: none; border-top: 1px dashed var(--chrome-border); margin: 24px 0; }
 .window-body img{ max-width: 100%; border-radius: 10px; }
 
+/* 2026-09-04: "노션처럼 사진 좌/중앙/우 정렬 + 크기 조절" 요청 — private/write/의
+   글쓰기 도구가 이미지 마크다운 `![alt](url "mtimg align=... width=...")`의
+   title 자리에 정렬/너비 메타데이터를 저장하고(아무 조작도 안 하면 메타데이터가
+   아예 없어서 그냥 평범한 마크다운 이미지), 그걸 커스텀 렌더러가 아래 클래스로
+   감싼 <span>으로 바꿔 찍어낸다(private/write/index.html의 markdownToHtml
+   렌더러 등록 부분 참고). 실제 정렬/크기 조절 버튼·드래그 손잡이 같은 편집용
+   UI는 글쓰기 도구의 "미리보기" 화면에서만 뜨고(그쪽 자체 <style>에 있음),
+   여기 있는 건 게시된 글에도 그대로 반영되어야 하는 "결과 모양"만이다. */
+.mt-img{
+  display: block;
+  width: var(--mt-w, 100%);
+  max-width: 100%;
+  margin: 22px 0;
+}
+.mt-img.align-left{ margin-left: 0; margin-right: auto; }
+.mt-img.align-center{ margin-left: auto; margin-right: auto; }
+.mt-img.align-right{ margin-left: auto; margin-right: 0; }
+.mt-img img{ display: block; width: 100%; height: auto; border-radius: 10px; }
+
 /* ---------- folder listing (entry-list) ---------- */
 
 .entry-list{ display: flex; flex-direction: column; gap: 4px; margin-top: 24px; }
