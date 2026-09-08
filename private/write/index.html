@@ -182,51 +182,73 @@
   .editor-pane{ flex:1; display:flex; flex-direction:column; }
   .editor-pane-label{ font-size:13.5px; color: var(--ink-faint); margin-bottom:8px; font-weight:600; }
 
-  .live-editor-wrap{ position:relative; flex:1; min-height:280px; }
+  .live-editor-wrap{ position:relative; flex:1; min-height:280px; display:flex; flex-direction:column; }
   .window.is-fullscreen .live-editor-wrap{ min-height:0; }
 
-  .live-editor-highlight, .live-editor-input{
-    position:absolute; inset:0; margin:0; width:100%; height:100%; box-sizing:border-box;
+  /* 2026-09-08: 진짜 contenteditable 표면. 예전 오버레이 방식과 달리 레이어가
+     하나뿐이라(실제 캐럿도 브라우저가 그대로 그려줌) 구조가 훨씬 단순하다.
+     #editor-textarea(hidden backing store)는 화면에 안 보이므로 폰트/여백을
+     맞출 필요가 없다 — 아래 .ce-backing-store 참고. */
+  .ce-editor{
+    position:relative; flex:1; width:100%; box-sizing:border-box;
     font-family:inherit; font-size:16.5px; line-height:1.85; padding:14px 16px;
     border:1px solid var(--chrome-border); border-radius:10px;
     white-space:pre-wrap; word-wrap:break-word; overflow:auto;
+    color:var(--ink); background: var(--chrome-bg); outline:none;
   }
-  .live-editor-highlight{
-    pointer-events:none; color:var(--ink); background: var(--chrome-bg);
+  .ce-editor:focus{ border-color: var(--accent-solid); outline:2px solid var(--accent-soft); }
+  /* 2026-09-07: 전체화면(.is-fullscreen)에서는 이 창이 콘솔 셸의
+     transform:scale(--console-scale) 밖(document.body 바로 아래)으로 옮겨져서
+     평소엔 콘솔 셸 배율을 같이 받아 화면 크기에 맞춰 자연히 커지던 16.5px
+     글자가, 전체화면에서는 그 배율을 전혀 못 받고 고정 16.5px 그대로 남는다
+     ("글 쓰는 창 폰트가 너무 작다, 큰 화면에서 비율 고정으로" 요청으로 확인).
+     실제 화면 폭(vw)에 비례해 커지되, 작은 창에서는 원래 크기 아래로 안
+     내려가고 아주 큰 화면에서는 30px에서 멈추도록 clamp()로 잡는다. 코드
+     블록(.ce-fence-*)은 이 값의 상대 크기(em)라 같이 늘어난다. */
+  .window.is-fullscreen .ce-editor{
+    font-size: clamp(16.5px, 0.9vw + 5.5px, 30px);
   }
-  .live-editor-highlight div{ min-height:1.85em; }
-  .live-editor-input{
-    background:transparent; color:transparent; resize:none; outline:none;
-    /* 진짜(브라우저 기본) 커서는 숨긴다 — 제목 줄처럼 글자 크기가 커지는 줄에서는
-       이 기본 커서가 (텍스트에어리어 전체가 한 글자 크기만 쓸 수 있어서) 원래
-       작은 글자 기준 위치에 남기 때문에, 화면에 커진 채로 보이는 글자와 어긋나
-       보임. 대신 아래 #editor-caret(스타일이 적용된 실제 화면 위치를 JS로 계산해
-       그리는 가짜 커서)를 그 자리에 정확히 그려서 보여준다. */
-    caret-color: transparent;
+  .ce-editor .ce-block{ min-height:1.85em; }
+  .ce-editor.ce-empty::before{
+    content: attr(data-placeholder); color: var(--ink-faint); pointer-events:none;
+    position:absolute; top:14px; left:16px; right:16px;
   }
-  .live-editor-input::placeholder{ color: var(--ink-faint); }
-  .live-editor-input:focus + .live-editor-highlight,
-  .live-editor-wrap:focus-within .live-editor-highlight{ border-color: var(--accent-solid); outline:2px solid var(--accent-soft); }
+  /* 실제 원문을 들고 있는 hidden textarea — 화면에는 전혀 안 보이지만
+     display:none/visibility:hidden은 아님(그러면 .focus()가 안 먹는 브라우저가
+     있어서, 기존 wrapSelection()/toggleLinePrefix()/insertAtCursor()가 여전히
+     이 요소에 .focus()를 호출하는 부분과 충돌한다). */
+  .ce-backing-store{
+    position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;
+    pointer-events:none; left:-99999px; top:-99999px; border:none; padding:0;
+  }
 
-  /* 가짜 커서 — 실제 캐럿(텍스트 삽입 위치) 대신 이걸 그려서, 제목처럼 글자가
-     커지는 줄에서도 "화면에 보이는 글자 크기 그대로" 정확한 위치에 커서가 나타나게
-     한다. 위치 계산은 #editor-caret-mirror(화면 밖에 숨겨둔 복사본)에 커서 앞
-     내용을 그대로 다시 그려서 재는 방식 — assets 스크립트가 아니라 이 페이지의
-     updateEditorCaret()/mirrorMeasureCaret()에서 처리한다. */
-  .editor-caret{
-    position:absolute; width:2px; background: var(--ink); pointer-events:none; display:none;
+  /* 2026-09-08: 코드 블록 하나 — 실제로는 진짜 <textarea>가 타이핑을 받는다
+     (Enter/Backspace/IME/붙여넣기 전부 브라우저 기본 동작 그대로라 안전함,
+     예전에 전체 에디터가 겪었던 contenteditable 버그와 무관). 그 밑에 겹쳐
+     둔 읽기 전용 <pre>가 하이라이트된 모습을 보여주고, textarea 글자는
+     투명 처리해서 진짜(브라우저 기본) 커서만 보이게 한다 — 코드 블록은
+     글자 크기가 항상 균일(monospace, 한 가지 크기)해서 본문 에디터처럼
+     캐럿 위치를 직접 계산할 필요가 없다(그래서 여긴 가짜 커서 안 씀). */
+  .ce-fence{ margin:0.35em 0; border:1px solid var(--chrome-border); border-radius:8px; overflow:hidden; background: var(--chrome-bg); }
+  .ce-fence-head{
+    padding:5px 12px; font-size:11.5px; color: var(--ink-faint); font-family: var(--font-mono);
+    background: rgba(127,127,127,0.07); border-bottom:1px dashed var(--chrome-border);
   }
-  .editor-caret.show{ display:block; animation: editor-caret-blink 1s step-end infinite; }
-  @keyframes editor-caret-blink{ 0%, 50% { opacity:1; } 50.001%, 100% { opacity:0; } }
+  .ce-fence-body{ position:relative; }
+  .ce-fence-highlight, .ce-fence-input{
+    display:block; width:100%; box-sizing:border-box; margin:0; padding:10px 14px;
+    font-family: var(--font-mono); font-size:0.92em; line-height:1.6;
+    white-space:pre; overflow-x:auto; border:none; background:transparent;
+  }
+  .ce-fence-highlight{ pointer-events:none; color: var(--ink-soft); position:absolute; inset:0; }
+  .ce-fence-highlight code{ font-family:inherit; background:none; padding:0; }
+  .ce-fence-input{ position:relative; color:transparent; caret-color: var(--ink); resize:vertical; outline:none; min-height:2.4em; }
 
-  /* 화면 밖에 숨겨서, 커서 위치 계산에만 쓰는 복사본. 실제 하이라이트 레이어와
-     폰트/줄간격/여백/줄바꿈 규칙이 전부 똑같아야 위치 계산이 정확하다. */
-  #editor-caret-mirror{
-    position:fixed; top:0; left:-99999px; visibility:hidden; margin:0; box-sizing:border-box;
-    font-family:inherit; font-size:16.5px; line-height:1.85; padding:14px 16px;
-    border:1px solid transparent; white-space:pre-wrap; word-wrap:break-word;
-  }
-  #editor-caret-mirror div{ min-height:1.85em; }
+  /* 이미지 블록 — contenteditable="false"인 통짜 블록으로, 클릭해도 그 안에
+     글자 캐럿이 생기지 않는다(자세한 이유는 스크립트의 ceDomPointForOffset
+     참고). 정렬/크기 툴바(.mt-img-toolbar 등)는 위 "이미지 정렬·크기 조절"
+     섹션의 스타일을 그대로 재사용한다. */
+  .ce-image{ margin:0.4em 0; }
 
   /* 라이브 마크다운 스타일 — 문법 기호(#, **, ` 등)는 옅게 보여주고, 제목은
      실제 사이트와 비슷한 크기로 바로 커진다. 위 가짜 커서 덕분에, 여기서 글자
@@ -603,13 +625,18 @@
               <button class="wbtn wbtn-ghost wbtn-small" id="btn-attach" type="button">이미지 · PDF 첨부</button>
               <span class="hint">업로드하면 커서 위치에 마크다운으로 자동 삽입돼요 (3MB 이하)</span>
             </div>
+            <!-- 2026-09-08: "노션처럼 코드/사진도 미리보기 없이 바로 보이게" 요청으로
+                 textarea+오버레이 방식을 진짜 contenteditable(#ce-editor)로 새로 만듦.
+                 #editor-textarea(hidden)는 여전히 "진짜 원문(마크다운)"을 들고 있는
+                 유일한 진실 공급원 — buildPostFile/doLoadForEdit/GitHub 발행/서식
+                 툴바/이미지 정렬 등 기존 코드는 전부 이 값만 읽고 쓰므로 그대로 둔다.
+                 자세한 설계 이유(과거 contenteditable 포기 이력 포함)는 아래 스크립트의
+                 "#ce-editor 컨텐트에디터블 에디터" 주석 참고. -->
             <div class="live-editor-wrap">
-              <div class="live-editor-highlight" id="editor-highlight" aria-hidden="true"></div>
-              <div class="editor-caret" id="editor-caret" aria-hidden="true"></div>
-              <textarea id="editor-textarea" class="live-editor-input" spellcheck="false"
-                placeholder="여기를 클릭하면 전체화면으로 바뀌어요. #, **, `, -, > 를 쓰면 입력하는 즉시 스타일이 적용됩니다."></textarea>
+              <div class="ce-editor" id="ce-editor" contenteditable="true" spellcheck="false"
+                data-placeholder="여기를 클릭하면 전체화면으로 바뀌어요. #, **, `, -, > 를 쓰면 입력하는 즉시 스타일이 적용되고, 이미지·코드블록도 바로 보여요."></div>
+              <textarea id="editor-textarea" class="ce-backing-store" tabindex="-1" aria-hidden="true"></textarea>
             </div>
-            <div id="editor-caret-mirror" aria-hidden="true"></div>
           </div>
 
           <!-- 전체화면일 때도 항상 보이도록, 창 안쪽 아래에 붙어있는 툴바 -->
@@ -863,7 +890,15 @@
   function applyImagePatch(index, patch){
     const editorEl = document.getElementById('editor-textarea');
     editorEl.value = updateImageMetaInSource(editorEl.value, index, patch);
-    syncHighlight();
+    // 2026-09-08: syncHighlight()가 아니라 renderCEBlocks()만 직접 부른다 —
+    // syncHighlight()는 (서식 툴바처럼) 편집 후 캐럿을 에디터 쪽으로 되돌리는
+    // 것까지 포함하는데, 정렬 버튼을 누르거나 크기 손잡이를 놓았을 때는
+    // 원래(예전 오버레이 방식에서도) 포커스를 에디터로 다시 뺏어오지 않았다
+    // (이미지 툴바만 조작 중이었지 타이핑을 이어가려던 게 아니므로) — 게다가
+    // textarea는 .value를 새로 대입하면 selectionStart/End가 브라우저에 의해
+    // 문서 맨 끝으로 밀려나므로, syncHighlight()를 그대로 쓰면 캐럿이 엉뚱하게
+    // 맨 끝으로 튀어 보이는 문제가 생긴다.
+    renderCEBlocks(editorEl.value);
     updateEditorCaret();
   }
   // 미리보기 화면 안 이미지마다: 호버하면 뜨는 좌/중앙/우 정렬 버튼 툴바 +
@@ -1644,18 +1679,637 @@
     }
     return { cls: '', inner: inlineFormat(esc) };
   }
+  // ---------------------------------------------------------------
+  // #ce-editor 컨텐트에디터블 에디터 (2026-09-08)
+  // ---------------------------------------------------------------
+  // "노션처럼 코드/사진도 미리보기 없이 바로 보이게" 요청으로 위 textarea+
+  // 오버레이 방식을 진짜 contenteditable로 새로 만든다.
+  //
+  // 중요한 과거 이력 — 이 프로젝트는 예전에 한 번 이 기능을 통째로
+  // contenteditable로 만들었다가, 줄/스타일 경계에서 Enter를 누르면 개행이
+  // 브라우저마다 다르게(어떤 브라우저에서는 아예 삼켜져서) 처리되는 실제
+  // 크로스브라우저 버그를 만나 포기하고 지금까지의 textarea+오버레이 방식으로
+  // 되돌아간 적이 있다(claude/homepage-design-decisions.md 참고). 사용자가
+  // 그 위험을 알고도 다시 만들기를 원해서 진행하되, 같은 버그를 반복하지
+  // 않도록 설계를 다르게 한다 — 브라우저의 기본 Enter/Backspace/Delete
+  // "블록 경계를 넘나드는" 동작은 절대 그대로 믿지 않는다. 이 세 키는 항상
+  // keydown에서 가로채(preventDefault) 우리가 직접 "원문 문자열 전체"를
+  // 손으로 잘라 붙이고, 그 결과로 블록을 통째로 다시 그린 뒤 캐럿을 정확한
+  // 위치로 되돌린다(ceApplyEdit). 오직 "한 줄 블록 안에서 글자 하나 입력"처럼
+  // 애초에 이 버그가 나지 않는 경우에만 브라우저 기본 동작을 그대로 두고
+  // (그 다음 그 줄만 다시 스타일 입힘 — ceReformatLine), 코드 블록 내부는
+  // 진짜 <textarea>가 그대로 받는다(버그 원인이었던 contenteditable을 그
+  // 안에서는 아예 안 씀 — 예전에도 검증됐던 안전한 방식).
+  //
+  // #editor-textarea(기존 hidden textarea)는 계속 "진짜 원문(마크다운)"을
+  // 들고 있는 유일한 진실 공급원으로 남는다 — buildPostFile/doLoadForEdit/
+  // GitHub 발행/서식 툴바(wrapSelection 등)/이미지 정렬(applyImagePatch) 등
+  // 기존 코드는 전부 이 값만 읽고 쓰므로 한 줄도 안 고쳐도 된다. syncHighlight()
+  // 하나만 "그 값으로 #ce-editor를 다시 그리고 캐럿을 옮긴다"는 뜻으로 새로
+  // 정의하면(아래), 기존 코드는 자기가 여전히 예전 방식을 그리는 줄 알고
+  // 호출해도 실제로는 새 에디터가 갱신된다. updateEditorCaret()은 이제 할 일이
+  // 없어서(caret은 syncHighlight 안에서 이미 처리됨) 호출부 호환을 위한
+  // 빈 함수로만 남긴다.
+
+  const CE_IMG_LINE_RE = /^\s*!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)\s*$/;
+  const CE_IMG_ANY_RE = /!\[[^\]]*\]\([^)\s]+(?:\s+"[^"]*")?\)/g;
+  const CE_FENCE_OPEN_RE = /^```(.*)$/;
+  const CE_FENCE_CLOSE_RE = /^```\s*$/;
+
+  // 원문(줄 배열)을 블록 목록으로 나눈다 — "다시 그릴 구조"를 결정하는 유일한
+  // 곳. 코드 펜스가 안 닫혀 있으면(아직 타이핑 중) 문서 끝까지를 그 블록으로
+  // 본다 — 그래야 닫는 ```를 마저 치기 전에도 코드처럼 바로 보인다.
+  function ceParseBlocks(rawText){
+    const lines = (rawText || '').split('\n');
+    const blocks = [];
+    let i = 0, pos = 0;
+    while (i < lines.length){
+      const line = lines[i];
+      const fenceMatch = line.match(CE_FENCE_OPEN_RE);
+      if (fenceMatch){
+        let j = i + 1;
+        while (j < lines.length && !CE_FENCE_CLOSE_RE.test(lines[j])) j++;
+        const closed = j < lines.length;
+        const endLine = closed ? j : lines.length - 1;
+        const raw = lines.slice(i, endLine + 1).join('\n');
+        blocks.push({ type: 'fence', raw, start: pos, lang: fenceMatch[1] || '', closed });
+        pos += raw.length + (endLine < lines.length - 1 ? 1 : 0);
+        i = endLine + 1;
+        continue;
+      }
+      const imgMatch = line.match(CE_IMG_LINE_RE);
+      if (imgMatch){
+        blocks.push({ type: 'image', raw: line, start: pos, alt: imgMatch[1], href: imgMatch[2], title: imgMatch[3] || '' });
+        pos += line.length + (i < lines.length - 1 ? 1 : 0);
+        i++;
+        continue;
+      }
+      blocks.push({ type: 'line', raw: line, start: pos });
+      pos += line.length + (i < lines.length - 1 ? 1 : 0);
+      i++;
+    }
+    if (blocks.length === 0) blocks.push({ type: 'line', raw: '', start: 0 });
+    blocks.forEach((b, idx) => {
+      b.end = b.start + b.raw.length;
+      if (b.type === 'image'){
+        // updateImageMetaInSource()는 원문 전체를 훑어 "몇 번째 이미지인지"로
+        // 찾으므로(줄 위치와 무관하게, 텍스트 한 줄 안에 여러 개 있어도 셈),
+        // 여기서도 같은 규칙으로 인덱스를 매겨야 정렬/크기 버튼이 엉뚱한
+        // 이미지를 고치지 않는다.
+      }
+    });
+    let imgIdx = 0;
+    blocks.forEach((b) => {
+      if (b.type === 'image'){ b.imgIndex = imgIdx; imgIdx++; }
+      else if (b.type === 'line'){
+        const m = b.raw.match(CE_IMG_ANY_RE);
+        if (m) imgIdx += m.length;
+      }
+    });
+    return blocks;
+  }
+
+  function ceRenderLineHtml(raw){
+    const state = { inFence: false };
+    const { cls, inner } = mdLineParts(raw, state);
+    return '<div class="ce-block ce-line' + (cls ? ' ' + cls : '') + '">' + (inner || '<br>') + '</div>';
+  }
+  function ceRenderImageHtml(block){
+    const meta = parseImageMeta(block.title);
+    return '<div class="ce-block ce-image" contenteditable="false" data-raw="' + escapeHtml(block.raw) + '" data-img-index="' + block.imgIndex + '">' +
+      '<span class="mt-img align-' + meta.align + '" data-align="' + meta.align + '"' +
+      ' data-width="' + meta.width + '" style="--mt-w:' + meta.width + '%">' +
+      '<img src="' + escapeHtml(block.href || '') + '" alt="' + escapeHtml(block.alt || '') + '" loading="lazy"></span>' +
+      '</div>';
+  }
+  function ceRenderFenceHtml(block){
+    const lang = block.lang.trim();
+    const bodyLines = block.raw.split('\n');
+    const codeLines = bodyLines.slice(1, block.closed ? bodyLines.length - 1 : bodyLines.length);
+    const code = codeLines.join('\n');
+    const result = highlightCode(code, block.lang);
+    return '<div class="ce-block ce-fence" contenteditable="false" data-lang="' + escapeHtml(lang) + '" data-closed="' + (block.closed ? '1' : '0') + '">' +
+      '<div class="ce-fence-head">' + escapeHtml(lang || '코드') + '</div>' +
+      '<div class="ce-fence-body">' +
+        '<pre class="ce-fence-highlight"><code class="hljs">' + result.html + '</code></pre>' +
+        '<textarea class="ce-fence-input" spellcheck="false">' + escapeHtml(code) + '</textarea>' +
+      '</div>' +
+    '</div>';
+  }
+
+  let ceComposing = false;
+  // 2026-09-08: renderCEBlocks()가 #ce-editor.innerHTML을 통째로 새로 쓰면,
+  // 그 순간 지금 포커스가 가 있던(예: 코드블록 안) 옛 DOM 노드가 문서에서
+  // 제거되면서 브라우저가 그 노드에 즉시 blur/focusout을 발생시킨다 — 코드
+  // 블록에서 밖으로 나갈 때(ceExitFenceBlock) 바로 이 렌더링 도중에 그 코드
+  // 블록 자신의 focusout 리스너가 (아직 안 끝난) 이 함수 실행 중에 다시
+  // renderCEBlocks()를 불러버려서 "이미 옮겨진 노드를 지우려 함" 에러가
+  // 났었다 — 렌더링 중이라는 플래그를 켜두고, 그 사이의 focusout은
+  // "렌더링 자체가 일으킨 것"으로 보고 무시한다(아래 ceWireBlocks의 focusout
+  // 리스너 참고).
+  let ceRendering = false;
+  // 아래 "전체화면 진입" 스크립트가 #ce-editor의 'focus' 이벤트를 참고하는데,
+  // ceSetSelectionRange()가 편집 후 캐럿을 다시 화면에 반영하려고 부르는
+  // .focus()까지 "사용자가 눌러서 들어왔다"로 오해하지 않도록 표시하는 플래그.
+  let ceProgrammaticFocus = false;
+
+  // 원문(문자열) → #ce-editor DOM 전체를 새로 그린다. 구조가 실제로 바뀔 때만
+  // (Enter, 블록 단위 삭제, 첨부파일 삽입, 서식 툴바 등) 불러야 한다 — 코드
+  // 블록 안에서 글자 하나 칠 때마다 부르면 그 textarea가 매번 새로 만들어져
+  // 포커스/커서를 잃는다(아래 ceWireBlocks의 fence input 리스너 참고).
+  function renderCEBlocks(rawText){
+    const ce = document.getElementById('ce-editor');
+    ceRendering = true;
+    try {
+      const blocks = ceParseBlocks(rawText);
+      ce.innerHTML = blocks.map((b) => {
+        if (b.type === 'fence') return ceRenderFenceHtml(b);
+        if (b.type === 'image') return ceRenderImageHtml(b);
+        return ceRenderLineHtml(b.raw);
+      }).join('');
+      ce.classList.toggle('ce-empty', rawText.length === 0);
+      ceWireBlocks();
+      return blocks;
+    } finally {
+      ceRendering = false;
+    }
+  }
+
+  // 방금 통째로 새로 그린 DOM에 이벤트를 (다시) 연결한다 — innerHTML을 새로
+  // 쓰면 이전에 붙인 리스너는 전부 사라지므로 매번 다시 붙여야 한다.
+  function ceWireBlocks(){
+    const ce = document.getElementById('ce-editor');
+    ce.querySelectorAll('.ce-fence-input').forEach((ta) => {
+      const fenceBlock = ta.closest('.ce-fence');
+      const pre = fenceBlock.querySelector('.ce-fence-highlight');
+      const langAttr = fenceBlock.dataset.lang || '';
+      ta.addEventListener('input', () => {
+        const result = highlightCode(ta.value, langAttr);
+        pre.querySelector('code').innerHTML = result.html;
+        pre.scrollTop = ta.scrollTop;
+        pre.scrollLeft = ta.scrollLeft;
+        ceSyncFullFromDom();
+      });
+      ta.addEventListener('scroll', () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; });
+      // 코드 블록의 마지막 빈 줄에서 Enter를 한 번 더 누르면(=다 썼고 밖으로
+      // 나가고 싶다는 뜻으로 봄) 코드 블록을 닫고 바로 아래에 새 빈 줄을
+      // 만들어 캐럿을 옮긴다. 그 외 Enter/Backspace 등은 전부 이 진짜
+      // textarea의 기본 동작 그대로 둔다(검증된, 버그 없는 방식).
+      ta.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const v = ta.value;
+        const atEnd = ta.selectionStart === v.length && ta.selectionEnd === v.length;
+        const lastLineEmpty = v === '' || /\n$/.test(v);
+        if (atEnd && lastLineEmpty){
+          e.preventDefault();
+          ta.value = v.replace(/\n$/, '');
+          ceExitFenceBlock(fenceBlock);
+        }
+      });
+      // 코드블록에서 포커스가 (ce-editor 안 다른 곳으로) 빠져나갈 때만 구조를
+      // 다시 파싱한다 — relatedTarget이 hidden backing store(#editor-textarea)면
+      // wrapSelection() 등이 내부적으로 옮긴 포커스일 뿐이니(그쪽이 알아서
+      // 다시 그림) 여기서 또 그리면 방금 그 함수가 막 갱신한 값을 아직 안
+      // 변한 DOM으로 덮어써버리는 경합이 생긴다 — 그래서 그 경우는 건너뛴다.
+      ta.addEventListener('focusout', (e) => {
+        if (ceRendering) return; // 이 blur 자체가 렌더링(DOM 교체) 때문에 일어난 것 — 다시 그리면 재진입 충돌
+        if (e.relatedTarget && e.relatedTarget.id === 'editor-textarea') return;
+        ceSyncFullFromDom();
+        renderCEBlocks(document.getElementById('editor-textarea').value);
+      });
+    });
+    ce.querySelectorAll('.ce-image').forEach((el) => {
+      const idx = parseInt(el.dataset.imgIndex, 10) || 0;
+      ceEnhanceImageBlock(el, idx);
+    });
+  }
+
+  function ceExitFenceBlock(fenceBlock){
+    ceSyncFullFromDom();
+    const editorEl = document.getElementById('editor-textarea');
+    const raw = editorEl.value;
+    const ceBlocks = Array.from(document.querySelectorAll('#ce-editor > .ce-block'));
+    const domIndex = ceBlocks.indexOf(fenceBlock);
+    const blocks = ceParseBlocks(raw);
+    const target = blocks[domIndex] || blocks[blocks.length - 1];
+    if (!target) return;
+    // 2026-09-08: 아직 닫는 ``` 가 없는(문서 끝까지가 그대로 코드로 먹히는)
+    // 펜스는 그냥 개행 하나만 끝에 넣으면 "코드 블록 맨 끝에 빈 줄 하나가
+    // 늘어난 것"일 뿐 여전히 안 닫힌 상태라 밖으로 못 나간다 — 닫는 ```도
+    // 같이 넣어줘야 재파싱했을 때 진짜로 블록이 끝나고 그 다음에 새 빈 줄이
+    // 생긴다. 이미 닫혀 있던 펜스(기존 글 수정 등)는 원래 개행 하나면 충분.
+    const insertText = (target.type === 'fence' && !target.closed) ? '\n```\n' : '\n';
+    const insertAt = target.end;
+    const newRaw = raw.slice(0, insertAt) + insertText + raw.slice(insertAt);
+    ceApplyEdit(newRaw, insertAt + insertText.length);
+  }
+
+  // 이미지 블록 하나에 정렬 버튼 툴바 + 크기 조절 손잡이를 붙인다 — 아래
+  // "이미지 정렬 · 크기 조절"의 enhanceImagesInPreview()와 완전히 같은
+  // UI/로직을 재사용하되, index를 querySelectorAll 순번이 아니라
+  // ceParseBlocks가 계산한(원문 전체 기준) imgIndex로 넘겨받는다.
+  function ceEnhanceImageBlock(wrap, index){
+    const align = wrap.querySelector('.mt-img') ? wrap.querySelector('.mt-img').dataset.align : 'center';
+    const imgWrap = wrap.querySelector('.mt-img');
+    if (!imgWrap || imgWrap.dataset.ceEnhanced === '1') return;
+    imgWrap.dataset.ceEnhanced = '1';
+    const toolbar = document.createElement('div');
+    toolbar.className = 'mt-img-toolbar';
+    [['left','al','왼쪽 정렬'], ['center','ac','가운데 정렬'], ['right','ar','오른쪽 정렬']].forEach(([a, iconCls, label]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mt-img-btn' + (a === align ? ' active' : '');
+      btn.title = label;
+      btn.innerHTML = '<span class="mt-align-icon ' + iconCls + '"></span>';
+      btn.addEventListener('mousedown', (e) => e.preventDefault());
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyImagePatch(index, { align: a });
+      });
+      toolbar.appendChild(btn);
+    });
+    imgWrap.appendChild(toolbar);
+    ['left','right'].forEach(side => {
+      const handle = document.createElement('span');
+      handle.className = 'mt-img-handle mt-img-handle-' + side;
+      handle.addEventListener('mousedown', (e) => beginImageResize(e, imgWrap, index, side));
+      imgWrap.appendChild(handle);
+    });
+  }
+
+  // ---- DOM 선택(Selection) ↔ 원문 속 "글자 하나짜리" 위치(flat offset) ----
+
+  // .ce-editor의 현재 실제 DOM을 그대로 훑어서 원문 문자열을 되살린다(구조
+  // 재판단 없이 "지금 그려진 그대로"). 코드블록 안에서 매 키 입력마다
+  // #editor-textarea 값만 최신으로 맞춰둘 때(구조 재렌더링 없이) 쓴다.
+  function ceCollectBlocks(){
+    const ce = document.getElementById('ce-editor');
+    const children = Array.from(ce.children);
+    const blocks = [];
+    let pos = 0;
+    children.forEach((el, i) => {
+      let raw, type;
+      if (el.classList.contains('ce-fence')){
+        const lang = el.dataset.lang || '';
+        const ta = el.querySelector('.ce-fence-input');
+        const code = ta ? ta.value : '';
+        const closed = el.dataset.closed !== '0';
+        raw = '```' + lang + '\n' + code + (closed ? '\n```' : '');
+        type = 'fence';
+      } else if (el.classList.contains('ce-image')){
+        raw = el.dataset.raw || '';
+        type = 'image';
+      } else {
+        raw = el.textContent;
+        type = 'line';
+      }
+      const start = pos;
+      blocks.push({ el, type, raw, start, end: start + raw.length });
+      pos = start + raw.length + (i < children.length - 1 ? 1 : 0);
+    });
+    if (blocks.length === 0) blocks.push({ el: null, type: 'line', raw: '', start: 0, end: 0 });
+    return blocks;
+  }
+  function ceSyncFullFromDom(){
+    const editorEl = document.getElementById('editor-textarea');
+    editorEl.value = ceCollectBlocks().map(b => b.raw).join('\n');
+    return editorEl.value;
+  }
+
+  function ceLocalOffsetInLine(lineEl, node, nodeOffset){
+    if (!node) return 0;
+    let local = 0;
+    if (node.nodeType === Node.TEXT_NODE){
+      const walker = document.createTreeWalker(lineEl, NodeFilter.SHOW_TEXT, null);
+      let tn;
+      while ((tn = walker.nextNode())){
+        if (tn === node) return local + nodeOffset;
+        local += tn.nodeValue.length;
+      }
+      return local;
+    }
+    const children = Array.from(node.childNodes).slice(0, nodeOffset);
+    children.forEach(c => { local += (c.textContent || '').length; });
+    return local;
+  }
+  function ceFlatOffsetFromPoint(node, offset){
+    const blocks = ceCollectBlocks();
+    if (!node) return blocks[blocks.length - 1].end;
+    // #ce-editor 자기 자신을 "몇 번째 자식 앞/뒤"로 가리키는 위치 — 통짜(코드/
+    // 이미지) 블록의 경계를 가리킬 때 우리가 직접 이 형태로 만든다(위
+    // ceDomPointForOffset 참고, Ctrl+A 전체 선택 등). blocks 배열은 #ce-editor의
+    // 자식 순서와 1:1로 대응하므로 인덱스를 그대로 blocks[i].start로 바꾼다.
+    if (node.id === 'ce-editor'){
+      if (offset <= 0) return blocks[0] ? blocks[0].start : 0;
+      if (offset >= blocks.length) return blocks[blocks.length - 1].end;
+      return blocks[offset].start;
+    }
+    let el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+    const blockEl = el ? el.closest('.ce-block') : null;
+    if (!blockEl) return blocks[blocks.length - 1].end;
+    const block = blocks.find(b => b.el === blockEl);
+    if (!block) return blocks[blocks.length - 1].end;
+    if (block.type === 'fence'){
+      const ta = blockEl.querySelector('.ce-fence-input');
+      if (ta && document.activeElement === ta){
+        const prefixLen = 3 + (blockEl.dataset.lang || '').length + 1;
+        return block.start + prefixLen + ta.selectionStart;
+      }
+      return block.start;
+    }
+    if (block.type === 'image') return block.start;
+    return block.start + ceLocalOffsetInLine(blockEl, node, offset);
+  }
+  function ceGetSelectionFlatRange(){
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return { start: 0, end: 0 };
+    const a = ceFlatOffsetFromPoint(sel.anchorNode, sel.anchorOffset);
+    const b = ceFlatOffsetFromPoint(sel.focusNode, sel.focusOffset);
+    return { start: Math.min(a, b), end: Math.max(a, b) };
+  }
+
+  function ceLineDomPoint(lineEl, local){
+    if (!lineEl.textContent) return { node: lineEl, offset: 0 };
+    const walker = document.createTreeWalker(lineEl, NodeFilter.SHOW_TEXT, null);
+    let acc = 0, tn;
+    while ((tn = walker.nextNode())){
+      const len = tn.nodeValue.length;
+      if (acc + len >= local) return { node: tn, offset: local - acc };
+      acc += len;
+    }
+    return { node: lineEl, offset: lineEl.childNodes.length };
+  }
+  // offset이 통짜(코드/이미지) 블록 범위 안이면, 그 블록 안에 글자 캐럿을 둘
+  // 수 없으므로 "그 블록 바로 앞/뒤"(부모인 #ce-editor 기준 자식 인덱스)를
+  // 대신 가리킨다 — Ctrl+A(전체 선택)처럼 여러 블록에 걸친 범위가 통짜
+  // 블록을 통과할 때도 이 방식이면 자연스럽게 그 블록까지 선택 범위에
+  // 포함된다(Range가 원래 텍스트가 아닌 노드도 "몇 번째 자식 앞/뒤"로
+  // 가리킬 수 있다는 성질을 그대로 이용).
+  function ceDomPointForOffset(blocks, offset){
+    let block = blocks.find(b => offset >= b.start && offset <= b.end);
+    if (!block) block = blocks[blocks.length - 1];
+    if (block.type === 'fence' || block.type === 'image'){
+      const ce = document.getElementById('ce-editor');
+      const idx = Array.from(ce.children).indexOf(block.el);
+      const atStart = offset <= block.start;
+      return { node: ce, offset: idx < 0 ? 0 : (atStart ? idx : idx + 1) };
+    }
+    if (!block.el) return null;
+    return ceLineDomPoint(block.el, offset - block.start);
+  }
+  function ceSetCaretAtOffset(offset){ ceSetSelectionRange(offset, offset); }
+  function ceSetSelectionRange(startOffset, endOffset){
+    const blocks = ceCollectBlocks();
+    const startBlock = blocks.find(b => startOffset >= b.start && startOffset <= b.end) || blocks[blocks.length - 1];
+    const endBlock = blocks.find(b => endOffset >= b.start && endOffset <= b.end) || blocks[blocks.length - 1];
+    const editorEl = document.getElementById('editor-textarea');
+    // 시작·끝이 같은 코드 블록 안에 있을 때만(=순수하게 "코드 안에서 캐럿/
+    // 선택") 그 블록의 진짜 textarea에 직접 캐럿을 둔다. 전체 선택처럼
+    // 여러 블록에 걸치면 아래 일반 Range 경로로 보내야 코드 블록도 선택
+    // 범위 안에 제대로 포함된다.
+    if (startBlock.type === 'fence' && startBlock === endBlock){
+      const ta = startBlock.el.querySelector('.ce-fence-input');
+      const prefixLen = 3 + (startBlock.el.dataset.lang || '').length + 1;
+      const localStart = Math.max(0, Math.min(ta.value.length, startOffset - startBlock.start - prefixLen));
+      const localEnd = Math.max(0, Math.min(ta.value.length, endOffset - startBlock.start - prefixLen));
+      ta.focus();
+      ta.setSelectionRange(localStart, localEnd);
+      editorEl.selectionStart = startOffset;
+      editorEl.selectionEnd = endOffset;
+      return;
+    }
+    const ce = document.getElementById('ce-editor');
+    // 2026-09-08: 이 .focus() 호출 자체는 "다시 캐럿을 화면에 반영"하려는
+    // 내부 동작일 뿐인데, 아래 "전체화면 진입" 스크립트가 #ce-editor의
+    // 'focus' 이벤트를 그대로 "사용자가 눌러서 들어왔다"로 해석해 전체화면에
+    // 진입시켜버린다 — 그러면 예를 들어 그냥 "글 수정"에서 기존 글을
+    // 불러오기만 해도(setEditorRawText → syncHighlight → 여기) 사용자가
+    // 누르지도 않았는데 전체화면으로 바뀌는 문제가 생긴다(직접 확인함).
+    // ceProgrammaticFocus 플래그로 "이건 우리가 코드에서 다시 맞춘 포커스지,
+    // 사용자가 클릭/포커스한 게 아니다"를 표시해서 그 리스너가 무시하게 한다.
+    ceProgrammaticFocus = true;
+    try { ce.focus({ preventScroll: true }); } finally { ceProgrammaticFocus = false; }
+    const startPoint = ceDomPointForOffset(blocks, startOffset);
+    const endPoint = ceDomPointForOffset(blocks, endOffset);
+    if (!startPoint || !endPoint) return;
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.setStart(startPoint.node, startPoint.offset);
+    range.setEnd(endPoint.node, endPoint.offset);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    editorEl.selectionStart = startOffset;
+    editorEl.selectionEnd = endOffset;
+  }
+
+  // 통짜(코드/이미지) 블록 바로 앞/뒤에서 Backspace/Delete를 누르면 글자
+  // 하나가 아니라 그 블록 전체(+이어붙는 개행 하나)를 지운다 — 안 그러면
+  // 큰 코드블록을 한 글자씩 수백 번 지워야 한다.
+  function ceAtomicRemovalRange(raw, offset, direction){
+    const blocks = ceParseBlocks(raw);
+    if (direction === 'backward'){
+      const prevBlock = blocks.find(b => b.end + 1 === offset);
+      if (prevBlock && prevBlock.type !== 'line') return { from: prevBlock.start, to: offset };
+      return { from: Math.max(0, offset - 1), to: offset };
+    }
+    const nextBlock = blocks.find(b => b.start === offset);
+    if (nextBlock && nextBlock.type !== 'line'){
+      const to = nextBlock.end < raw.length ? nextBlock.end + 1 : nextBlock.end;
+      return { from: offset, to };
+    }
+    return { from: offset, to: Math.min(raw.length, offset + 1) };
+  }
+
+  // 원문을 통째로 바꾸고, 구조를 다시 그린 뒤, 캐럿을 원하는 위치로 되돌리는
+  // 공통 경로 — Enter/Backspace/Delete/붙여넣기/자르기가 전부 이걸 쓴다.
+  function ceApplyEdit(newRaw, caretOffset){
+    document.getElementById('editor-textarea').value = newRaw;
+    renderCEBlocks(newRaw);
+    ceSetCaretAtOffset(caretOffset);
+  }
+
+  function ceIsPrintableKey(e){
+    return e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
+  }
+  function ceOnKeydown(e){
+    if (e.target.closest('.ce-fence-input')) return; // 코드블록 내부는 안 건드림
+    if (ceComposing) return; // IME 조합 중엔 그대로 둠
+    const editorEl = document.getElementById('editor-textarea');
+
+    // 2026-09-08: Ctrl/Cmd+A(전체 선택)를 브라우저 기본 동작에 맡기면, 코드
+    // 블록·이미지 블록처럼 contenteditable="false"인 통짜 블록 바로 위에서
+    // 캐럿이 시작된 경우 실제로는 아무것도 선택되지 않는(collapsed로 남는)
+    // 경우가 있었다(직접 확인함) — 그러면 그 상태에서 Delete를 눌러도 아무
+    // 일도 안 일어나 "전체 선택해서 지우기"가 먹통이 된다. 그래서 여기서
+    // 직접 처리해 항상 원문 전체를 확실히 선택한다.
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a'){
+      e.preventDefault();
+      ceSyncFullFromDom();
+      ceSetSelectionRange(0, editorEl.value.length);
+      return;
+    }
+
+    if (e.key === 'Enter'){
+      e.preventDefault();
+      const { start, end } = ceGetSelectionFlatRange();
+      ceSyncFullFromDom();
+      const raw = editorEl.value;
+      const newRaw = raw.slice(0, start) + '\n' + raw.slice(end);
+      ceApplyEdit(newRaw, start + 1);
+      return;
+    }
+    if (e.key === 'Backspace'){
+      const { start, end } = ceGetSelectionFlatRange();
+      e.preventDefault();
+      ceSyncFullFromDom();
+      const raw = editorEl.value;
+      if (start !== end){
+        ceApplyEdit(raw.slice(0, start) + raw.slice(end), start);
+        return;
+      }
+      if (start === 0) return;
+      const range = ceAtomicRemovalRange(raw, start, 'backward');
+      ceApplyEdit(raw.slice(0, range.from) + raw.slice(range.to), range.from);
+      return;
+    }
+    if (e.key === 'Delete'){
+      const { start, end } = ceGetSelectionFlatRange();
+      e.preventDefault();
+      ceSyncFullFromDom();
+      const raw = editorEl.value;
+      if (start !== end){
+        ceApplyEdit(raw.slice(0, start) + raw.slice(end), start);
+        return;
+      }
+      if (start >= raw.length) return;
+      const range = ceAtomicRemovalRange(raw, start, 'forward');
+      ceApplyEdit(raw.slice(0, range.from) + raw.slice(range.to), range.from);
+      return;
+    }
+    if (ceIsPrintableKey(e)){
+      // 평범한 글자 입력은 원칙적으로 브라우저 기본 동작에 맡기고 'input'
+      // 이벤트에서 그 줄만 다시 스타일 입힌다(ceOnInput/ceReformatLine) —
+      // 단, 선택 범위가 블록 하나를 벗어나거나(여러 줄에 걸침) 통짜(코드/
+      // 이미지) 블록을 물고 있으면, 브라우저가 "선택 지우고 타이핑"하면서
+      // 블록 경계를 억지로 이어붙이려 하는 게 바로 예전에 겪은 것과 같은
+      // 종류의 위험이라 이 경우만 직접 처리한다.
+      const { start, end } = ceGetSelectionFlatRange();
+      if (start === end) return;
+      const blocks = ceCollectBlocks();
+      const startBlock = blocks.find(b => start >= b.start && start <= b.end);
+      const endBlock = blocks.find(b => end >= b.start && end <= b.end);
+      const crossesBlocks = startBlock !== endBlock;
+      const hitsAtomic = (startBlock && startBlock.type !== 'line') || (endBlock && endBlock.type !== 'line');
+      if (crossesBlocks || hitsAtomic){
+        e.preventDefault();
+        ceSyncFullFromDom();
+        const raw = editorEl.value;
+        ceApplyEdit(raw.slice(0, start) + e.key + raw.slice(end), start + 1);
+      }
+    }
+  }
+  function ceReformatLine(lineEl){
+    const sel = window.getSelection();
+    const caretLocal = ceLocalOffsetInLine(lineEl, sel.focusNode, sel.focusOffset);
+    const raw = lineEl.textContent;
+    const state = { inFence: false };
+    const { cls, inner } = mdLineParts(raw, state);
+    lineEl.className = 'ce-block ce-line' + (cls ? ' ' + cls : '');
+    lineEl.innerHTML = inner || '<br>';
+    const point = ceLineDomPoint(lineEl, caretLocal);
+    if (point){
+      const range = document.createRange();
+      range.setStart(point.node, point.offset);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    ceSyncFullFromDom();
+    document.getElementById('ce-editor').classList.toggle('ce-empty', document.getElementById('editor-textarea').value.length === 0);
+  }
+  function ceOnInput(e){
+    if (ceComposing) return; // compositionend에서 처리
+    // 2026-09-08: contenteditable에서 'input' 이벤트의 target은 실제로 글자가
+    // 바뀐 줄(.ce-line)이 아니라 contenteditable 루트(#ce-editor) 그 자체다
+    // (직접 확인함 — e.target.closest('.ce-line')은 항상 실패한다). 대신
+    // "지금 캐럿이 있는 곳"을 현재 선택(Selection)에서 찾아 그 줄을 알아낸다.
+    const sel = window.getSelection();
+    const anchorEl = sel && sel.focusNode ? (sel.focusNode.nodeType === Node.TEXT_NODE ? sel.focusNode.parentElement : sel.focusNode) : null;
+    const lineEl = anchorEl && anchorEl.closest ? anchorEl.closest('.ce-line') : null;
+    if (!lineEl){ ceSyncFullFromDom(); return; }
+    ceReformatLine(lineEl);
+  }
+  function ceOnPaste(e){
+    if (e.target.closest('.ce-fence-input')) return; // 코드블록 안은 기본 붙여넣기(순수 텍스트) 그대로 둠
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    if (!text) return;
+    const { start, end } = ceGetSelectionFlatRange();
+    ceSyncFullFromDom();
+    const editorEl = document.getElementById('editor-textarea');
+    const raw = editorEl.value;
+    ceApplyEdit(raw.slice(0, start) + text + raw.slice(end), start + text.length);
+  }
+  function ceOnCut(e){
+    if (e.target.closest('.ce-fence-input')) return;
+    const { start, end } = ceGetSelectionFlatRange();
+    if (start === end) return;
+    e.preventDefault();
+    ceSyncFullFromDom();
+    const editorEl = document.getElementById('editor-textarea');
+    const raw = editorEl.value;
+    (e.clipboardData || window.clipboardData).setData('text/plain', raw.slice(start, end));
+    ceApplyEdit(raw.slice(0, start) + raw.slice(end), start);
+  }
+  function ceOnCompositionStart(){ ceComposing = true; }
+  function ceOnCompositionEnd(){
+    ceComposing = false;
+    // ceOnInput과 같은 이유로 e.target이 아니라 현재 선택 위치로 줄을 찾는다.
+    const sel = window.getSelection();
+    const anchorEl = sel && sel.focusNode ? (sel.focusNode.nodeType === Node.TEXT_NODE ? sel.focusNode.parentElement : sel.focusNode) : null;
+    const lineEl = anchorEl && anchorEl.closest ? anchorEl.closest('.ce-line') : null;
+    if (lineEl) ceReformatLine(lineEl); else ceSyncFullFromDom();
+  }
+  (function(){
+    const ce = document.getElementById('ce-editor');
+    ce.addEventListener('keydown', ceOnKeydown);
+    ce.addEventListener('input', ceOnInput);
+    ce.addEventListener('paste', ceOnPaste);
+    ce.addEventListener('cut', ceOnCut);
+    ce.addEventListener('compositionstart', ceOnCompositionStart);
+    ce.addEventListener('compositionend', ceOnCompositionEnd);
+    // 서식 툴바(wrapSelection/toggleLinePrefix)는 여전히 #editor-textarea의
+    // selectionStart/End를 읽으므로, ce-editor 안에서 선택이 바뀔 때마다
+    // 그 값을 최신으로 맞춰둔다(코드블록 내부는 자기 textarea가 따로 관리).
+    document.addEventListener('selectionchange', () => {
+      const active = document.activeElement;
+      if (!active || (active !== ce && !ce.contains(active))) return;
+      if (active.closest && active.closest('.ce-fence-input')) return;
+      if (ceComposing) return;
+      const { start, end } = ceGetSelectionFlatRange();
+      const editorEl = document.getElementById('editor-textarea');
+      editorEl.selectionStart = start;
+      editorEl.selectionEnd = end;
+    });
+    renderCEBlocks(document.getElementById('editor-textarea').value);
+  })();
+
+  // 기존 코드가 "예전 라이브 하이라이트를 다시 그린다"는 뜻으로 부르던 이름을
+  // 그대로 유지 — 이제는 #ce-editor 전체를 원문 기준으로 다시 그리고 캐럿을
+  // 되돌리는 함수다(위 ceApplyEdit과 같은 일을 하지만, "지금 editorEl.value/
+  // selectionStart/End에 이미 반영된 값"을 그대로 읽어 화면에 맞추는 용도로
+  // 쓰인다 — wrapSelection/toggleLinePrefix/insertAtCursor/setEditorRawText/
+  // applyImagePatch가 전부 이 순서로 쓴다: 1) editorEl.value/selectionStart/End를
+  // 먼저 바꾼다 2) syncHighlight() 호출).
   function syncHighlight(){
     const editorEl = document.getElementById('editor-textarea');
-    const highlightEl = document.getElementById('editor-highlight');
-    const lines = editorEl.value.split('\n');
-    const state = { inFence: false };
-    highlightEl.innerHTML = lines.map((line) => {
-      const { cls, inner } = mdLineParts(line, state);
-      return '<div class="' + cls + '">' + (inner || '<br>') + '</div>';
-    }).join('');
-    highlightEl.scrollTop = editorEl.scrollTop;
-    highlightEl.scrollLeft = editorEl.scrollLeft;
+    renderCEBlocks(editorEl.value);
+    ceSetSelectionRange(editorEl.selectionStart, editorEl.selectionEnd);
   }
+  // 캐럿 위치 계산은 이제 syncHighlight()/ceSetSelectionRange() 안에서 전부
+  // 처리된다 — 예전 가짜 커서 시스템(mirrorMeasureCaret) 호출부와의 호환을
+  // 위해서만 빈 함수로 남겨둔다.
+  function updateEditorCaret(){}
   function getEditorRawText(){
     return document.getElementById('editor-textarea').value;
   }
@@ -1728,8 +2382,8 @@
   }
   (function(){
     const toolbar = document.getElementById('format-toolbar');
-    const editorEl = document.getElementById('editor-textarea');
-    if (!toolbar || !editorEl) return;
+    const ceEl = document.getElementById('ce-editor');
+    if (!toolbar || !ceEl) return;
     const ACTIONS = {
       bold:   () => wrapSelection('**', '**', '굵은 텍스트'),
       italic: () => wrapSelection('*', '*', '기울임 텍스트'),
@@ -1749,79 +2403,16 @@
       if (fn) fn();
     });
     // 옵시디언과 같은 단축키: Ctrl/Cmd+B(굵게), Ctrl/Cmd+I(기울임).
-    editorEl.addEventListener('keydown', (e) => {
+    // 2026-09-08: #ce-editor는 진짜 contenteditable이라 브라우저가 Ctrl+B/I를
+    // 자체적으로 "굵게/기울임 서식 명령(execCommand)"으로 가로챌 수 있다 —
+    // 그러면 우리가 원하는 "**로 감싸기"가 아니라 실제 <b>/<i> 태그가 DOM에
+    // 끼어들 수 있으므로, 이 리스너에서 항상 먼저 preventDefault로 막는다.
+    ceEl.addEventListener('keydown', (e) => {
       if (!(e.ctrlKey || e.metaKey)) return;
       const key = e.key.toLowerCase();
       if (key === 'b'){ e.preventDefault(); ACTIONS.bold(); }
       else if (key === 'i'){ e.preventDefault(); ACTIONS.italic(); }
     });
-  })();
-
-  // ---------------------------------------------------------------
-  // 가짜 커서 위치 계산 — 실제 캐럿은 항상 "한 가지 글자 크기"만 아는 textarea
-  // 안에 있어서, 제목처럼 커지는 줄에서는 화면에 보이는(커진) 글자와 어긋난다.
-  // 그래서 진짜 캐럿은 투명하게 숨기고(caret-color:transparent), 대신 커서
-  // 앞쪽 내용을 화면 밖 복사본(#editor-caret-mirror)에 그대로 다시 그린 뒤 그
-  // 끝 지점을 측정해서, 화면에 실제로 보이는 크기 그대로 정확한 위치에
-  // #editor-caret를 그려 넣는다.
-  // ---------------------------------------------------------------
-  function mirrorMeasureCaret(uptoText){
-    const highlightEl = document.getElementById('editor-highlight');
-    const mirror = document.getElementById('editor-caret-mirror');
-    mirror.style.width = highlightEl.clientWidth + 'px';
-    const lines = uptoText.split('\n');
-    const state = { inFence: false };
-    mirror.innerHTML = lines.map((line, i) => {
-      const { cls, inner } = mdLineParts(line, state);
-      if (i === lines.length - 1){
-        return '<div class="' + cls + '">' + (inner || '') + '<span id="caret-tail-marker">​</span></div>';
-      }
-      return '<div class="' + cls + '">' + (inner || '<br>') + '</div>';
-    }).join('');
-    const marker = document.getElementById('caret-tail-marker');
-    const mirrorRect = mirror.getBoundingClientRect();
-    const markerRect = marker.getBoundingClientRect();
-    return {
-      x: markerRect.left - mirrorRect.left,
-      y: markerRect.top - mirrorRect.top,
-      h: markerRect.height || 24
-    };
-  }
-  function updateEditorCaret(){
-    const editorEl = document.getElementById('editor-textarea');
-    const caretEl = document.getElementById('editor-caret');
-    const highlightEl = document.getElementById('editor-highlight');
-    if (document.activeElement !== editorEl || editorEl.selectionStart !== editorEl.selectionEnd){
-      caretEl.classList.remove('show');
-      return;
-    }
-    const offset = mirrorMeasureCaret(editorEl.value.slice(0, editorEl.selectionStart));
-    caretEl.style.left = offset.x + 'px';
-    caretEl.style.top = (offset.y - highlightEl.scrollTop) + 'px';
-    caretEl.style.height = offset.h + 'px';
-    // 깜빡임(blink) 애니메이션을 매번 처음(보이는 상태)부터 다시 시작시키는 트릭 —
-    // 안 그러면 타이핑/이동 도중에 애니메이션 타이밍이 안 보이는 구간과 겹쳐서
-    // 커서가 잠깐 사라진 것처럼 보일 수 있다.
-    caretEl.classList.remove('show');
-    void caretEl.offsetWidth;
-    caretEl.classList.add('show');
-  }
-  (function(){
-    const editorEl = document.getElementById('editor-textarea');
-    editorEl.addEventListener('input', () => { syncHighlight(); updateEditorCaret(); });
-    editorEl.addEventListener('scroll', () => {
-      const highlightEl = document.getElementById('editor-highlight');
-      highlightEl.scrollTop = editorEl.scrollTop;
-      highlightEl.scrollLeft = editorEl.scrollLeft;
-      updateEditorCaret();
-    });
-    editorEl.addEventListener('click', updateEditorCaret);
-    editorEl.addEventListener('keyup', updateEditorCaret);
-    editorEl.addEventListener('select', updateEditorCaret);
-    editorEl.addEventListener('focus', updateEditorCaret);
-    editorEl.addEventListener('blur', () => document.getElementById('editor-caret').classList.remove('show'));
-    window.addEventListener('resize', updateEditorCaret);
-    syncHighlight();
   })();
 
   // ---------------------------------------------------------------
@@ -1832,7 +2423,7 @@
     const win = document.getElementById('editor-window');
     const backdrop = document.getElementById('editor-backdrop');
     const chrome = document.getElementById('editor-chrome');
-    const editorEl = document.getElementById('editor-textarea');
+    const ceEl = document.getElementById('ce-editor');
     const hint = document.getElementById('editor-hint');
 
     function applySize(){
@@ -1866,7 +2457,7 @@
       document.body.style.overflow = 'hidden';
       window.addEventListener('resize', applySize);
       hint.textContent = 'Esc 또는 바깥을 눌러 닫기';
-      if (refocus) editorEl.focus({ preventScroll: true });
+      if (refocus) ceEl.focus({ preventScroll: true });
     }
     function exit(){
       win.classList.remove('is-fullscreen');
@@ -1888,8 +2479,8 @@
       setTimeout(updateEditorCaret, 0);
     }
     chrome.addEventListener('click', () => enter(false));
-    editorEl.addEventListener('click', () => enter(true));
-    editorEl.addEventListener('focus', () => enter(true));
+    ceEl.addEventListener('click', () => enter(true));
+    ceEl.addEventListener('focus', () => { if (!ceProgrammaticFocus) enter(true); });
     document.querySelector('#editor-window .chrome-dots').addEventListener('click', (e) => {
       if (win.classList.contains('is-fullscreen')){ e.stopPropagation(); exit(); }
     });
@@ -2740,13 +3331,40 @@
     paintPreview(data);
     document.getElementById('tool-area').hidden = true;
     section.hidden = false;
+    // 2026-09-08: #tool-area/#preview-section 둘 다 자기 자신만의
+    // overflow-y:auto 스크롤을 갖고 있다(style.css의
+    // ".console-screen #tool-area:not([hidden])" 규칙 참고 — 바깥
+    // .console-screen과는 별개인 안쪽 스크롤 컨테이너). section.scrollIntoView()는
+    // "이 요소를 담고 있는 바깥 스크롤 컨테이너(.console-screen)"만
+    // 움직일 뿐, preview-section 자기 자신의 내부 스크롤 위치는 안 건드린다
+    // — 그래서 예전에 미리보기를 한 번 스크롤해서 읽은 적이 있으면, 완전히
+    // 다른 글을 열었을 때도 그 스크롤 위치 그대로(예: 본문 중간부터) 보이는
+    // 문제가 있었다. 매번 새로 열 때는 위에서부터 보이도록 내부 스크롤도
+    // 같이 0으로 되돌린다.
+    section.scrollTop = 0;
     section.scrollIntoView({ behavior:'instant', block:'start' });
   });
   // "← 돌아가기" — 미리보기를 닫고 원래 도구 화면(모드 전환 버튼 + 메타 카드 +
   // 글쓰기 창)으로 되돌아간다.
+  // 2026-09-08: "미리보기를 누르면 다시 되돌아갈 수가 없다(창 내부 화면이
+  // 밑으로 내려가서 움직이지를 않음)" 버그 수정 — #tool-area 자신도 자기
+  // 내용(모드 전환 버튼 + 메타 카드 + 글쓰기 창)이 화면보다 길면 자기
+  // 안에서만 스크롤되는 별도의 overflow-y:auto 영역이다(style.css의
+  // ".console-screen #tool-area:not([hidden])" 규칙 참고 — 바깥
+  // .console-screen과는 별개). 글을 쓰다가 아래쪽으로 스크롤한 채로
+  // "미리보기"를 누르면, tool-area는 hidden 속성만 걸릴 뿐 그 안쪽
+  // 스크롤 위치(scrollTop)는 그대로 남아있는 상태로 얼어붙는다 — 그래서
+  // "돌아가기"를 눌러 다시 보이게 해도 여전히 아까 스크롤해 내려간 자리
+  // 그대로 나타나(마치 화면이 아래에 낀 채 안 움직이는 것처럼 보임).
+  // scrollIntoView()는 tool-area를 담은 바깥 스크롤 컨테이너만 움직일 뿐
+  // tool-area 자신의 내부 스크롤은 그대로 두므로, 내부 scrollTop도 명시적으로
+  // 0으로 되돌려야 실제로 "정상적으로 위에서부터 보이는" 상태로 복귀한다.
   document.getElementById('btn-preview-back').addEventListener('click', () => {
     document.getElementById('preview-section').hidden = true;
-    document.getElementById('tool-area').hidden = false;
+    const toolArea = document.getElementById('tool-area');
+    toolArea.hidden = false;
+    toolArea.scrollTop = 0;
+    toolArea.scrollIntoView({ behavior:'instant', block:'start' });
   });
 
   // ---------------------------------------------------------------
@@ -2836,7 +3454,7 @@
       // 필드 한 줄만 살짝 잘려 보이고 바로 글쓰기 창이 시작됨). preventScroll
       // 옵션을 주면 포커스만 옮기고 스크롤은 그대로 유지되므로, 도착 직후엔
       // 항상 페이지 맨 위(메타 카드 전체가 보이는 상태)부터 시작한다.
-      document.getElementById('editor-textarea').focus({ preventScroll: true });
+      document.getElementById('ce-editor').focus({ preventScroll: true });
     } else if (qMode === 'edit' && qFolder && qSlug){
       const editBtn = document.querySelector('.mode-btn[data-mode="edit"]');
       if (editBtn) editBtn.click();
