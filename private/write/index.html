@@ -253,7 +253,21 @@
   /* 라이브 마크다운 스타일 — 문법 기호(#, **, ` 등)는 옅게 보여주고, 제목은
      실제 사이트와 비슷한 크기로 바로 커진다. 위 가짜 커서 덕분에, 여기서 글자
      크기를 바꿔도 커서 위치는 항상 정확하게 따라온다. */
-  .md-mark{ color: var(--ink-faint); }
+  /* 2026-09-08 (노션 스타일 요청 — "굵게/기울임/제목도 코드·이미지 블록처럼
+     같은 방식으로 해줘"): 코드·이미지 블록은 이제 마크다운 기호 없이 완성된
+     모습만 보이는데, 굵게(**)/기울임(*·_)/취소선(~~)/인라인 코드(`)/링크
+     ([]())/수식($)/제목(#)/인용(>)/목록(-,*,1.) 기호는 여전히 옅게 색만 바뀐
+     채 계속 화면에 남아 있었다 — 전부 mdLineParts()/inlineFormat()가
+     .md-mark로 똑같이 감싸주므로, 이 클래스 하나만 손보면 전부 한 번에 같은
+     방식으로 숨길 수 있다. display:none은 안 된다 — 네이티브 캐럿을 그 안에
+     둘 수 없어서(이 에디터의 캐럿 복원이 문자 오프셋으로 항상 Range를 만들
+     수 있어야 함, ceLineDomPoint 참고) 기호 바로 위/옆에서 클릭하면 캐럿이
+     엉뚱한 곳으로 튄다. 대신 폭/높이만 0으로 접어 "그려지긴 하되 안 보이는"
+     상태로 두면 캐럿은 여전히 그 자리에 놓을 수 있다. 지금 캐럿이 있는 줄
+     (.ce-line-active — ceUpdateActiveLine이 selectionchange/입력마다 갱신)
+     에서만 원래 크기로 되돌려 기호를 보여준다. */
+  .md-mark{ color: var(--ink-faint); font-size:0; line-height:0; }
+  .ce-line-active .md-mark{ font-size:1em; line-height:inherit; }
   .md-h1{ font-family: var(--font-pixel); font-size:24px; font-weight:700; color: var(--accent-solid); }
   .md-h2{ font-family: var(--font-pixel); font-size:20px; font-weight:700; color: var(--accent-solid); }
   .md-h3{ font-family: var(--font-pixel); font-size:17px; font-weight:700; color: var(--accent-solid); }
@@ -1835,6 +1849,43 @@
     }
   }
 
+  // 2026-09-08 (버그 수정): 코드블록(.ce-fence-input) 안에서 클릭/타이핑으로
+  // 캐럿을 옮겨도, 서식 툴바(wrapSelection/toggleLinePrefix)와 첨부 삽입
+  // (insertAtCursor)이 읽는 hidden backing store(#editor-textarea)의
+  // selectionStart/End는 "코드블록에 들어가기 직전" 값에 멈춰 있었다 —
+  // 아래 selectionchange 리스너가 fence-input에 포커스가 있을 때는 일부러
+  // 건드리지 않기 때문(주석 "코드블록 내부는 자기 textarea가 따로 관리"라고
+  // 되어 있었지만 실제로 그 "따로 관리"하는 코드가 빠져 있었음). 그 결과
+  // 코드블록 안에서 커서를 옮긴 뒤 이미지를 첨부하거나 서식 버튼을 누르면
+  // 완전히 엉뚱한(심지어 이미 지나간) 위치에 삽입돼 코드블록 구조가 깨지고
+  // ("코드블럭 생성 시 수정안됨"), 첨부한 이미지가 아직 안 닫힌 코드펜스
+  // 안 텍스트로 먹혀버려 렌더링되지 않고("이미지 업로드시 안뜸"), 그 결과로
+  // 재계산된 캐럿이 화면에 안 맞는 엉뚱한 자리에 그려지는("코드블록 커서가
+  // 매우 뒤에 있다") 증상으로 이어졌다. 아래 두 함수로 fence-input 자신의
+  // selectionStart/End가 바뀔 때마다 backing store를 실시간으로 맞춘다.
+  function ceFenceFlatSelection(ta){
+    const fenceBlock = ta.closest('.ce-fence');
+    if (!fenceBlock) return null;
+    const blocks = ceCollectBlocks();
+    const block = blocks.find((b) => b.el === fenceBlock);
+    if (!block) return null;
+    const prefixLen = 3 + (fenceBlock.dataset.lang || '').length + 1;
+    return {
+      start: block.start + prefixLen + ta.selectionStart,
+      end: block.start + prefixLen + ta.selectionEnd
+    };
+  }
+  function ceSyncBackingSelectionFromFence(ta){
+    const sel = ceFenceFlatSelection(ta);
+    if (!sel) return;
+    const editorEl = document.getElementById('editor-textarea');
+    editorEl.selectionStart = sel.start;
+    editorEl.selectionEnd = sel.end;
+    // 코드블록 안으로 캐럿이 들어온 것이므로(코드블록엔 .md-mark가 없음),
+    // 바깥 줄에 남아 있던 활성 표시(마크다운 기호 노출)는 지운다.
+    ceUpdateActiveLine();
+  }
+
   // 방금 통째로 새로 그린 DOM에 이벤트를 (다시) 연결한다 — innerHTML을 새로
   // 쓰면 이전에 붙인 리스너는 전부 사라지므로 매번 다시 붙여야 한다.
   function ceWireBlocks(){
@@ -1849,6 +1900,12 @@
         pre.scrollTop = ta.scrollTop;
         pre.scrollLeft = ta.scrollLeft;
         ceSyncFullFromDom();
+        ceSyncBackingSelectionFromFence(ta);
+      });
+      // 클릭/방향키/드래그 선택 등 "타이핑이 아닌" 방식으로 캐럿이 바뀌는
+      // 모든 경우도 빠짐없이 backing store에 반영한다.
+      ['click', 'keyup', 'select', 'focus'].forEach((evt) => {
+        ta.addEventListener(evt, () => ceSyncBackingSelectionFromFence(ta));
       });
       ta.addEventListener('scroll', () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; });
       // 코드 블록의 마지막 빈 줄에서 Enter를 한 번 더 누르면(=다 썼고 밖으로
@@ -2076,6 +2133,7 @@
       ta.setSelectionRange(localStart, localEnd);
       editorEl.selectionStart = startOffset;
       editorEl.selectionEnd = endOffset;
+      ceUpdateActiveLine();
       return;
     }
     const ce = document.getElementById('ce-editor');
@@ -2100,6 +2158,7 @@
     sel.addRange(range);
     editorEl.selectionStart = startOffset;
     editorEl.selectionEnd = endOffset;
+    ceUpdateActiveLine();
   }
 
   // 통짜(코드/이미지) 블록 바로 앞/뒤에서 Backspace/Delete를 누르면 글자
@@ -2208,6 +2267,30 @@
       }
     }
   }
+  // 2026-09-08 (노션 스타일 마크다운 기호 숨김): #ce-editor 전체에서 "지금
+  // 캐럿이 있는 한 줄"을 찾아 .ce-line-active 클래스를 옮겨 붙인다 — 이
+  // 클래스 하나로 위 .ce-line-active .md-mark CSS가 그 줄의 기호만 원래
+  // 크기로 되돌린다. 순수 classList 조작이라(텍스트 노드/구조를 전혀 안
+  // 건드림) 캐럿 오프셋 계산에 전혀 영향을 주지 않는다 — ceReformatLine이
+  // 매 키 입력마다 줄 하나의 innerHTML을 통째로 새로 쓰기 때문에(active
+  // 클래스도 같이 날아감) 그때마다 다시 불러줘야 하고, renderCEBlocks가
+  // #ce-editor.innerHTML을 통째로 새로 쓰는 모든 경로(ceApplyEdit/
+  // syncHighlight → ceSetSelectionRange)에서도 마찬가지다. 코드블록
+  // (.ce-fence-input)에 포커스가 가 있을 땐 활성 줄이 없다 — 코드 블록
+  // 안에는애초에 .md-mark가 없다.
+  function ceUpdateActiveLine(){
+    const ce = document.getElementById('ce-editor');
+    let activeLineEl = null;
+    if (document.activeElement === ce){
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0){
+        const anchorEl = sel.focusNode ? (sel.focusNode.nodeType === Node.TEXT_NODE ? sel.focusNode.parentElement : sel.focusNode) : null;
+        activeLineEl = anchorEl && anchorEl.closest ? anchorEl.closest('.ce-line') : null;
+      }
+    }
+    ce.querySelectorAll('.ce-line-active').forEach((el) => { if (el !== activeLineEl) el.classList.remove('ce-line-active'); });
+    if (activeLineEl && !activeLineEl.classList.contains('ce-line-active')) activeLineEl.classList.add('ce-line-active');
+  }
   function ceReformatLine(lineEl){
     const sel = window.getSelection();
     const caretLocal = ceLocalOffsetInLine(lineEl, sel.focusNode, sel.focusOffset);
@@ -2226,6 +2309,7 @@
     }
     ceSyncFullFromDom();
     document.getElementById('ce-editor').classList.toggle('ce-empty', document.getElementById('editor-textarea').value.length === 0);
+    ceUpdateActiveLine();
   }
   function ceOnInput(e){
     if (ceComposing) return; // compositionend에서 처리
@@ -2290,6 +2374,7 @@
       const editorEl = document.getElementById('editor-textarea');
       editorEl.selectionStart = start;
       editorEl.selectionEnd = end;
+      ceUpdateActiveLine();
     });
     renderCEBlocks(document.getElementById('editor-textarea').value);
   })();
@@ -2322,8 +2407,29 @@
   // 업로드한 뒤 마크다운 링크를 자동으로 넣어줄 때 씀.
   function insertAtCursor(text){
     const editorEl = document.getElementById('editor-textarea');
-    const start = editorEl.selectionStart, end = editorEl.selectionEnd;
-    const value = editorEl.value;
+    let start = editorEl.selectionStart, end = editorEl.selectionEnd;
+    let value = editorEl.value;
+    // 2026-09-08 (버그 수정): 지금 커서가 (닫혔든 안 닫혔든) 코드펜스 "안"에
+    // 있으면 — 언어줄 바로 다음부터 닫는 ``` 직전까지 — 여기 그대로 끼워
+    // 넣으면 첨부한 이미지/파일 마크다운이 진짜 이미지 블록이 아니라 코드
+    // 텍스트로 먹혀버려 렌더링되지 않는다(위 selectionStart bug와 맞물려
+    // 실제로 재현된 버그). 이미지·PDF 첨부는 언제나 "진짜 블록"으로 보여야
+    // 하므로, 커서가 펜스 내부일 때는 그 펜스가 끝나는 지점 바로 뒤로
+    // 삽입 위치를 옮긴다 — 그 펜스가 아직 안 닫혀 있으면(닫는 ```가 없어
+    // 문서 끝까지 전부 코드로 먹는 상태) 닫는 마커까지 먼저 붙여줘야, 방금
+    // 끼워 넣을 내용이 여전히 그 펜스 안으로 먹히지 않는다.
+    const enclosingFence = ceParseBlocks(value).find(
+      (b) => b.type === 'fence' && start > b.start && start < b.end
+    );
+    if (enclosingFence){
+      if (!enclosingFence.closed){
+        const closeMarker = '\n```';
+        value = value.slice(0, enclosingFence.end) + closeMarker + value.slice(enclosingFence.end);
+        start = end = enclosingFence.end + closeMarker.length;
+      } else {
+        start = end = enclosingFence.end;
+      }
+    }
     const needsLeadingBreak = start > 0 && value[start - 1] !== '\n';
     const insertion = (needsLeadingBreak ? '\n' : '') + text + '\n';
     editorEl.value = value.slice(0, start) + insertion + value.slice(end);
